@@ -1,0 +1,98 @@
+/* ============================================
+   ШРИФТЫ И ПЕРЕМЕННЫЕ
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Lobster&display=swap');
+
+:root {
+    /* Цвета */
+    --primary: #1E3A8A;
+    --primary-light: #3B82F6;
+    --primary-dark: #1A2A5E;
+    --primary-gradient: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+    
+    --secondary: #5B8DB8;
+    --accent: #F59E0B;
+    --accent-light: #FDEBD0;
+    
+    /* Фоны */
+    --bg-main: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-header: rgba(255, 255, 255, 0.98);
+    --bg-sidebar: rgba(255, 255, 255, 0.98);
+    
+    /* Текст */
+    --text-primary: #1E293B;
+    --text-secondary: #475569;
+    --text-light: #FFFFFF;
+    --text-muted: #94A3B8;
+    
+    /* Границы и тени */
+    --border: #dbeafe;
+    --border-radius: 12px;
+    --shadow: 0 4px 20px rgba(59, 130, 246, 0.12);
+    --shadow-hover: 0 8px 30px rgba(59, 130, 246, 0.2);
+    --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.2);
+    
+    /* Статусы */
+    --success: #059669;
+    --success-bg: #D1FAE5;
+    --danger: #DC2626;
+    --danger-bg: #FEE2E2;
+    --warning: #F59E0B;
+    --warning-bg: #FDEBD0;
+    --info: #3B82F6;
+    --info-bg: #DBEAFE;
+    
+    /* Настройки */
+    --transition: 0.3s ease;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --header-height: 74px;
+    --sidebar-width: 220px;
+}
+
+/* ============================================
+   СБРОС И БАЗА
+   ============================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--font-family);
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
+    background-attachment: fixed;
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* Скроллбар */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-main); border-radius: 10px; }
+::-webkit-scrollbar-thumb { background: var(--primary-light); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* ============================================
+   УТИЛИТЫ
+   ============================================ */
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-muted { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+
+.flex { display: flex; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-4 { gap: 4px; } .gap-8 { gap: 8px; } .gap-12 { gap: 12px; } .gap-16 { gap: 16px; }
+.mt-8 { margin-top: 8px; } .mt-16 { margin-top: 16px; } .mb-8 { margin-bottom: 8px; } .mb-16 { margin-bottom: 16px; }
+.w-100 { width: 100%; }
+.animate-pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* Адаптив для базы */
+@media (max-width: 768px) {
+    .header { padding: 10px 16px; }
+    .main-content { margin-left: 0; padding: 16px; }
+}

@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Добавление брата/сестры | vgatk_bd</title>
+    
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        .page-container { max-width: 800px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+
+        .form-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .form-section { margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+        .form-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .form-section-title { font-size: 16px; font-weight: 600; color: var(--primary); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-weight: 600; font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-label .required { color: var(--danger); margin-left: 2px; }
+        .form-control { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; transition: var(--transition); background: var(--bg-card); height: 48px; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(44, 62, 143, 0.1); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        .form-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--border); }
+        .form-actions .btn { padding: 12px 32px; font-size: 15px; }
+
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 16px 24px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px; box-shadow: var(--shadow-modal); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        .suggestions-container { position: relative; }
+        .suggestions-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 2px solid var(--border); border-top: none; border-radius: 0 0 var(--border-radius) var(--border-radius); max-height: 200px; overflow-y: auto; z-index: 100; display: none; }
+        .suggestions-list.show { display: block; }
+        .suggestions-list .suggestion-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border); transition: var(--transition); }
+        .suggestions-list .suggestion-item:hover { background: var(--bg-hover); }
+        .suggestions-list .suggestion-item .name { font-weight: 600; }
+        .suggestions-list .suggestion-item .info { font-size: 12px; color: var(--text-muted); }
+
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .form-card { padding: 20px; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-actions { flex-direction: column; }
+            .form-actions .btn { width: 100%; justify-content: center; }
+            .page-title { font-size: 20px; }
+            .toast-notification { left: 20px; right: 20px; top: 80px; }
+        }
+        @media (max-width: 480px) {
+            .page-title { font-size: 18px; }
+            .form-actions .btn { padding: 10px; font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-logo">
+        <span class="college-name">
+            <h2>Учреждение образования<br>
+            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<aside class="sidebar" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html" class="active"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">➕ Добавление брата/сестры</h1>
+            </div>
+            <a href="javascript:history.back()" class="btn btn-secondary">← Назад</a>
+        </div>
+
+        <div class="form-card">
+            <form id="addSiblingForm" onsubmit="return false;">
+                <div class="form-section">
+                    <div class="form-section-title">👤 Данные брата/сестры</div>
+
+                    <div class="form-group">
+                        <label class="form-label">ФИО <span class="required">*</span></label>
+                        <div class="suggestions-container">
+                            <input type="text" class="form-control" id="fullName" placeholder="Введите ФИО" required>
+                            <div class="suggestions-list" id="suggestionsList"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Тип <span class="required">*</span></label>
+                            <select class="form-control" id="type">
+                                <option value="Брат">Брат</option>
+                                <option value="Сестра">Сестра</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Дата рождения</label>
+                            <input type="date" class="form-control" id="birthDate">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Тип занятости</label>
+                            <select class="form-control" id="employmentType">
+                                <option value="учёба">📚 Учится</option>
+                                <option value="работа">💼 Работает</option>
+                                <option value="не работает">🚫 Не работает</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Место учёбы/работы</label>
+                            <input type="text" class="form-control" id="studyWork" placeholder="Место учёбы или работы">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Адрес проживания</label>
+                        <input type="text" class="form-control" id="address" placeholder="г. Минск, ул. Пушкина 5">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Область</label>
+                            <input type="text" class="form-control" id="region" placeholder="Минская">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Район</label>
+                            <input type="text" class="form-control" id="district" placeholder="Минский">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Населённый пункт</label>
+                        <input type="text" class="form-control" id="locality" placeholder="Минск">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <a href="javascript:history.back()" class="btn btn-secondary">Отмена</a>
+                    <button type="button" class="btn btn-success" id="saveSiblingBtn">✅ Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script>
+// ============================================================
+// SUPABASE
+// ============================================================
+const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+
+let sbClient;
+if (typeof window.supabaseClient !== 'undefined') {
+    sbClient = window.supabaseClient;
+} else {
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    window.supabaseClient = sbClient;
+}
+console.log('✅ Supabase готов к использованию');
+
+// ============================================================
+// ПРОВЕРКА АВТОРИЗАЦИИ ЧЕРЕЗ SUPABASE SESSION
+// ============================================================
+let currentUser = null;
+
+async function checkAuth() {
+    try {
+        const { data: { session }, error } = await sbClient.auth.getSession();
+        
+        if (error || !session) {
+            console.error('❌ Нет сессии:', error);
+            showToast('❌ Требуется авторизация. Пожалуйста, войдите в систему.', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
+            return false;
+        }
+
+        console.log('✅ Сессия активна:', session.user.email);
+        
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            try {
+                currentUser = JSON.parse(savedUser);
+                document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+                const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+                document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+            } catch (e) {
+                console.error('Ошибка парсинга пользователя:', e);
+            }
+        } else {
+            const { data: userData } = await sbClient.auth.getUser();
+            if (userData && userData.user) {
+                document.getElementById('userNameDisplay').textContent = userData.user.email || userData.user.id;
+                document.getElementById('userRoleDisplay').textContent = 'Пользователь';
+            }
+        }
+
+        return true;
+    } catch (e) {
+        console.error('❌ Ошибка проверки авторизации:', e);
+        showToast('❌ Ошибка авторизации. Пожалуйста, войдите заново.', 'error');
+        setTimeout(() => {
+            window.location.href = '/index.html';
+        }, 2000);
+        return false;
+    }
+}
+
+document.getElementById('logoutBtn').onclick = () => { 
+    localStorage.removeItem('currentUser');
+    sbClient.auth.signOut();
+    window.location.href = '/index.html'; 
+};
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+// ============================================================
+// ПОИСК СУЩЕСТВУЮЩИХ
+// ============================================================
+const searchInput = document.getElementById('fullName');
+const suggestionsList = document.getElementById('suggestionsList');
+let searchTimeout;
+
+searchInput.addEventListener('input', function() {
+    const query = this.value.trim();
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        suggestionsList.classList.remove('show');
+        return;
+    }
+
+    searchTimeout = setTimeout(async () => {
+        try {
+            const { data, error } = await sbClient
+                .from('siblings')
+                .select('*')
+                .ilike('full_name', `%${query}%`)
+                .limit(5);
+
+            if (error || !data || data.length === 0) {
+                suggestionsList.classList.remove('show');
+                return;
+            }
+
+            suggestionsList.innerHTML = data.map(s => `
+                <div class="suggestion-item" onclick="selectSibling('${s.id}')">
+                    <div class="name">${s.full_name}</div>
+                    <div class="info">${s.type || ''} ${s.study_work ? '· ' + s.study_work : ''}</div>
+                </div>
+            `).join('');
+            suggestionsList.classList.add('show');
+        } catch (e) {
+            console.error('Ошибка поиска:', e);
+        }
+    }, 300);
+});
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.suggestions-container')) {
+        suggestionsList.classList.remove('show');
+    }
+});
+
+async function selectSibling(id) {
+    try {
+        const { data, error } = await sbClient
+            .from('siblings')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !data) return;
+
+        document.getElementById('fullName').value = data.full_name;
+        document.getElementById('type').value = data.type || 'Брат';
+        document.getElementById('birthDate').value = data.birth_date || '';
+        document.getElementById('employmentType').value = data.employment_type || 'учёба';
+        document.getElementById('studyWork').value = data.study_work || '';
+        document.getElementById('address').value = data.address || '';
+        document.getElementById('region').value = data.region || '';
+        document.getElementById('district').value = data.district || '';
+        document.getElementById('locality').value = data.locality || '';
+        
+        suggestionsList.classList.remove('show');
+        showToast('✅ Данные загружены из базы', 'success');
+    } catch (e) {
+        console.error('Ошибка загрузки:', e);
+    }
+}
+
+// ============================================================
+// СОХРАНЕНИЕ БРАТА/СЕСТРЫ
+// ============================================================
+async function saveSibling() {
+    const fullName = document.getElementById('fullName').value.trim();
+    const type = document.getElementById('type').value;
+    const birthDate = document.getElementById('birthDate').value;
+    const employmentType = document.getElementById('employmentType').value;
+    const studyWork = document.getElementById('studyWork').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const region = document.getElementById('region').value.trim();
+    const district = document.getElementById('district').value.trim();
+    const locality = document.getElementById('locality').value.trim();
+
+    if (!fullName) {
+        showToast('❌ Введите ФИО', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('saveSiblingBtn');
+    btn.innerHTML = '⏳ Сохранение...';
+    btn.disabled = true;
+
+    try {
+        const { data: { session } } = await sbClient.auth.getSession();
+        if (!session) {
+            showToast('❌ Требуется авторизация. Пожалуйста, войдите в систему.', 'error');
+            btn.innerHTML = '✅ Сохранить';
+            btn.disabled = false;
+            return;
+        }
+
+        const { data: existing } = await sbClient
+            .from('siblings')
+            .select('id')
+            .eq('full_name', fullName)
+            .maybeSingle();
+
+        let result;
+        if (existing) {
+            const { data, error } = await sbClient
+                .from('siblings')
+                .update({
+                    type: type,
+                    birth_date: birthDate || null,
+                    employment_type: employmentType || null,
+                    study_work: studyWork || null,
+                    address: address || null,
+                    region: region || null,
+                    district: district || null,
+                    locality: locality || null
+                })
+                .eq('id', existing.id)
+                .select();
+            if (error) throw error;
+            result = data;
+            showToast(`✅ Данные "${fullName}" обновлены!`, 'success');
+        } else {
+            const siblingData = {
+                full_name: fullName,
+                type: type,
+                birth_date: birthDate || null,
+                employment_type: employmentType || null,
+                study_work: studyWork || null,
+                address: address || null,
+                region: region || null,
+                district: district || null,
+                locality: locality || null
+            };
+
+            const { data, error } = await sbClient
+                .from('siblings')
+                .insert([siblingData])
+                .select();
+
+            if (error) {
+                if (error.code === '42501') {
+                    showToast('❌ Ошибка RLS: нет прав на добавление.', 'error');
+                } else {
+                    throw error;
+                }
+                btn.innerHTML = '✅ Сохранить';
+                btn.disabled = false;
+                return;
+            }
+            result = data;
+            showToast(`✅ "${fullName}" успешно добавлен(а)!`, 'success');
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('student_id');
+        
+        if (studentId && result && result.length > 0) {
+            const siblingId = result[0].id;
+            await sbClient
+                .from('student_siblings')
+                .insert([{ student_id: studentId, sibling_id: siblingId }]);
+            showToast(`✅ Брат/сестра привязан(а) к студенту!`, 'success');
+        }
+
+        setTimeout(() => {
+            window.location.href = document.referrer || '/students/index.html';
+        }, 1500);
+
+    } catch (error) {
+        console.error('❌ Ошибка сохранения:', error);
+        showToast(`❌ Ошибка: ${error.message}`, 'error');
+    } finally {
+        btn.innerHTML = '✅ Сохранить';
+        btn.disabled = false;
+    }
+}
+
+document.getElementById('saveSiblingBtn').onclick = saveSibling;
+
+document.getElementById('addSiblingForm').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        saveSibling();
+    }
+});
+
+// ============================================================
+// МОБИЛЬНОЕ МЕНЮ
+// ============================================================
+document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+window.onresize = () => {
+    if (window.innerWidth <= 768) {
+        document.getElementById('menuToggle').style.display = 'inline-block';
+    } else {
+        document.getElementById('menuToggle').style.display = 'none';
+        document.getElementById('sidebar').classList.remove('open');
+    }
+};
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+(async function init() {
+    const isAuth = await checkAuth();
+    if (isAuth) {
+        console.log('✅ Авторизация успешна');
+    }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,9 @@
+# SPA маршрутизация (для всех страниц)
+/*    /index.html    200
+
+# Перенаправления
+/students/add-student.html  /students/add-student.html  200
+/students/edit-student.html /students/edit-student.html  200
+
+# Правила для API (если нужно)
+/api/*  https://selbolepupendprhixas.supabase.co/rest/v1/:splat  200!

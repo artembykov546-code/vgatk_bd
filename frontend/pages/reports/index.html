@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчёты | vgatk_bd</title>
+    
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+
+        .report-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .report-card {
+            background: var(--bg-card);
+            padding: 6px 10px;
+            border-radius: var(--border-radius);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .report-card:hover { border-color: var(--primary-light); transform: translateY(-2px); }
+        .report-card.active { border-color: var(--primary); background: var(--primary); color: white; }
+        .report-card .icon { font-size: 14px; display: block; margin-bottom: 2px; }
+
+        .filters-panel {
+            background: var(--bg-card);
+            padding: 10px 14px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 6px 10px;
+        }
+        .filters-panel .filter-group { display: flex; flex-direction: column; }
+        .filters-panel .filter-group label { font-size: 9px; font-weight: 600; color: var(--text-muted); margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px; }
+        .filters-panel .filter-group select { padding: 4px 6px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 11px; background: var(--bg-card); }
+        .filters-panel .filter-group select:focus { outline: none; border-color: var(--primary-light); }
+        .filters-panel .filter-group input { padding: 4px 6px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 11px; background: var(--bg-card); }
+        .filters-panel .filter-group input:focus { outline: none; border-color: var(--primary-light); }
+
+        .export-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            align-items: center;
+        }
+        .export-buttons .btn { padding: 6px 14px; font-size: 12px; }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 13px; 
+            font-family: 'Times New Roman', Times, serif;
+            table-layout: auto;
+            min-width: 100%;
+        }
+        .table thead { background: var(--bg-main); }
+        .table th { 
+            padding: 6px 10px; 
+            text-align: left; 
+            font-weight: 700; 
+            color: var(--text-secondary); 
+            border-bottom: 2px solid var(--border); 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.3px; 
+            position: sticky; 
+            top: 0; 
+            background: var(--bg-main); 
+            white-space: nowrap;
+            word-break: keep-all;
+        }
+        .table td { 
+            padding: 5px 10px; 
+            border-bottom: 1px solid var(--border); 
+            vertical-align: middle; 
+            font-size: 12px; 
+            font-family: 'Times New Roman', Times, serif;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 200px;
+            white-space: normal;
+            line-height: 1.3;
+        }
+        .table tbody tr:hover { background: rgba(44, 62, 143, 0.04); }
+
+        .report-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 8px 14px;
+            background: var(--bg-main);
+            border-radius: var(--border-radius);
+            margin-top: 8px;
+            font-size: 12px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .report-stats .stat-item { display: flex; gap: 4px; }
+        .report-stats .stat-item .label { color: var(--text-muted); }
+        .report-stats .stat-item .value { font-weight: 600; color: var(--primary); }
+
+        .chart-container {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+        .chart-container .chart-wrapper { max-width: 450px; margin: 0 auto; max-height: 320px; }
+        .chart-container h3 { font-size: 14px; font-weight: 600; color: var(--primary); margin-bottom: 12px; text-align: center; }
+        .chart-container .chart-note { text-align: center; font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+        .toast-notification {
+            position: fixed; top: 80px; right: 20px; padding: 12px 20px;
+            border-radius: var(--border-radius); color: white; font-weight: 600;
+            z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px;
+            box-shadow: var(--shadow-modal);
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close { float: right; margin-left: 12px; cursor: pointer; font-size: 16px; opacity: 0.8; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-xl);
+            padding: 24px;
+            max-width: 700px;
+            width: 95%;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-modal);
+            animation: slideUp 0.3s ease;
+            border: 1px solid var(--border);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 16px;
+        }
+        .modal-title { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
+        .modal-body { padding: 8px 0 16px; }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 2px solid var(--border);
+        }
+        .modal .form-group { margin-bottom: 12px; }
+        .modal .form-label { display: block; font-weight: 600; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
+        .modal .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            transition: var(--transition);
+            background: var(--bg-card);
+            box-sizing: border-box;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .modal .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(44, 62, 143, 0.1);
+        }
+        .modal .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .modal .pdf-preview {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            max-height: 280px;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: 'Times New Roman', Times, serif;
+            white-space: pre-wrap;
+        }
+
+        /* Стили для PDF */
+        .pdf-content {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            padding: 6px;
+            background: white;
+            color: #000;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .pdf-content .pdf-header {
+            text-align: center;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #000;
+        }
+        .pdf-content .pdf-header .pdf-title {
+            font-size: 16pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .pdf-content .pdf-header .pdf-subtitle {
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .pdf-content .pdf-header .pdf-info {
+            font-size: 11pt;
+            margin-top: 2px;
+            color: #555;
+        }
+        .pdf-content .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+            margin-top: 4px;
+            table-layout: auto;
+        }
+        .pdf-content .pdf-table th {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            background: #e9ecef;
+            text-align: left;
+            font-weight: 700;
+            font-size: 9.5pt;
+            word-break: keep-all;
+            white-space: nowrap;
+        }
+        .pdf-content .pdf-table td {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            font-size: 9pt;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 120px;
+            white-space: normal;
+            line-height: 1.2;
+        }
+        .pdf-content .pdf-footer {
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px solid #000;
+            font-size: 11pt;
+        }
+
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .report-selector { grid-template-columns: repeat(3, 1fr); }
+            .filters-panel { grid-template-columns: 1fr 1fr; }
+            .export-buttons .btn { flex: 1; }
+            .modal .form-row { grid-template-columns: 1fr; }
+            .table td { max-width: 120px; font-size: 11px; }
+            .table th { font-size: 10px; }
+        }
+        @media (max-width: 480px) {
+            .report-selector { grid-template-columns: repeat(2, 1fr); }
+            .filters-panel { grid-template-columns: 1fr; }
+            .table td { max-width: 80px; font-size: 10px; padding: 3px 6px; }
+            .table th { font-size: 9px; padding: 3px 6px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-logo">
+        <span class="college-name">
+            <h2>Учреждение образования<br>
+            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<aside class="sidebar" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html" class="active"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📊 Отчёты <small>генерация официальных отчётов</small></h1>
+            </div>
+        </div>
+
+        <div class="report-selector" id="reportSelector">
+            <div class="report-card active" data-report="students"><span class="icon">👨‍🎓</span>Студенты</div>
+            <div class="report-card" data-report="groups"><span class="icon">📚</span>Группы</div>
+            <div class="report-card" data-report="graduates"><span class="icon">🎓</span>Выпускники</div>
+            <div class="report-card" data-report="expelled"><span class="icon">❌</span>Отчисленные</div>
+            <div class="report-card" data-report="academic"><span class="icon">📚</span>Академ. отпуск</div>
+            <div class="report-card" data-report="citizenship"><span class="icon">🌍</span>По гражданству</div>
+            <div class="report-card" data-report="address"><span class="icon">📍</span>По адресам</div>
+            <div class="report-card" data-report="accounting"><span class="icon">📋</span>По учёту</div>
+            <div class="report-card" data-report="age"><span class="icon">📅</span>По возрасту</div>
+            <div class="report-card" data-report="gender"><span class="icon">🧑‍🤝‍🧑</span>По полу</div>
+            <div class="report-card" data-report="by_groups"><span class="icon">📁</span>По группам</div>
+            <div class="report-card" data-report="statistics"><span class="icon">📊</span>Статистика</div>
+            <div class="report-card" data-report="underage"><span class="icon">🧒</span>Несовершеннолетние</div>
+            <div class="report-card" data-report="employment"><span class="icon">💼</span>Трудоустройство</div>
+            <div class="report-card" data-report="target_training"><span class="icon">🎯</span>Целевая подготовка</div>
+            <div class="report-card" data-report="avg_grade_school"><span class="icon">🏫</span>Ср.балл со школы</div>
+            <div class="report-card" data-report="avg_grade_college"><span class="icon">📊</span>Ср.балл в колледже</div>
+        </div>
+
+        <div class="filters-panel" id="filtersPanel"></div>
+
+        <div class="export-buttons">
+            <button class="btn btn-success" id="exportPDFBtn">📄 PDF</button>
+        </div>
+
+        <div class="chart-container" id="chartContainer" style="display:none;">
+            <h3 id="chartTitle">📊 Распределение данных</h3>
+            <div class="chart-wrapper"><canvas id="statsChart"></canvas></div>
+            <div class="chart-note" id="chartNote">* Диаграмма отображает распределение данных</div>
+        </div>
+
+        <div class="table-container">
+            <table class="table">
+                <thead id="reportThead"><tr><th colspan="10" style="text-align:center;padding:20px;">Выберите отчёт</th></tr></thead>
+                <tbody id="reportTbody"><tr><td colspan="10"><div class="empty-state"><span class="icon">📊</span><p>Выберите отчёт для просмотра</p></div></td></tr></tbody>
+            </table>
+        </div>
+
+        <div class="report-stats" id="reportStats">
+            <div class="stat-item"><span class="label">Всего записей:</span><span class="value" id="totalRecords">0</span></div>
+            <div class="stat-item"><span class="label">Дата отчёта:</span><span class="value" id="reportDate">—</span></div>
+        </div>
+
+    </div>
+</main>
+
+<div class="modal-overlay" id="pdfModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">📄 Экспорт в PDF</h2>
+            <button class="modal-close" id="pdfModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Заголовок отчёта</label>
+                <input type="text" class="form-control" id="pdfTitle" value="ОТЧЁТ">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Подзаголовок</label>
+                <input type="text" class="form-control" id="pdfSubtitle" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Должность руководителя</label>
+                <input type="text" class="form-control" id="pdfDirectorPosition" value="Директор">
+            </div>
+            <div class="form-group">
+                <label class="form-label">ФИО руководителя</label>
+                <input type="text" class="form-control" id="pdfDirectorName" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Предпросмотр</label>
+                <div class="pdf-preview" id="pdfPreview">Здесь будет предпросмотр вашего отчёта...</div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="pdfCancelBtn">Отмена</button>
+            <button class="btn btn-success" id="pdfGenerateBtn">📄 Сгенерировать PDF</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/components.js"></script>
+
+<script>
+if (typeof window.supabaseClient === 'undefined') {
+    window.supabaseClient = window.supabase.createClient(
+        'https://selbolepupendprhixas.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+    );
+}
+console.log('✅ Supabase готов к использованию');
+
+const sb = window.supabaseClient;
+
+let currentUser = null;
+let currentReport = 'students';
+let reportData = [];
+let reportColumns = [];
+let chartInstance = null;
+let allGroups = [];
+let allGraduationYears = [];
+
+const COLLEGE_NAME = 'Учреждение образования "Витебский государственный аграрно-технический колледж"';
+const REGIONS = ['Брестская','Витебская','Гомельская','Гродненская','Минская','Могилёвская'];
+const SETTLEMENT_TYPES = ['г.', 'гп', 'аг.', 'д.', 'пгт'];
+
+const REPORTS = {
+    students: { label: 'Список студентов', icon: '👨‍🎓', columns: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон','Гражданство','Пол','Статус'], filters: ['status','group','type','citizenship','gender'] },
+    groups: { label: 'Группы', icon: '📚', columns: ['№ п/п','Название','Тип','Дата начала','Дата окончания','Студентов','Куратор'], filters: ['type'] },
+    graduates: { label: 'Выпускники', icon: '🎓', columns: ['№ п/п','ФИО','Группа','Тип','Год выпуска','Телефон'], filters: ['type','graduation_year'] },
+    expelled: { label: 'Отчисленные', icon: '❌', columns: ['№ п/п','ФИО','Группа','Дата отчисления','Приказ','Статья','Телефон'], filters: ['group','type'] },
+    academic: { label: 'Академ. отпуск', icon: '📚', columns: ['№ п/п','ФИО','Группа','Дата начала','Приказ','Причина','Телефон'], filters: ['group','type'] },
+    citizenship: { label: 'По гражданству', icon: '🌍', columns: ['№ п/п','ФИО','Группа','Гражданство','Телефон'], filters: ['status','group','type','citizenship'] },
+    address: { label: 'По адресам', icon: '📍', columns: ['№ п/п','ФИО','Группа','Тип адреса','Область','Район','Нас. пункт','Тип нас. пункта','Адрес'], filters: ['status','group','type','region','district','settlement_type','city','address_type'] },
+    accounting: { label: 'По учёту', icon: '📋', columns: ['№ п/п','ФИО','Группа','Вид учёта','Дата постановки','Дата снятия','Статус учёта'], filters: ['status','group','type','accounting_type'] },
+    age: { label: 'По возрасту', icon: '📅', columns: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон'], filters: ['status','group','type'] },
+    gender: { label: 'По полу', icon: '🧑‍🤝‍🧑', columns: ['№ п/п','ФИО','Группа','Пол'], filters: ['status','group','type','gender'] },
+    by_groups: { label: 'По группам', icon: '📁', columns: ['№ п/п','Группа','Студент','Статус'], filters: ['type','group'] },
+    statistics: { label: 'Статистика', icon: '📊', columns: ['№ п/п','Показатель','Значение','Примечание'], filters: [] },
+    underage: { label: 'Несовершеннолетние', icon: '🧒', columns: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон'], filters: ['status','group','type'] },
+    employment: { label: 'Трудоустройство', icon: '💼', columns: ['№ п/п','ФИО','Группа','Наименование организации','Телефон'], filters: ['group','type'] },
+    target_training: { label: 'Целевая подготовка', icon: '🎯', columns: ['№ п/п','ФИО','Группа','Заказчик','№ договора','Срок отработки','Телефон'], filters: ['status','group','type'] },
+    avg_grade_school: { label: 'Ср.балл со школы', icon: '🏫', columns: ['№ п/п','ФИО','Группа','Школа','Ср.балл аттестата','Год выпуска'], filters: ['group','type'] },
+    avg_grade_college: { label: 'Ср.балл в колледже', icon: '📊', columns: ['№ п/п','Категория','Наименование','Курс','Средний балл','Студентов','Примечание'], filters: ['type','course','group'] }
+};
+
+function loadUser() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) { window.location.href = '/index.html'; return; }
+    try {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
+        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+        document.getElementById('pdfDirectorName').value = currentUser.full_name || currentUser.name || '__________________';
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+    }
+}
+
+document.getElementById('logoutBtn').onclick = () => {
+    localStorage.removeItem('currentUser');
+    window.location.href = '/index.html';
+};
+
+function showToast(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 4000);
+}
+window.showToast = showToast;
+
+function formatDateForReport(dateStr) {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function calcAge(birthDate) {
+    if (!birthDate) return '—';
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+    return age;
+}
+
+function getStatusText(status) {
+    if (status === 'active') return 'Активен';
+    if (status === 'expelled') return 'Отчислен';
+    if (status === 'academic') return 'Академ. отпуск';
+    if (status === 'graduated') return 'Выпущен';
+    return status || '—';
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getCourseFromGroupName(groupName) {
+    if (!groupName) return '—';
+    const match = groupName.match(/^(\d+)/);
+    if (match) {
+        const num = parseInt(match[1]);
+        if (num >= 1 && num <= 4) return num + ' курс';
+        return '—';
+    }
+    return '—';
+}
+
+function getCourseNumberFromGroupName(groupName) {
+    if (!groupName) return 0;
+    const match = groupName.match(/^(\d+)/);
+    if (match) {
+        const num = parseInt(match[1]);
+        if (num >= 1 && num <= 4) return num;
+        return 0;
+    }
+    return 0;
+}
+
+async function loadGraduationYears() {
+    try {
+        const { data, error } = await sb
+            .from('graduates')
+            .select('graduation_year')
+            .not('graduation_year', 'is', null)
+            .order('graduation_year', { ascending: false });
+        
+        if (error) throw error;
+        
+        const years = new Set();
+        data.forEach(item => {
+            if (item.graduation_year) {
+                years.add(String(item.graduation_year));
+            }
+        });
+        allGraduationYears = Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+        
+        const gradYearSelect = document.getElementById('filterGradYear');
+        if (gradYearSelect) {
+            const currentValue = gradYearSelect.value;
+            gradYearSelect.innerHTML = '<option value="all">Все годы</option>';
+            allGraduationYears.forEach(year => {
+                gradYearSelect.innerHTML += `<option value="${year}">${year}</option>`;
+            });
+            gradYearSelect.value = currentValue;
+        }
+    } catch (error) {
+        console.error('❌ Ошибка загрузки годов выпуска:', error);
+    }
+}
+
+async function renderFilters(reportKey) {
+    const panel = document.getElementById('filtersPanel');
+    const report = REPORTS[reportKey];
+    if (!report) return;
+    let html = '';
+    const filterOrder = ['status','group','type','course','citizenship','gender','region','district','settlement_type','city','address_type','accounting_type','graduation_year'];
+
+    filterOrder.forEach(filterKey => {
+        if (!report.filters.includes(filterKey)) return;
+        switch (filterKey) {
+            case 'status':
+                html += `<div class="filter-group"><label>Статус</label><select id="filterStatus"><option value="all">Все</option><option value="active">Активен</option><option value="expelled">Отчислен</option><option value="academic">Акад. отпуск</option></select></div>`;
+                break;
+            case 'group':
+                html += `<div class="filter-group"><label>Группа</label><select id="filterGroup"><option value="all">Все группы</option></select></div>`;
+                break;
+            case 'type':
+                html += `<div class="filter-group"><label>Тип</label><select id="filterType"><option value="all">Все</option><option value="sso">ССО</option><option value="pto">ПТО</option></select></div>`;
+                break;
+            case 'course':
+                html += `<div class="filter-group"><label>Курс</label><select id="filterCourse"><option value="all">Все курсы</option><option value="1">1 курс</option><option value="2">2 курс</option><option value="3">3 курс</option><option value="4">4 курс</option></select></div>`;
+                break;
+            case 'citizenship':
+                html += `<div class="filter-group"><label>Гражданство</label><select id="filterCitizenship"><option value="all">Все</option><option value="РБ">🇧🇾 РБ</option><option value="РФ">🇷🇺 РФ</option><option value="Другое">Другое</option></select></div>`;
+                break;
+            case 'gender':
+                html += `<div class="filter-group"><label>Пол</label><select id="filterGender"><option value="all">Все</option><option value="Мужской">Мужской</option><option value="Женский">Женский</option></select></div>`;
+                break;
+            case 'region':
+                html += `<div class="filter-group"><label>Область</label><select id="filterRegion"><option value="all">Все области</option>${REGIONS.map(r => `<option value="${r}">${r}</option>`).join('')}</select></div>`;
+                break;
+            case 'district':
+                html += `<div class="filter-group"><label>Район</label><select id="filterDistrict"><option value="all">Все районы</option></select></div>`;
+                break;
+            case 'settlement_type':
+                html += `<div class="filter-group"><label>Тип нас. пункта</label><select id="filterSettlementType"><option value="all">Все типы</option>${SETTLEMENT_TYPES.map(t => `<option value="${t}">${t}</option>`).join('')}</select></div>`;
+                break;
+            case 'city':
+                html += `<div class="filter-group"><label>Населенный пункт</label><select id="filterCity"><option value="all">Все населённые пункты</option></select></div>`;
+                break;
+            case 'address_type':
+                html += `<div class="filter-group"><label>Тип адреса</label><select id="filterAddressType"><option value="all">Все</option><option value="registration">Регистрация</option><option value="living">Проживание</option></select></div>`;
+                break;
+            case 'accounting_type':
+                html += `<div class="filter-group"><label>Вид учёта</label><select id="filterAccounting"><option value="all">Все</option><option value="КДН">КДН</option><option value="ИДН">ИДН</option><option value="СОП">СОП</option><option value="сирота">Сирота</option><option value="опека">Опека</option></select></div>`;
+                break;
+            case 'graduation_year':
+                html += `<div class="filter-group"><label>Год выпуска</label><select id="filterGradYear"><option value="all">Все годы</option>${allGraduationYears.map(y => `<option value="${y}">${y}</option>`).join('')}</select></div>`;
+                break;
+        }
+    });
+
+    panel.innerHTML = html;
+    await loadGroupsFilter();
+    await updateGroupFilter();
+    
+    document.querySelectorAll('.filters-panel select').forEach(select => {
+        select.addEventListener('change', generateReport);
+    });
+
+    const typeFilter = document.getElementById('filterType');
+    if (typeFilter) {
+        typeFilter.addEventListener('change', function() {
+            updateGroupFilter();
+            generateReport();
+        });
+    }
+
+    const courseFilter = document.getElementById('filterCourse');
+    if (courseFilter) {
+        courseFilter.addEventListener('change', function() {
+            updateGroupFilter();
+            generateReport();
+        });
+    }
+}
+
+async function loadGroupsFilter() {
+    try {
+        const { data, error } = await sb.from('groups').select('id, name, type, is_archived').order('name');
+        if (error) throw error;
+        allGroups = data || [];
+    } catch (error) { console.error('❌ Ошибка загрузки групп:', error); }
+}
+
+async function updateGroupFilter() {
+    const select = document.getElementById('filterGroup');
+    if (!select) return;
+    const typeFilter = document.getElementById('filterType')?.value || 'all';
+    const courseFilter = document.getElementById('filterCourse')?.value || 'all';
+    
+    let filteredGroups = allGroups;
+    
+    if (currentReport === 'graduates') {
+        filteredGroups = filteredGroups.filter(g => g.is_archived === true);
+    } else {
+        filteredGroups = filteredGroups.filter(g => g.is_archived !== true);
+    }
+    
+    if (typeFilter !== 'all') filteredGroups = filteredGroups.filter(g => g.type === typeFilter);
+    if (courseFilter !== 'all') {
+        const courseNum = parseInt(courseFilter);
+        filteredGroups = filteredGroups.filter(g => getCourseNumberFromGroupName(g.name) === courseNum);
+    }
+    const currentValue = select.value;
+    select.innerHTML = '<option value="all">Все группы</option>';
+    filteredGroups.forEach(g => select.innerHTML += `<option value="${g.id}">${g.name}</option>`);
+    select.value = currentValue;
+}
+
+document.querySelectorAll('.report-card').forEach(card => {
+    card.addEventListener('click', function() {
+        document.querySelectorAll('.report-card').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        currentReport = this.dataset.report;
+        renderFilters(currentReport);
+        generateReport();
+    });
+});
+
+function getFilterValues() {
+    const getVal = (id) => document.getElementById(id)?.value || 'all';
+    return {
+        status: getVal('filterStatus'),
+        group: getVal('filterGroup'),
+        type: getVal('filterType'),
+        course: getVal('filterCourse'),
+        citizenship: getVal('filterCitizenship'),
+        gender: getVal('filterGender'),
+        region: getVal('filterRegion'),
+        district: getVal('filterDistrict'),
+        settlement_type: getVal('filterSettlementType'),
+        city: getVal('filterCity'),
+        address_type: getVal('filterAddressType'),
+        accounting_type: getVal('filterAccounting'),
+        graduation_year: getVal('filterGradYear')
+    };
+}
+
+function renderTable(data, columns) {
+    const thead = document.getElementById('reportThead');
+    const tbody = document.getElementById('reportTbody');
+    if (!data || data.length === 0) {
+        thead.innerHTML = `<tr><th colspan="${columns.length}" style="text-align:center;padding:20px;">Нет данных</th></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${columns.length}"><div class="empty-state"><span class="icon">📭</span><p>Нет данных</p></div></td></tr>`;
+        document.getElementById('totalRecords').textContent = '0';
+        return;
+    }
+    thead.innerHTML = `<tr>${columns.map(c => `<th>${c}</th>`).join('')}</tr>`;
+    let html = '';
+    data.forEach((row, i) => {
+        html += `<tr>`;
+        columns.forEach(c => {
+            let val = row[c] || '—';
+            if (c === '№ п/п') val = i + 1;
+            // Обрезаем длинные значения для отображения
+            if (typeof val === 'string' && val.length > 50) {
+                val = val.substring(0, 47) + '...';
+            }
+            html += `<td>${val}</td>`;
+        });
+        html += `</tr>`;
+    });
+    tbody.innerHTML = html;
+    document.getElementById('totalRecords').textContent = data.length;
+}
+
+async function getStudentsReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    if (f.citizenship !== 'all') q = q.eq('citizenship', f.citizenship);
+    if (f.gender !== 'all') q = q.eq('gender', f.gender);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.status !== 'graduated');
+    return filtered.map(s => ({ 
+        'ФИО': s.full_name, 
+        'Группа': s.groups?.name || '—', 
+        'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—', 
+        'Возраст': s.birth_date ? calcAge(s.birth_date) : '—', 
+        'Телефон': s.phone || '—', 
+        'Гражданство': s.citizenship || '—',
+        'Пол': s.gender || '—', 
+        'Статус': getStatusText(s.status)
+    }));
+}
+
+async function getGroupsReport(f) {
+    let q = sb.from('groups').select(`*`);
+    if (f.type !== 'all') q = q.eq('type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const result = [];
+    for (const g of data) {
+        const { count } = await sb.from('students').select('*', { count: 'exact', head: true }).eq('group_id', g.id);
+        result.push({ 'Название': g.name, 'Тип': getTypeLabel(g.type), 'Дата начала': g.date_start || '—', 'Дата окончания': g.date_end || '—', 'Студентов': count || 0, 'Куратор': g.curator||'—' });
+    }
+    return result;
+}
+
+async function getGraduatesReport(f) {
+    let q = sb.from('graduates').select('*');
+    if (f.type !== 'all') q = q.eq('type', f.type);
+    if (f.graduation_year !== 'all') q = q.eq('graduation_year', f.graduation_year);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data.map(g => ({ 'ФИО': g.full_name, 'Группа': g.group_name||'—', 'Тип': getTypeLabel(g.type), 'Год выпуска': g.graduation_year||'—', 'Телефон': g.phone||'—' }));
+}
+
+async function getExpelledReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.status === 'expelled');
+    return filtered.map(s => ({
+        'ФИО': s.full_name,
+        'Группа': s.groups?.name || '—',
+        'Дата отчисления': s.expulsion_date || '—',
+        'Приказ': s.expulsion_order || '—',
+        'Статья': s.expulsion_article || '—',
+        'Телефон': s.phone || '—'
+    }));
+}
+
+async function getAcademicReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.status === 'academic');
+    return filtered.map(s => ({
+        'ФИО': s.full_name,
+        'Группа': s.groups?.name || '—',
+        'Дата начала': s.academic_leave_date || '—',
+        'Приказ': s.academic_leave_order || '—',
+        'Причина': s.academic_leave_reason || '—',
+        'Телефон': s.phone || '—'
+    }));
+}
+
+async function getCitizenshipReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    if (f.citizenship !== 'all') q = q.eq('citizenship', f.citizenship);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.status !== 'graduated');
+    return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Гражданство': s.citizenship||'—', 'Телефон': s.phone||'—' }));
+}
+
+async function getAddressReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    let filtered = data.filter(s => s.status !== 'graduated');
+    if (f.region !== 'all') filtered = filtered.filter(s => s.address_region === f.region);
+    if (f.district !== 'all') filtered = filtered.filter(s => s.address_district === f.district);
+    if (f.settlement_type !== 'all') filtered = filtered.filter(s => s.address_settlement_type === f.settlement_type);
+    if (f.city !== 'all') filtered = filtered.filter(s => s.address_locality === f.city);
+    return filtered.map(s => ({ 
+        'ФИО': s.full_name, 
+        'Группа': s.groups?.name||'—', 
+        'Тип адреса': f.address_type==='registration'?'Регистрация':f.address_type==='living'?'Проживание':'Оба', 
+        'Область': s.address_region||'—', 
+        'Район': s.address_district||'—', 
+        'Нас. пункт': s.address_locality||'—', 
+        'Тип нас. пункта': s.address_settlement_type||'—', 
+        'Адрес': f.address_type==='registration'?(s.address_reg||'—'):(s.address_live||'—') 
+    }));
+}
+
+async function getAccountingReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    let filtered = data.filter(s => s.status !== 'graduated');
+    if (f.accounting_type !== 'all') filtered = filtered.filter(s => s.accounting_type && s.accounting_type.includes(f.accounting_type));
+    const result = [];
+    filtered.forEach(s => {
+        const types = s.accounting_type || [];
+        types.forEach(type => result.push({ 
+            'ФИО': s.full_name, 
+            'Группа': s.groups?.name||'—', 
+            'Вид учёта': type, 
+            'Дата постановки': s.accounting_date_start ? formatDateForReport(s.accounting_date_start) : '—', 
+            'Дата снятия': s.accounting_date_end ? formatDateForReport(s.accounting_date_end) : '—',
+            'Статус учёта': s.accounting_date_end ? 'Снят' : 'Активен'
+        }));
+    });
+    return result;
+}
+
+async function getAgeReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.status !== 'graduated');
+    return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—', 'Возраст': s.birth_date ? calcAge(s.birth_date) : '—', 'Телефон': s.phone||'—' }));
+}
+
+async function getGenderReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    if (f.gender !== 'all') q = q.eq('gender', f.gender);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.status !== 'graduated');
+    return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Пол': s.gender||'—' }));
+}
+
+async function getByGroupsReport(f) {
+    let q = sb.from('groups').select(`id, name, type, students:students(id, full_name, status)`);
+    if (f.type !== 'all') q = q.eq('type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const result = [];
+    let filteredGroups = data;
+    if (f.group !== 'all') {
+        filteredGroups = filteredGroups.filter(g => g.id === f.group);
+    }
+    filteredGroups.forEach(g => {
+        const students = g.students || [];
+        students.forEach(s => {
+            if (s.status === 'graduated') return;
+            result.push({ 'Группа': g.name, 'Студент': s.full_name, 'Статус': getStatusText(s.status) });
+        });
+    });
+    return result;
+}
+
+async function getStatisticsReport(f) {
+    const [students, groups, graduates] = await Promise.all([
+        sb.from('students').select('*', { count: 'exact' }),
+        sb.from('groups').select('*', { count: 'exact' }),
+        sb.from('graduates').select('*', { count: 'exact' })
+    ]);
+    const { data: genderData } = await sb.from('students').select('gender').not('gender', 'is', null);
+    const maleCount = genderData?.filter(g => g.gender === 'Мужской').length || 0;
+    const femaleCount = genderData?.filter(g => g.gender === 'Женский').length || 0;
+    const { data: ageData } = await sb.from('students').select('birth_date').not('birth_date', 'is', null);
+    let under18 = 0, age18_20 = 0, age21_25 = 0, age25plus = 0;
+    ageData?.forEach(s => {
+        const age = calcAge(s.birth_date);
+        if (age < 18) under18++;
+        else if (age >= 18 && age <= 20) age18_20++;
+        else if (age >= 21 && age <= 25) age21_25++;
+        else if (age > 25) age25plus++;
+    });
+    const { data: accountingData } = await sb.from('students').select('accounting_type').not('accounting_type', 'is', null);
+    const accountingCount = {};
+    accountingData?.forEach(s => { if (s.accounting_type) s.accounting_type.forEach(type => accountingCount[type] = (accountingCount[type] || 0) + 1); });
+    const stats = [
+        { 'Показатель': 'Всего студентов', 'Значение': students.count || 0, 'Примечание': '' },
+        { 'Показатель': 'Всего групп', 'Значение': groups.count || 0, 'Примечание': '' },
+        { 'Показатель': 'Всего выпускников', 'Значение': graduates.count || 0, 'Примечание': '' },
+        { 'Показатель': 'Мужской пол', 'Значение': maleCount, 'Примечание': '' },
+        { 'Показатель': 'Женский пол', 'Значение': femaleCount, 'Примечание': '' },
+        { 'Показатель': 'До 18 лет', 'Значение': under18, 'Примечание': '' },
+        { 'Показатель': '18-20 лет', 'Значение': age18_20, 'Примечание': '' },
+        { 'Показатель': '21-25 лет', 'Значение': age21_25, 'Примечание': '' },
+        { 'Показатель': 'Старше 25 лет', 'Значение': age25plus, 'Примечание': '' }
+    ];
+    Object.keys(accountingCount).forEach((type) => stats.push({ 'Показатель': `Учёт: ${type}`, 'Значение': accountingCount[type], 'Примечание': '' }));
+    return stats;
+}
+
+async function getUnderageReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => { 
+        if (!s.birth_date) return false; 
+        if (s.status === 'graduated') return false;
+        return calcAge(s.birth_date) < 18; 
+    });
+    return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—', 'Возраст': s.birth_date ? calcAge(s.birth_date) : '—', 'Телефон': s.phone||'—' }));
+}
+
+async function getEmploymentReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.status === 'active');
+    return filtered.map(s => ({ 
+        'ФИО': s.full_name, 
+        'Группа': s.groups?.name || '—',
+        'Наименование организации': s.work_place || '—',
+        'Телефон': s.phone || '—'
+    }));
+}
+
+async function getTargetTrainingReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    const filtered = data.filter(s => s.target_training === true && s.status !== 'graduated');
+    return filtered.map(s => ({ 
+        'ФИО': s.full_name, 
+        'Группа': s.groups?.name || '—',
+        'Заказчик': s.target_customer || '—',
+        '№ договора': s.target_contract || '—',
+        'Срок отработки': s.target_years ? s.target_years + ' лет' : '—',
+        'Телефон': s.phone || '—'
+    }));
+}
+
+async function getAvgGradeSchoolReport(f) {
+    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data
+        .filter(s => s.avg_grade !== null && s.avg_grade !== undefined && s.status !== 'graduated')
+        .map(s => ({
+            'ФИО': s.full_name,
+            'Группа': s.groups?.name || '—',
+            'Школа': s.school || '—',
+            'Ср.балл аттестата': s.avg_grade || '—',
+            'Год выпуска': s.school_year || '—'
+        }));
+}
+
+async function getAvgGradeCollegeReport(f) {
+    const result = [];
+    const typeFilter = f.type;
+    const courseFilter = f.course;
+    const groupFilter = f.group;
+
+    let q = sb.from('groups').select(`id, name, type, date_start`);
+    if (typeFilter !== 'all') q = q.eq('type', typeFilter);
+    const { data: groups, error: groupsError } = await q;
+    if (groupsError) throw groupsError;
+
+    let filteredGroups = groups || [];
+    if (courseFilter !== 'all') {
+        const courseNum = parseInt(courseFilter);
+        filteredGroups = filteredGroups.filter(g => getCourseNumberFromGroupName(g.name) === courseNum);
+    }
+    if (groupFilter !== 'all') {
+        filteredGroups = filteredGroups.filter(g => g.id === groupFilter);
+    }
+
+    let studentsQuery = sb.from('students').select('*, groups!inner (name, type)').not('status', 'eq', 'graduated');
+    
+    let allStudentsData = [];
+    if (groupFilter !== 'all') {
+        const { data } = await studentsQuery.eq('group_id', groupFilter);
+        allStudentsData = data || [];
+    } else if (typeFilter !== 'all') {
+        const { data } = await studentsQuery.eq('groups.type', typeFilter);
+        allStudentsData = data || [];
+    } else {
+        const { data } = await studentsQuery;
+        allStudentsData = data || [];
+    }
+
+    if (filteredGroups.length > 0 && groupFilter === 'all') {
+        const groupIds = filteredGroups.map(g => g.id);
+        allStudentsData = allStudentsData.filter(s => groupIds.includes(s.group_id));
+    }
+
+    if (groupFilter === 'all' && courseFilter === 'all' && typeFilter === 'all') {
+        const valid = allStudentsData.filter(s => s.avg_grade !== null && s.avg_grade !== undefined);
+        if (valid.length > 0) {
+            const avg = valid.reduce((sum, s) => sum + parseFloat(s.avg_grade), 0) / valid.length;
+            result.push({
+                'Категория': 'По колледжу',
+                'Наименование': 'Общий средний балл',
+                'Курс': '—',
+                'Средний балл': avg.toFixed(2),
+                'Студентов': valid.length,
+                'Примечание': ''
+            });
+        }
+    }
+
+    if (groupFilter === 'all') {
+        const groupMap = {};
+        allStudentsData.forEach(s => {
+            const gid = s.group_id;
+            if (!groupMap[gid]) groupMap[gid] = [];
+            if (s.avg_grade !== null && s.avg_grade !== undefined) {
+                groupMap[gid].push(parseFloat(s.avg_grade));
+            }
+        });
+        const groupIds = Object.keys(groupMap);
+        for (const gid of groupIds) {
+            const grades = groupMap[gid];
+            if (grades.length === 0) continue;
+            const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
+            const group = filteredGroups.find(g => g.id === gid);
+            result.push({
+                'Категория': 'По группе',
+                'Наименование': group?.name || 'Группа',
+                'Курс': getCourseFromGroupName(group?.name || ''),
+                'Средний балл': avg.toFixed(2),
+                'Студентов': grades.length,
+                'Примечание': group ? getTypeLabel(group.type) : ''
+            });
+        }
+    }
+
+    if (groupFilter === 'all' && courseFilter === 'all') {
+        const courseMap = {};
+        allStudentsData.forEach(s => {
+            const course = getCourseFromGroupName(s.groups?.name || '');
+            if (!courseMap[course]) courseMap[course] = [];
+            if (s.avg_grade !== null && s.avg_grade !== undefined) {
+                courseMap[course].push(parseFloat(s.avg_grade));
+            }
+        });
+        const courses = Object.keys(courseMap).filter(c => c !== '—');
+        for (const course of courses) {
+            const grades = courseMap[course];
+            if (grades.length === 0) continue;
+            const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
+            const type = allStudentsData.find(s => s.groups?.type)?.groups?.type || '';
+            result.push({
+                'Категория': 'По курсу',
+                'Наименование': `${getTypeLabel(type)} (${course})`,
+                'Курс': course,
+                'Средний балл': avg.toFixed(2),
+                'Студентов': grades.length,
+                'Примечание': ''
+            });
+        }
+    }
+
+    if (groupFilter === 'all' && courseFilter === 'all') {
+        const typeMap = {};
+        allStudentsData.forEach(s => {
+            const type = s.groups?.type || '';
+            if (!typeMap[type]) typeMap[type] = [];
+            if (s.avg_grade !== null && s.avg_grade !== undefined) {
+                typeMap[type].push(parseFloat(s.avg_grade));
+            }
+        });
+        const types = Object.keys(typeMap);
+        for (const type of types) {
+            const grades = typeMap[type];
+            if (grades.length === 0) continue;
+            const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
+            result.push({
+                'Категория': 'По типу',
+                'Наименование': getTypeLabel(type),
+                'Курс': '—',
+                'Средний балл': avg.toFixed(2),
+                'Студентов': grades.length,
+                'Примечание': ''
+            });
+        }
+    }
+
+    if (groupFilter !== 'all') {
+        const group = filteredGroups.find(g => g.id === groupFilter);
+        const students = allStudentsData.filter(s => s.group_id === groupFilter && s.avg_grade !== null && s.avg_grade !== undefined);
+        if (students.length > 0) {
+            const avg = students.reduce((sum, s) => sum + parseFloat(s.avg_grade), 0) / students.length;
+            result.push({
+                'Категория': 'По группе (детально)',
+                'Наименование': `${group?.name || 'Группа'} - средний`,
+                'Курс': getCourseFromGroupName(group?.name || ''),
+                'Средний балл': avg.toFixed(2),
+                'Студентов': students.length,
+                'Примечание': ''
+            });
+            students.sort((a, b) => a.full_name.localeCompare(b.full_name));
+            students.forEach(s => {
+                result.push({
+                    'Категория': 'Студент',
+                    'Наименование': s.full_name,
+                    'Курс': '—',
+                    'Средний балл': parseFloat(s.avg_grade).toFixed(2),
+                    'Студентов': 1,
+                    'Примечание': ''
+                });
+            });
+        }
+    }
+
+    const order = { 'По колледжу': 1, 'По типу': 2, 'По группе': 3, 'По курсу': 4, 'По группе (детально)': 5, 'Студент': 6 };
+    return result.sort((a, b) => (order[a['Категория']] || 9) - (order[b['Категория']] || 9));
+}
+
+function renderChart(data, reportKey) {
+    const container = document.getElementById('chartContainer');
+    const title = document.getElementById('chartTitle');
+    const note = document.getElementById('chartNote');
+    
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    container.style.display = 'none';
+    
+    const showCharts = ['avg_grade_school', 'avg_grade_college', 'statistics', 'expelled', 'academic'];
+    if (!showCharts.includes(reportKey)) return;
+    if (!data || data.length === 0) { container.style.display = 'none'; return; }
+
+    let labels = [], values = [], chartType = 'doughnut';
+    let chartLabel = 'Значение';
+
+    if (reportKey === 'avg_grade_school') {
+        const sorted = [...data].sort((a, b) => parseFloat(b['Ср.балл аттестата']) - parseFloat(a['Ср.балл аттестата']));
+        const display = sorted.slice(0, 20);
+        labels = display.map(item => {
+            const name = item['ФИО'] || '—';
+            return name.length > 18 ? name.substring(0, 16) + '…' : name;
+        });
+        values = display.map(item => parseFloat(item['Ср.балл аттестата']) || 0);
+        chartType = 'bar';
+        chartLabel = 'Средний балл аттестата';
+        title.textContent = '🏫 Распределение среднего балла аттестата';
+        note.textContent = `* Отображены ${display.length} студентов с наивысшим баллом`;
+    } else if (reportKey === 'avg_grade_college') {
+        const numeric = data.filter(item => !isNaN(item['Средний балл']) && item['Средний балл'] > 0);
+        if (numeric.length === 0) { container.style.display = 'none'; return; }
+        const display = numeric.slice(0, 15);
+        labels = display.map(item => {
+            const name = item['Наименование'] || '—';
+            return name.length > 20 ? name.substring(0, 18) + '…' : name;
+        });
+        values = display.map(item => parseFloat(item['Средний балл']) || 0);
+        chartType = 'doughnut';
+        chartLabel = 'Средний балл';
+        title.textContent = '📊 Распределение среднего балла в колледже';
+        note.textContent = `* Отображены ${display.length} категорий с наивысшим баллом`;
+    } else if (reportKey === 'statistics') {
+        const numeric = data.filter(item => !isNaN(item['Значение']) && item['Значение'] > 0);
+        if (numeric.length === 0) { container.style.display = 'none'; return; }
+        labels = numeric.map(item => item['Показатель']);
+        values = numeric.map(item => item['Значение']);
+        chartType = 'doughnut';
+        chartLabel = 'Значение';
+        title.textContent = '📊 Статистика';
+        note.textContent = '* Данные отображаются в виде круговой диаграммы';
+    } else if (reportKey === 'expelled') {
+        const groupMap = {};
+        data.forEach(item => {
+            const group = item['Группа'] || '—';
+            if (!groupMap[group]) groupMap[group] = 0;
+            groupMap[group]++;
+        });
+        const sorted = Object.entries(groupMap).sort((a, b) => b[1] - a[1]);
+        labels = sorted.map(([name]) => name);
+        values = sorted.map(([, count]) => count);
+        chartType = 'doughnut';
+        chartLabel = 'Количество отчисленных';
+        title.textContent = '❌ Распределение отчисленных по группам';
+        note.textContent = `* Всего отчисленных: ${data.length}`;
+    } else if (reportKey === 'academic') {
+        const groupMap = {};
+        data.forEach(item => {
+            const group = item['Группа'] || '—';
+            if (!groupMap[group]) groupMap[group] = 0;
+            groupMap[group]++;
+        });
+        const sorted = Object.entries(groupMap).sort((a, b) => b[1] - a[1]);
+        labels = sorted.map(([name]) => name);
+        values = sorted.map(([, count]) => count);
+        chartType = 'doughnut';
+        chartLabel = 'Количество в академ. отпуске';
+        title.textContent = '📚 Распределение студентов в академ. отпуске по группам';
+        note.textContent = `* Всего в академ. отпуске: ${data.length}`;
+    }
+
+    if (labels.length === 0) { container.style.display = 'none'; return; }
+
+    container.style.display = 'block';
+    const ctx = document.getElementById('statsChart').getContext('2d');
+    const colors = ['#2C3E8F','#27AE60','#F39C12','#E74C3C','#3498DB','#9B59B6','#1ABC9C','#E67E22','#7F8C8D','#2ECC71','#E74C3C','#3498DB','#F1C40F','#8E44AD','#2C3E50'];
+
+    chartInstance = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: chartLabel,
+                data: values,
+                backgroundColor: colors.slice(0, values.length),
+                borderColor: '#ffffff',
+                borderWidth: chartType === 'bar' ? 1 : 2,
+                borderRadius: chartType === 'bar' ? 4 : 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: chartType === 'doughnut',
+                    position: 'bottom',
+                    labels: { font: { size: 10 }, padding: 8, boxWidth: 12 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (chartType === 'bar') {
+                                return `${context.parsed.y}`;
+                            }
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            return `${context.label}: ${context.parsed} (${((context.parsed / total) * 100).toFixed(1)}%)`;
+                        }
+                    }
+                }
+            },
+            scales: chartType === 'bar' ? {
+                y: { beginAtZero: true, title: { display: true, text: chartLabel } },
+                x: { ticks: { font: { size: 9 } } }
+            } : undefined
+        }
+    });
+}
+
+async function generateReport() {
+    const tbody = document.getElementById('reportTbody');
+    const thead = document.getElementById('reportThead');
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div></td></tr>`;
+    try {
+        const filters = getFilterValues();
+        let data = [], columns = [];
+        switch (currentReport) {
+            case 'students': data = await getStudentsReport(filters); columns = REPORTS.students.columns; break;
+            case 'groups': data = await getGroupsReport(filters); columns = REPORTS.groups.columns; break;
+            case 'graduates': data = await getGraduatesReport(filters); columns = REPORTS.graduates.columns; break;
+            case 'expelled': data = await getExpelledReport(filters); columns = REPORTS.expelled.columns; break;
+            case 'academic': data = await getAcademicReport(filters); columns = REPORTS.academic.columns; break;
+            case 'citizenship': data = await getCitizenshipReport(filters); columns = REPORTS.citizenship.columns; break;
+            case 'address': data = await getAddressReport(filters); columns = REPORTS.address.columns; break;
+            case 'accounting': data = await getAccountingReport(filters); columns = REPORTS.accounting.columns; break;
+            case 'age': data = await getAgeReport(filters); columns = REPORTS.age.columns; break;
+            case 'gender': data = await getGenderReport(filters); columns = REPORTS.gender.columns; break;
+            case 'by_groups': data = await getByGroupsReport(filters); columns = REPORTS.by_groups.columns; break;
+            case 'statistics': data = await getStatisticsReport(filters); columns = REPORTS.statistics.columns; break;
+            case 'underage': data = await getUnderageReport(filters); columns = REPORTS.underage.columns; break;
+            case 'employment': data = await getEmploymentReport(filters); columns = REPORTS.employment.columns; break;
+            case 'target_training': data = await getTargetTrainingReport(filters); columns = REPORTS.target_training.columns; break;
+            case 'avg_grade_school': data = await getAvgGradeSchoolReport(filters); columns = REPORTS.avg_grade_school.columns; break;
+            case 'avg_grade_college': data = await getAvgGradeCollegeReport(filters); columns = REPORTS.avg_grade_college.columns; break;
+            default: data = []; columns = ['Нет данных'];
+        }
+        reportData = data;
+        reportColumns = columns;
+        renderTable(data, columns);
+        document.getElementById('reportDate').textContent = new Date().toLocaleDateString('ru-RU');
+        renderChart(data, currentReport);
+    } catch (error) {
+        console.error('❌ Ошибка:', error);
+        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="icon">❌</span><p>${error.message}</p></div></td></tr>`;
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+function updatePdfPreview() {
+    const preview = document.getElementById('pdfPreview');
+    const title = document.getElementById('pdfTitle').value || 'ОТЧЁТ';
+    const subtitle = document.getElementById('pdfSubtitle').value || '';
+    const dateStr = new Date().toLocaleDateString('ru-RU');
+    const reportName = REPORTS[currentReport]?.label || currentReport;
+    const directorPosition = document.getElementById('pdfDirectorPosition').value || 'Директор';
+    const directorName = document.getElementById('pdfDirectorName').value || '__________________';
+    
+    let previewHtml = `${COLLEGE_NAME}\n`;
+    previewHtml += `${'='.repeat(50)}\n`;
+    previewHtml += `${title}\n`;
+    if (subtitle) previewHtml += `${subtitle}\n`;
+    previewHtml += `${'='.repeat(50)}\n`;
+    previewHtml += `Отчёт: ${reportName}\n`;
+    previewHtml += `Дата: ${dateStr}\n`;
+    previewHtml += `${'-'.repeat(40)}\n`;
+    previewHtml += `Всего записей: ${reportData.length}\n`;
+    previewHtml += `${'-'.repeat(40)}\n`;
+    
+    if (reportData.length > 0 && reportColumns.length > 0) {
+        const header = reportColumns.join(' | ');
+        previewHtml += header + '\n';
+        previewHtml += '-'.repeat(Math.min(header.length, 80)) + '\n';
+        reportData.slice(0, 10).forEach((row, i) => {
+            const cells = reportColumns.map(c => {
+                let val = row[c] || '—';
+                if (c === '№ п/п') val = i + 1;
+                return String(val);
+            });
+            previewHtml += cells.join(' | ') + '\n';
+        });
+        if (reportData.length > 10) {
+            previewHtml += `\n... и ещё ${reportData.length - 10} записей\n`;
+        }
+    }
+    
+    previewHtml += `\n${'-'.repeat(40)}\n`;
+    previewHtml += `${directorPosition} учреждения образования: ${directorName}\n`;
+    previewHtml += `Дата: ${dateStr}`;
+    
+    preview.textContent = previewHtml;
+}
+
+document.getElementById('pdfModalClose').onclick = () => {
+    document.getElementById('pdfModal').classList.remove('active');
+};
+document.getElementById('pdfCancelBtn').onclick = () => {
+    document.getElementById('pdfModal').classList.remove('active');
+};
+document.getElementById('pdfModal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('active');
+});
+
+document.getElementById('pdfTitle').addEventListener('input', updatePdfPreview);
+document.getElementById('pdfSubtitle').addEventListener('input', updatePdfPreview);
+document.getElementById('pdfDirectorPosition').addEventListener('input', updatePdfPreview);
+document.getElementById('pdfDirectorName').addEventListener('input', updatePdfPreview);
+
+document.getElementById('exportPDFBtn').addEventListener('click', function() {
+    if (!reportData || reportData.length === 0) {
+        showToast('❌ Нет данных для экспорта', 'error');
+        return;
+    }
+    const reportName = REPORTS[currentReport]?.label || currentReport;
+    document.getElementById('pdfTitle').value = 'ОТЧЁТ';
+    document.getElementById('pdfSubtitle').value = reportName;
+    updatePdfPreview();
+    document.getElementById('pdfModal').classList.add('active');
+});
+
+document.getElementById('pdfGenerateBtn').addEventListener('click', function() {
+    generatePDF();
+});
+
+function generatePDF() {
+    const title = document.getElementById('pdfTitle').value || 'ОТЧЁТ';
+    const subtitle = document.getElementById('pdfSubtitle').value || '';
+    const dateStr = new Date().toLocaleDateString('ru-RU');
+    const reportName = REPORTS[currentReport]?.label || currentReport;
+    const directorPosition = document.getElementById('pdfDirectorPosition').value || 'Директор';
+    const directorName = document.getElementById('pdfDirectorName').value || '__________________';
+    const fontSize = 14;
+    
+    // Строим таблицу для PDF с правильным переносом
+    let tableHtml = `<table class="pdf-table"><thead><tr>`;
+    reportColumns.forEach(c => {
+        tableHtml += `<th>${c}</th>`;
+    });
+    tableHtml += `</tr></thead><tbody>`;
+    reportData.forEach((row, i) => {
+        tableHtml += `<tr>`;
+        reportColumns.forEach(c => {
+            let val = row[c] || '—';
+            if (c === '№ п/п') val = i + 1;
+            tableHtml += `<td>${val}</td>`;
+        });
+        tableHtml += `</tr>`;
+    });
+    tableHtml += `</tbody></table>`;
+    
+    const content = document.createElement('div');
+    content.innerHTML = `
+        <div class="pdf-content">
+            <div class="pdf-header">
+                <div class="pdf-title">${title}</div>
+                ${subtitle ? `<div class="pdf-subtitle">${subtitle}</div>` : ''}
+                <div class="pdf-info">Дата: ${dateStr}</div>
+            </div>
+            ${tableHtml}
+            <div class="pdf-footer">
+                <div><strong>Всего записей: ${reportData.length}</strong></div>
+                <div style="margin-top:4px;">${directorPosition} учреждения образования: ${directorName}</div>
+                <div style="margin-top:2px;">Дата: ${dateStr}</div>
+            </div>
+        </div>
+    `;
+    
+    const opt = {
+        margin: [4, 4, 4, 4],
+        filename: `Отчёт_${currentReport}_${dateStr.replace(/\./g, '-')}.pdf`,
+        html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            width: 277 * 3.78,
+            height: 190 * 3.78
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'landscape'
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+    
+    document.getElementById('pdfModal').classList.remove('active');
+    
+    html2pdf().set(opt).from(content).save().then(() => {
+        showToast('✅ Отчёт сохранён в PDF');
+    }).catch((error) => {
+        showToast('❌ Ошибка создания PDF: ' + error.message, 'error');
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const modalBody = document.querySelector('.modal-body');
+    if (modalBody) {
+        modalBody.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && document.getElementById('pdfModal').classList.contains('active')) {
+                e.preventDefault();
+                const generateBtn = document.getElementById('pdfGenerateBtn');
+                if (generateBtn && !generateBtn.disabled) {
+                    generateBtn.click();
+                }
+            }
+        });
+    }
+});
+
+document.getElementById('menuToggle').onclick = () => {
+    document.getElementById('sidebar').classList.toggle('open');
+};
+
+if (window.innerWidth <= 768) {
+    document.getElementById('menuToggle').style.display = 'inline-block';
+}
+
+window.onresize = () => {
+    if (window.innerWidth <= 768) {
+        document.getElementById('menuToggle').style.display = 'inline-block';
+    } else {
+        document.getElementById('menuToggle').style.display = 'none';
+        document.getElementById('sidebar').classList.remove('open');
+    }
+};
+
+loadUser();
+loadGraduationYears();
+renderFilters('students');
+generateReport();
+</script>
+
+</body>
+</html>
