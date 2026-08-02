@@ -1,12 +1,15 @@
 [build]
-  command = "npm run build"
+  command = "npm install && npm run build"
   publish = "dist"
 
+# SPA маршрутизация: все запросы идут на index.html, 
+# а роутинг обрабатывается внутри JavaScript
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
+# Заголовки безопасности для всего сайта
 [[headers]]
   for = "/*"
   [headers.values]
@@ -15,6 +18,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
 
+# Кэширование статики (изображения, CSS, JS) на 1 год
 [[headers]]
   for = "/images/*"
   [headers.values]

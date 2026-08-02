@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание группы | vgatk_bd</title>
+    
+    <!-- ===== ИКОНКА САЙТА ===== -->
+    <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
+    
+    <!-- ===== ШРИФТЫ ===== -->
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    
+    <!-- ===== SUPABASE ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* ===== БАЗОВЫЕ СТИЛИ ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%); background-attachment: fixed; min-height: 100vh; color: #1E293B; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .header { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); border-bottom: 1px solid #dbeafe; }
+        .college-name { font-family: 'Lobster', cursive; font-size: 16px; color: #1E3A8A; line-height: 1.2; letter-spacing: 0.5px; }
+        .college-name .sub { font-family: 'Lobster', cursive; font-size: 16px; color: #1E3A8A; }
+        .header-user { display: flex; align-items: center; gap: 16px; }
+        .header-user-info { text-align: right; }
+        .header-user-name { font-weight: 600; font-size: 14px; color: #1E293B; }
+        .header-user-role { font-size: 12px; color: #64748B; }
+        .btn-logout { background: linear-gradient(135deg, #EF4444, #DC2626); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+        .btn-logout:hover { background: linear-gradient(135deg, #DC2626, #B91C1C); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); transform: translateY(-2px); }
+
+        .sidebar { position: fixed; left: 0; top: 74px; width: 220px; height: calc(100vh - 74px); background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); padding: 20px 0; overflow-y: auto; z-index: 90; border-right: 1px solid #dbeafe; box-shadow: 4px 0 20px rgba(59, 130, 246, 0.08); }
+        .sidebar-nav { list-style: none; padding: 0 16px; }
+        .sidebar-nav li { margin-bottom: 4px; }
+        .sidebar-nav .nav-label { padding: 12px 16px 6px; color: #94A3B8; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 8px; color: #475569; font-weight: 500; font-size: 14px; transition: all 0.3s ease; text-decoration: none; }
+        .sidebar-nav a:hover { background: rgba(59, 130, 246, 0.08); color: #2563EB; }
+        .sidebar-nav a.active { background: rgba(59, 130, 246, 0.12); color: #2563EB; }
+        .sidebar-nav a .icon { font-size: 20px; width: 24px; text-align: center; }
+
+        .main-content { margin-left: 220px; padding: 24px 32px; min-height: calc(100vh - 74px); }
+        .page-container { max-width: 900px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: #1E3A8A; }
+        .page-title small { font-weight: 400; font-size: 14px; color: #64748B; }
+        
+        .btn { padding: 8px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; transition: all 0.3s ease; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-secondary { background: linear-gradient(135deg, #94A3B8, #64748B); color: white; box-shadow: 0 4px 15px rgba(148, 163, 184, 0.3); }
+        .btn-primary { background: linear-gradient(135deg, #3B82F6, #2563EB); color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .btn-success { background: linear-gradient(135deg, #10B981, #059669); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+        .form-card { background: rgba(255, 255, 255, 0.98); border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08); border: 1px solid #dbeafe; animation: slideUp 0.4s ease; }
+        .form-section { margin-bottom: 28px; }
+        .form-section-title { font-size: 16px; font-weight: 600; color: #1E3A8A; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #dbeafe; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-weight: 600; font-size: 14px; color: #475569; margin-bottom: 6px; }
+        .form-label .required { color: #DC2626; margin-left: 2px; }
+        .form-control { width: 100%; padding: 10px 14px; border: 2px solid #dbeafe; border-radius: 8px; font-size: 14px; transition: all 0.3s ease; background: white; height: 48px; }
+        .form-control:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        select.form-control { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748B' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; cursor: pointer; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-hint { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+
+        .staff-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+        .staff-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 16px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 14px; }
+        .staff-item .role-badge { font-size: 11px; padding: 2px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; font-weight: 600; margin-left: 8px; }
+        .empty-staff { color: #94A3B8; font-size: 13px; font-style: italic; padding: 8px 0; }
+
+        .form-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 2px solid #dbeafe; }
+        .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease infinite; vertical-align: middle; margin-right: 8px; }
+
+        /* Стили для тегов */
+        .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; min-height: 36px; }
+        .tag-item { display: inline-flex; align-items: center; gap: 6px; background: #f1f5f9; padding: 4px 12px 4px 14px; border-radius: 20px; font-size: 13px; border: 1px solid #dbeafe; animation: fadeIn 0.2s ease; }
+        .tag-item .remove-tag { cursor: pointer; color: #DC2626; font-weight: 700; font-size: 16px; line-height: 1; padding: 0 2px; transition: all 0.3s ease; }
+        .tag-item .remove-tag:hover { color: #B91C1C; transform: scale(1.2); }
+        .tag-input-group { display: flex; gap: 8px; margin-top: 6px; }
+        .tag-input-group input { flex: 1; padding: 8px 12px; border: 2px solid #dbeafe; border-radius: 8px; font-size: 13px; transition: all 0.3s ease; }
+        .tag-input-group input:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .empty-tags { color: #94A3B8; font-size: 13px; }
+
+        /* ===== TOAST-УВЕДОМЛЕНИЯ ===== */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 420px;
+            width: 100%;
+        }
+
+        .toast {
+            padding: 14px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+            animation: slideInRight 0.4s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-left: 4px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(4px);
+        }
+
+        .toast-success {
+            background: linear-gradient(135deg, #10B981, #059669);
+        }
+
+        .toast-error {
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+        }
+
+        .toast-warning {
+            background: linear-gradient(135deg, #F59E0B, #D97706);
+        }
+
+        .toast-info {
+            background: linear-gradient(135deg, #3B82F6, #2563EB);
+        }
+
+        .toast .toast-close {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: all 0.3s ease;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .toast .toast-close:hover {
+            color: white;
+            transform: scale(1.2);
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .toast.toast-out {
+            animation: slideOutRight 0.3s ease forwards;
+        }
+
+        @keyframes slideOutRight {
+            to {
+                opacity: 0;
+                transform: translateX(60px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header { padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
+            .college-name { font-size: 13px; } .college-name .sub { font-size: 13px; }
+            .header-user-info { display: none; }
+            .sidebar { transform: translateX(-100%); width: 280px; top: 74px; height: calc(100vh - 74px); }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 16px; }
+            .form-card { padding: 20px; }
+            .form-row { grid-template-columns: 1fr; }
+            .form-actions { flex-direction: column; }
+            .form-actions .btn { width: 100%; justify-content: center; }
+            #menuToggle { display: inline-block !important; }
+            .page-title { font-size: 20px; }
+            .toast-container { left: 16px; right: 16px; top: 80px; }
+        }
+        @media (min-width: 769px) { #menuToggle { display: none !important; } }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+    <div class="header-logo">
+        <span class="college-name">
+            <h2>Учреждение образования<br>
+            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html" class="active"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📝 Создание группы <small>новая учебная группа</small></h1>
+            </div>
+            <a href="/students/index.html" class="btn btn-secondary">← Назад к группам</a>
+        </div>
+
+        <div class="form-card">
+            <!-- ОСНОВНЫЕ ДАННЫЕ ГРУППЫ -->
+            <div class="form-section">
+                <div class="form-section-title">📋 Основные данные</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Название группы <span class="required">*</span></label>
+                        <input type="text" class="form-control" id="groupName" placeholder="Например: 1П-141, 138" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Тип <span class="required">*</span></label>
+                        <select class="form-control" id="groupType" required>
+                            <option value="pto">🔧 ПТО</option>
+                            <option value="sso">🎓 ССО</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Дата начала обучения <span class="required">*</span></label>
+                        <input type="date" class="form-control" id="dateStart" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Дата выпуска <span class="required">*</span></label>
+                        <input type="date" class="form-control" id="dateEnd" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- СПЕЦИАЛЬНОСТИ (ТЕГИ) -->
+            <div class="form-section">
+                <div class="form-section-title">🎯 Специальности</div>
+                <div class="tag-list" id="specialtyList"><span class="empty-tags">Нет добавленных специальностей</span></div>
+                <div class="tag-input-group">
+                    <input type="text" id="specialtyInput" placeholder="Введите специальность..." onkeydown="if(event.key==='Enter'){event.preventDefault();addSpecialty();}">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="addSpecialty()">➕ Добавить</button>
+                </div>
+            </div>
+
+            <!-- КВАЛИФИКАЦИИ (ТЕГИ) -->
+            <div class="form-section">
+                <div class="form-section-title">📜 Квалификации</div>
+                <div class="tag-list" id="qualificationList"><span class="empty-tags">Нет добавленных квалификаций</span></div>
+                <div class="tag-input-group">
+                    <input type="text" id="qualificationInput" placeholder="Введите квалификацию..." onkeydown="if(event.key==='Enter'){event.preventDefault();addQualification();}">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="addQualification()">➕ Добавить</button>
+                </div>
+            </div>
+
+            <!-- КУРАТОРЫ -->
+            <div class="form-section">
+                <div class="form-section-title">👨‍🏫 Кураторы</div>
+                <div class="form-hint" style="margin-bottom:12px;">Чтобы добавить куратора, перейдите на вкладку «Сотрудники», выберите преподавателя и назначьте ему эту группу.</div>
+                <div id="curatorsContainer" class="staff-list">
+                    <div class="empty-staff">Загрузка...</div>
+                </div>
+            </div>
+
+            <!-- МАСТЕРА ПО -->
+            <div class="form-section" id="mastersSection">
+                <div class="form-section-title">🔧 Мастера ПО <span style="font-weight:400;font-size:13px;color:#94A3B8;">(только для ПТО)</span></div>
+                <div class="form-hint" style="margin-bottom:12px;">Чтобы добавить мастера ПО, перейдите на вкладку «Сотрудники», выберите мастера и назначьте ему эту группу.</div>
+                <div id="mastersContainer" class="staff-list">
+                    <div class="empty-staff">Загрузка...</div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="/students/index.html" class="btn btn-secondary">Отмена</a>
+                <button type="button" class="btn btn-success" id="saveGroupBtn">✅ Создать группу</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ===== КОНТЕЙНЕР ДЛЯ TOAST-УВЕДОМЛЕНИЙ ===== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ============================================================
+// КОНФИГУРАЦИЯ И АВТОРИЗАЦИЯ
+// ============================================================
+const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+function getCurrentUser() {
+    try { return JSON.parse(localStorage.getItem('currentUser')); } 
+    catch { return null; }
+}
+
+function requireAuth() {
+    if (!getCurrentUser()) window.location.href = '/index.html';
+}
+
+function renderUserInfo() {
+    const user = getCurrentUser();
+    if (!user) return;
+    document.getElementById('userNameDisplay').textContent = user.name || user.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[user.role] || user.role;
+}
+
+document.getElementById('logoutBtn').onclick = () => {
+    localStorage.removeItem('currentUser');
+    window.location.href = '/index.html';
+};
+
+requireAuth();
+renderUserInfo();
+
+// ============================================================
+// TOAST-УВЕДОМЛЕНИЯ
+// ============================================================
+
+function showToast(message, type = 'success', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+    };
+    
+    toast.innerHTML = `
+        <span style="flex:1;">${icons[type] || ''} ${message}</span>
+        <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('toast-out');
+        setTimeout(() => {
+            if (toast.parentElement) toast.remove();
+        }, 300);
+    }, duration);
+}
+
+// ============================================================
+// ТЕГИ (СПЕЦИАЛЬНОСТИ И КВАЛИФИКАЦИИ)
+// ============================================================
+let specialties = [];
+let qualifications = [];
+
+function addSpecialty() {
+    const input = document.getElementById('specialtyInput');
+    const value = input.value.trim();
+    if (!value) return;
+    if (specialties.includes(value)) { 
+        showToast('Эта специальность уже добавлена', 'warning');
+        return; 
+    }
+    specialties.push(value);
+    input.value = '';
+    renderTags('specialtyList', specialties, 'specialty');
+}
+
+function addQualification() {
+    const input = document.getElementById('qualificationInput');
+    const value = input.value.trim();
+    if (!value) return;
+    if (qualifications.includes(value)) { 
+        showToast('Эта квалификация уже добавлена', 'warning');
+        return; 
+    }
+    qualifications.push(value);
+    input.value = '';
+    renderTags('qualificationList', qualifications, 'qualification');
+}
+
+function removeTag(containerId, item, type) {
+    if (type === 'specialty') { specialties = specialties.filter(s => s !== item); renderTags('specialtyList', specialties, 'specialty'); }
+    else if (type === 'qualification') { qualifications = qualifications.filter(q => q !== item); renderTags('qualificationList', qualifications, 'qualification'); }
+}
+
+function renderTags(containerId, items, type) {
+    const container = document.getElementById(containerId);
+    if (items.length === 0) {
+        const labels = { 'specialty': 'специальностей', 'qualification': 'квалификаций' };
+        container.innerHTML = `<span class="empty-tags">Нет добавленных ${labels[type] || 'элементов'}</span>`;
+        return;
+    }
+    
+    container.innerHTML = items.map(function(item) {
+        const safeItem = String(item).replace(/'/g, "\\'");
+        return `
+            <span class="tag-item">
+                ${item}
+                <span class="remove-tag" onclick="removeTag('${containerId}', '${safeItem}', '${type}')">×</span>
+            </span>
+        `;
+    }).join('');
+}
+
+// ============================================================
+// УПРАВЛЕНИЕ ВИДИМОСТЬЮ МАСТЕРОВ ПО
+// ============================================================
+function toggleMastersSection() {
+    const type = document.getElementById('groupType').value;
+    const section = document.getElementById('mastersSection');
+    if (type === 'pto') {
+        section.style.display = 'block';
+    } else {
+        section.style.display = 'none';
+    }
+}
+
+document.getElementById('groupType').addEventListener('change', toggleMastersSection);
+
+// ============================================================
+// ЗАГРУЗКА СОТРУДНИКОВ, ЗАКРЕПЛЁННЫХ ЗА ГРУППОЙ
+// ============================================================
+async function loadAssignedStaff() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const groupId = urlParams.get('id');
+
+    const curatorsContainer = document.getElementById('curatorsContainer');
+    const mastersContainer = document.getElementById('mastersContainer');
+
+    if (!groupId) {
+        curatorsContainer.innerHTML = '<div class="empty-staff">Группа ещё не создана. Назначьте кураторов после создания через вкладку «Сотрудники».</div>';
+        mastersContainer.innerHTML = '<div class="empty-staff">Группа ещё не создана. Назначьте мастеров ПО после создания через вкладку «Сотрудники».</div>';
+        return;
+    }
+
+    const { data: employees, error } = await supabaseClient
+        .from('employees')
+        .select('id, full_name, category, groups')
+        .eq('is_hidden', false)
+        .order('full_name');
+
+    if (error) { 
+        console.error(error); 
+        curatorsContainer.innerHTML = '<div class="empty-staff">Ошибка загрузки</div>';
+        mastersContainer.innerHTML = '<div class="empty-staff">Ошибка загрузки</div>';
+        return; 
+    }
+
+    const assignedCurators = employees.filter(e => 
+        e.category === 'teachers' && e.groups && e.groups.includes(groupId)
+    );
+    
+    const assignedMasters = employees.filter(e => 
+        e.category === 'masters' && e.groups && e.groups.includes(groupId)
+    );
+
+    if (assignedCurators.length > 0) {
+        curatorsContainer.innerHTML = assignedCurators.map(c => `
+            <div class="staff-item">
+                <span>${c.full_name}</span>
+            </div>
+        `).join('');
+    } else {
+        curatorsContainer.innerHTML = '<div class="empty-staff">Нет назначенных кураторов</div>';
+    }
+
+    if (assignedMasters.length > 0) {
+        mastersContainer.innerHTML = assignedMasters.map(m => `
+            <div class="staff-item">
+                <span>${m.full_name}</span>
+            </div>
+        `).join('');
+    } else {
+        mastersContainer.innerHTML = '<div class="empty-staff">Нет назначенных мастеров ПО</div>';
+    }
+}
+
+// ============================================================
+// СОЗДАНИЕ ГРУППЫ + ENTER
+// ============================================================
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        if (document.activeElement.tagName !== 'INPUT' || 
+           (document.activeElement.id !== 'specialtyInput' && document.activeElement.id !== 'qualificationInput')) {
+            e.preventDefault();
+            document.getElementById('saveGroupBtn').click();
+        }
+    }
+});
+
+document.getElementById('saveGroupBtn').onclick = async function() {
+    const name = document.getElementById('groupName').value.trim();
+    const type = document.getElementById('groupType').value;
+    const dateStart = document.getElementById('dateStart').value;
+    const dateEnd = document.getElementById('dateEnd').value;
+
+    if (!name) { 
+        showToast('Введите название группы', 'error');
+        return; 
+    }
+    if (!dateStart || !dateEnd) { 
+        showToast('Укажите даты обучения', 'error');
+        return; 
+    }
+
+    const btn = document.getElementById('saveGroupBtn');
+    btn.innerHTML = '<span class="loading-spinner"></span> Сохранение...';
+    btn.disabled = true;
+
+    try {
+        const groupData = {
+            name: name,
+            type: type,
+            date_start: dateStart,
+            date_end: dateEnd,
+            specialty: specialties,
+            qualification: qualifications,
+            is_archived: false
+        };
+        
+        const { data: newGroup, error: groupError } = await supabaseClient
+            .from('groups')
+            .insert([groupData])
+            .select()
+            .single();
+
+        if (groupError) throw groupError;
+
+        showToast(`✅ Группа "${name}" успешно создана!`, 'success', 5000);
+        
+        setTimeout(() => {
+            window.location.href = '/students/index.html';
+        }, 1500);
+
+    } catch (error) {
+        console.error('❌ Ошибка создания группы:', error);
+        showToast('Ошибка: ' + error.message, 'error');
+    } finally {
+        btn.innerHTML = '✅ Создать группу';
+        btn.disabled = false;
+    }
+};
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+
+const today = new Date();
+const year = today.getFullYear();
+document.getElementById('dateStart').value = `${year}-09-01`;
+document.getElementById('dateEnd').value = `${year + 3}-06-30`;
+
+renderTags('specialtyList', [], 'specialty');
+renderTags('qualificationList', [], 'qualification');
+toggleMastersSection();
+loadAssignedStaff();
+
+</script>
+
+</body>
+</html>

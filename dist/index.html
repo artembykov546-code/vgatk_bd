@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход | vgatk_bd</title>
+    
+    <!-- ===== FAVICON ===== -->
+    <link rel="icon" href="./images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="./images/favicon.ico" type="image/x-icon">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    
+    <!-- ===== SUPABASE & BCRYPT ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+    
+    <style>
+        /* ===== БАЗОВЫЕ СТИЛИ ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --transition: all 0.3s ease; --border-radius: 8px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
+            background-attachment: fixed; min-height: 100vh; color: #1E293B;
+        }
+
+        /* ===== АНИМАЦИИ ===== */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== СТРАНИЦА ВХОДА ===== */
+        .login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .login-container { width: 100%; max-width: 420px; }
+        .login-card {
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.98); border-radius: 16px;
+            padding: 40px 36px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15);
+            animation: slideUp 0.5s ease; border: 1px solid #dbeafe;
+        }
+        .login-header { text-align: center; margin-bottom: 32px; }
+        .login-logo-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .login-logo {
+            width: 100px;
+            height: 100px;
+            display: block;
+            border-radius: 50%;
+            object-fit: contain;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+            border: 2px solid #dbeafe;
+            transition: var(--transition);
+        }
+        .login-logo-fallback {
+            font-size: 72px;
+            display: block;
+            margin: 0 auto 12px;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+            border: 2px solid #dbeafe;
+        }
+        .login-title { font-family: 'Lobster', cursive; font-size: 18px; color: #1E3A8A !important; margin-bottom: 4px; letter-spacing: 0.5px; line-height: 1.3; }
+        .login-subtitle { color: #64748B; font-size: 13px; }
+
+        .login-form .form-group { margin-bottom: 20px; }
+        .login-form .form-label { font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px; display: block; }
+
+        .password-wrapper { position: relative; width: 100%; }
+        .password-wrapper .form-control { padding: 12px 48px 12px 16px; font-size: 15px; border: 2px solid #dbeafe; border-radius: 8px; width: 100%; transition: var(--transition); background: rgba(255, 255, 255, 0.95); height: 48px; box-sizing: border-box; }
+        .password-wrapper .form-control:focus { border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); outline: none; }
+        .password-wrapper .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; color: #94A3B8; background: none; border: none; padding: 4px; transition: var(--transition); line-height: 1; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; }
+        .password-wrapper .toggle-password:hover { color: #3B82F6; background: rgba(59, 130, 246, 0.08); }
+
+        .form-control { padding: 12px 16px; font-size: 15px; border: 2px solid #dbeafe; border-radius: 8px; width: 100%; transition: var(--transition); background: rgba(255, 255, 255, 0.95); height: 48px; box-sizing: border-box; }
+        .form-control:focus { border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); outline: none; }
+
+        .login-btn { width: 100%; padding: 14px; font-size: 16px; font-weight: 600; border: none; border-radius: 8px; background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: white; cursor: pointer; transition: var(--transition); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); margin-top: 8px; height: 48px; }
+        .login-btn:hover { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
+        .login-btn:active { transform: scale(0.97); }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+
+        .login-error { background: rgba(239, 68, 68, 0.1); color: #DC2626; padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none; border-left: 4px solid #EF4444; }
+        .login-error.show { display: block; animation: shake 0.5s ease; }
+        .login-loader { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease infinite; vertical-align: middle; margin-right: 8px; }
+
+        .change-password-container { display: none; }
+        .change-password-container.active { display: block; animation: slideUp 0.4s ease; }
+        
+        .password-strength { height: 4px; border-radius: 4px; margin-top: 8px; background: #e2e8f0; transition: var(--transition); overflow: hidden; }
+        .password-strength .bar { height: 100%; width: 0%; border-radius: 4px; transition: var(--transition); }
+        .password-strength .bar.weak { width: 25%; background: linear-gradient(90deg, #EF4444, #DC2626); }
+        .password-strength .bar.medium { width: 50%; background: linear-gradient(90deg, #F59E0B, #D97706); }
+        .password-strength .bar.strong { width: 75%; background: linear-gradient(90deg, #3B82F6, #2563EB); }
+        .password-strength .bar.very-strong { width: 100%; background: linear-gradient(90deg, #10B981, #059669); }
+        .password-hint { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+
+        .btn-secondary { width: 100%; padding: 12px; background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%); color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); transition: all 0.3s ease; height: 48px; }
+        .btn-secondary:hover { background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4); transform: translateY(-2px); }
+
+        .login-links { text-align: center; margin-top: 16px; font-size: 14px; color: #64748B; }
+        .login-links a { color: #1E3A8A; font-weight: 600; text-decoration: none; transition: var(--transition); }
+        .login-links a:hover { text-decoration: underline; color: #3B82F6; }
+
+        /* ===== АДАПТИВНЫЕ РАЗМЕРЫ ЛОГОТИПА ===== */
+        @media (max-width: 768px) {
+            .login-card { padding: 32px 28px; }
+            .login-logo { width: 90px; height: 90px; }
+            .login-logo-fallback { width: 90px; height: 90px; font-size: 60px; }
+            .login-title { font-size: 16px; }
+        }
+
+        @media (max-width: 480px) {
+            .login-card { padding: 28px 20px; }
+            .login-logo { width: 80px; height: 80px; padding: 6px; }
+            .login-logo-fallback { width: 80px; height: 80px; font-size: 50px; }
+            .login-title { font-size: 15px; }
+            .login-subtitle { font-size: 12px; }
+            .password-wrapper .form-control, .form-control, .login-btn { height: 44px; font-size: 14px; }
+            .password-wrapper .form-control { padding: 10px 44px 10px 14px; }
+            .form-control { padding: 10px 14px; }
+            .login-btn { font-size: 15px; }
+            .btn-secondary { font-size: 14px; height: 44px; }
+        }
+
+        @media (max-width: 380px) {
+            .login-card { padding: 20px 16px; }
+            .login-logo { width: 70px; height: 70px; padding: 5px; }
+            .login-logo-fallback { width: 70px; height: 70px; font-size: 42px; }
+            .login-title { font-size: 13px; }
+            .login-subtitle { font-size: 11px; }
+            .password-wrapper .form-control, .form-control, .login-btn { height: 40px; font-size: 13px; }
+            .password-wrapper .form-control { padding: 8px 40px 8px 12px; }
+            .form-control { padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-page">
+    <div class="login-container" id="loginContainer">
+        <div class="login-card">
+
+            <!-- ===== ОБЫЧНЫЙ ВХОД ===== -->
+            <div class="login-form" id="loginForm">
+                <div class="login-header">
+                    <div class="login-logo-wrapper">
+                        <img src="./images/favicon.png" alt="Логотип" class="login-logo" id="loginLogo" onerror="this.style.display='none';this.parentElement.innerHTML='<span class=\'login-logo-fallback\'>🏛️</span>'">
+                    </div>
+                    <h1 class="login-title">Учреждение образования<br>"Витебский государственный<br>аграрно-технический колледж"</h1>
+                    <p class="login-subtitle">База данных</p>
+                </div>
+
+                <div class="login-error" id="loginError">
+                    ⚠️ <span id="errorMessage">Неверный логин или пароль</span>
+                </div>
+
+                <form id="loginFormElement">
+                    <div class="form-group">
+                        <label class="form-label">Логин</label>
+                        <input type="text" class="form-control" id="loginInput" placeholder="Введите логин" autocomplete="username" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Пароль</label>
+                        <div class="password-wrapper">
+                            <input type="password" class="form-control" id="passwordInput" placeholder="Введите пароль" autocomplete="current-password" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('passwordInput')">👁️</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="login-btn" id="loginBtn">🔑 Войти</button>
+                </form>
+
+                <div class="login-links">
+                    Нет аккаунта? <a href="/register/index.html">Зарегистрироваться</a>
+                </div>
+            </div>
+
+            <!-- ===== СМЕНА ПАРОЛЯ ===== -->
+            <div class="change-password-container" id="changePasswordContainer">
+                <div class="login-header">
+                    <span style="font-size:48px;display:block;margin-bottom:12px;"></span>
+                    <h1 class="login-title">Смена пароля</h1>
+                    <p class="login-subtitle" id="changeUserInfo">Пользователь: <strong id="changeUserLogin">admin</strong></p>
+                </div>
+
+                <div class="login-error" id="changeError">
+                    ⚠️ <span id="changeErrorMessage">Пароли не совпадают</span>
+                </div>
+
+                <form id="changeFormElement">
+                    <div class="form-group">
+                        <label class="form-label">Новый пароль</label>
+                        <div class="password-wrapper">
+                            <input type="password" class="form-control" id="newPasswordInput" placeholder="Введите новый пароль (мин. 6 символов)" required minlength="6">
+                            <button type="button" class="toggle-password" onclick="togglePassword('newPasswordInput')">👁️</button>
+                        </div>
+                        <div class="password-strength" id="passwordStrength"><div class="bar" id="strengthBar"></div></div>
+                        <div class="password-hint" id="strengthText">Введите пароль для оценки надёжности</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Подтверждение пароля</label>
+                        <div class="password-wrapper">
+                            <input type="password" class="form-control" id="confirmPasswordInput" placeholder="Повторите новый пароль" required>
+                            <button type="button" class="toggle-password" onclick="togglePassword('confirmPasswordInput')">👁️</button>
+                        </div>
+                        <div class="password-hint" id="confirmHint">Пароли должны совпадать</div>
+                    </div>
+
+                    <button type="submit" class="login-btn" id="changeBtn">💾 Сохранить изменения</button>
+                </form>
+
+                <div class="login-footer" style="margin-top:12px;">
+                    <button class="btn-secondary" id="logoutChangeBtn">↩️ Вернуться ко входу</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// ПРОВЕРКА ЗАГРУЗКИ BCRYPTJS
+// ============================================================
+if (typeof dcodeIO === 'undefined' || typeof dcodeIO.bcrypt === 'undefined') {
+    console.error('❌ ОШИБКА: Библиотека bcryptjs не загрузилась!');
+    alert('Ошибка загрузки системы безопасности. Пожалуйста, обновите страницу.');
+} else {
+    window.bcrypt = dcodeIO.bcrypt;
+    console.log('✅ bcryptjs успешно загружен');
+}
+
+// ============================================================
+// КОНФИГУРАЦИЯ SUPABASE
+// ============================================================
+const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let tempUserId = null;
+let currentDeviceSessionId = null;
+
+// ============================================================
+// ГЕНЕРАЦИЯ УНИКАЛЬНОГО ID СЕССИИ ДЛЯ УСТРОЙСТВА
+// ============================================================
+function generateDeviceSessionId() {
+    // Используем комбинацию: userAgent + screen размеры + временная метка
+    const ua = navigator.userAgent || '';
+    const screen = `${window.screen?.width || 0}x${window.screen?.height || 0}`;
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    return `device_${btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20)}_${timestamp}_${random}`;
+}
+
+// ============================================================
+// ПРОВЕРКА СЕССИИ ПРИ ВХОДЕ
+// ============================================================
+async function checkUserSession(userId) {
+    try {
+        const { data: user, error } = await supabaseClient
+            .from('users')
+            .select('active_session_id')
+            .eq('id', userId)
+            .single();
+
+        if (error) throw error;
+
+        // Если есть активная сессия и она не совпадает с текущей
+        if (user.active_session_id && user.active_session_id !== currentDeviceSessionId) {
+            console.log('⚠️ Активная сессия обнаружена на другом устройстве');
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('❌ Ошибка проверки сессии:', error);
+        return true; // Пускаем, если ошибка
+    }
+}
+
+// ============================================================
+// ОБНОВЛЕНИЕ СЕССИИ ПОЛЬЗОВАТЕЛЯ
+// ============================================================
+async function updateUserSession(userId, sessionId, isActive = true) {
+    try {
+        const { error } = await supabaseClient
+            .from('users')
+            .update({ 
+                active_session_id: isActive ? sessionId : null,
+                last_login: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+        if (error) throw error;
+        console.log(`✅ Сессия ${isActive ? 'активирована' : 'завершена'}`);
+        return true;
+    } catch (error) {
+        console.error('❌ Ошибка обновления сессии:', error);
+        return false;
+    }
+}
+
+// ============================================================
+// ЗАВЕРШЕНИЕ СЕССИИ НА ВСЕХ УСТРОЙСТВАХ
+// ============================================================
+async function invalidateAllSessions(userId) {
+    try {
+        const { error } = await supabaseClient
+            .from('users')
+            .update({ 
+                active_session_id: null,
+                session_invalidated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+        if (error) throw error;
+        console.log('✅ Все сессии пользователя завершены');
+        return true;
+    } catch (error) {
+        console.error('❌ Ошибка завершения сессий:', error);
+        return false;
+    }
+}
+
+// ============================================================
+// ПРОВЕРКА ДЕЙСТВИТЕЛЬНОСТИ СЕССИИ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+// ============================================================
+async function validateCurrentSession() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) return false;
+
+    try {
+        const user = JSON.parse(savedUser);
+        const { data: dbUser, error } = await supabaseClient
+            .from('users')
+            .select('active_session_id, employee_id, role')
+            .eq('id', user.id)
+            .single();
+
+        if (error) throw error;
+
+        // Если активная сессия не совпадает с текущей - выходим
+        if (dbUser.active_session_id && dbUser.active_session_id !== currentDeviceSessionId) {
+            console.log('⚠️ Сессия недействительна, выполняется выход');
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('❌ Ошибка проверки сессии:', error);
+        return true;
+    }
+}
+
+// ============================================================
+// ОСНОВНЫЕ ФУНКЦИИ
+// ============================================================
+
+// Генерируем ID устройства при загрузке
+currentDeviceSessionId = generateDeviceSessionId();
+console.log('🆔 ID устройства:', currentDeviceSessionId);
+
+// Проверяем сессию при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем, есть ли сохранённый пользователь
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+        // Если пользователь есть, но мы на странице входа - проверяем сессию
+        validateCurrentSession().then(isValid => {
+            if (isValid) {
+                // Если сессия валидна, перенаправляем на дашборд
+                window.location.href = '/dashboard.html';
+            }
+        });
+    }
+});
+
+async function handleLogin(login, password) {
+    try {
+        console.log('🔍 Поиск пользователя:', login);
+        
+        const { data: user, error } = await supabaseClient
+            .from('users')
+            .select(`id, login, password_hash, employee_id, force_change, active_session_id`)
+            .eq('login', login)
+            .maybeSingle();
+
+        if (error || !user) {
+            console.error('❌ Пользователь не найден или ошибка запроса:', error);
+            showError('❌ Неверный логин или пароль');
+            return false;
+        }
+
+        console.log('✅ Пользователь найден:', user.login);
+
+        // Проверяем пароль
+        const isMatch = await window.bcrypt.compare(password, user.password_hash);
+        
+        if (!isMatch) {
+            console.error('❌ Пароль не совпадает');
+            showError('❌ Неверный логин или пароль');
+            return false;
+        }
+
+        console.log('✅ Пароль верный!');
+
+        // Проверяем, нет ли активной сессии на другом устройстве
+        if (user.active_session_id && user.active_session_id !== currentDeviceSessionId) {
+            // Если есть активная сессия на другом устройстве
+            const confirmContinue = confirm(
+                '⚠️ Обнаружена активная сессия на другом устройстве.\n\n' +
+                'Продолжить? Это завершит сессию на другом устройстве.'
+            );
+            
+            if (!confirmContinue) {
+                return false;
+            }
+            
+            // Завершаем старую сессию
+            await invalidateAllSessions(user.id);
+        }
+
+        // Проверяем, нужно ли сменить пароль
+        if (user.force_change) {
+            tempUserId = user.id;
+            changeUserLogin.textContent = user.login;
+            loginForm.style.display = 'none';
+            changeContainer.classList.add('active');
+            loginBtn.innerHTML = '🔑 Войти';
+            loginBtn.disabled = false;
+            return true;
+        }
+
+        // Обновляем сессию для текущего устройства
+        await updateUserSession(user.id, currentDeviceSessionId, true);
+
+        let fullName = user.login;
+        if (user.employee_id) {
+            const { data: emp } = await supabaseClient
+                .from('employees')
+                .select('full_name')
+                .eq('id', user.employee_id)
+                .single();
+            
+            if (emp && emp.full_name) fullName = emp.full_name;
+        }
+
+        loginSuccess(user, fullName);
+        return true;
+
+    } catch (err) {
+        console.error('❌ Ошибка входа:', err);
+        showError('❌ Ошибка подключения к базе данных');
+        return false;
+    }
+}
+
+function loginSuccess(user, fullName) {
+    const userData = {
+        id: user.id,
+        login: user.login,
+        name: fullName,
+        full_name: fullName,
+        employee_id: user.employee_id,
+        groups_access: user.groups_access || [],
+        session_id: currentDeviceSessionId
+    };
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    
+    console.log('✅ Вход выполнен, перенаправление...');
+    window.location.href = '/dashboard.html';
+}
+
+async function handleChangePassword() {
+    const newPassword = newPasswordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    if (!newPassword || newPassword.length < 6) {
+        showChangeError('❌ Пароль должен содержать минимум 6 символов');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        showChangeError('❌ Пароли не совпадают');
+        return;
+    }
+
+    changeBtn.innerHTML = '<span class="login-loader"></span> Сохранение...';
+    changeBtn.disabled = true;
+
+    try {
+        const hashedPassword = await window.bcrypt.hash(newPassword, 10);
+        
+        // Обновляем пароль и завершаем все старые сессии
+        const { error } = await supabaseClient
+            .from('users')
+            .update({ 
+                password_hash: hashedPassword,
+                force_change: false,
+                active_session_id: currentDeviceSessionId, // Устанавливаем текущую сессию как активную
+                password_changed_at: new Date().toISOString()
+            })
+            .eq('id', tempUserId);
+
+        if (error) throw error;
+
+        alert('✅ Пароль успешно изменён!');
+        window.location.reload();
+
+    } catch (err) {
+        console.error('❌ Ошибка смены пароля:', err);
+        showChangeError('❌ Ошибка при сохранении пароля');
+    } finally {
+        changeBtn.innerHTML = '💾 Сохранить изменения';
+        changeBtn.disabled = false;
+    }
+}
+
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.parentElement.querySelector('.toggle-password');
+    if (input.type === 'password') { 
+        input.type = 'text'; 
+        button.textContent = '🙈'; 
+    } else { 
+        input.type = 'password'; 
+        button.textContent = '👁️'; 
+    }
+}
+
+function showError(message) {
+    errorMessage.textContent = message;
+    loginError.classList.add('show');
+    setTimeout(() => loginError.classList.remove('show'), 5000);
+}
+
+function showChangeError(message) {
+    changeErrorMessage.textContent = message;
+    changeError.classList.add('show');
+    setTimeout(() => changeError.classList.remove('show'), 5000);
+}
+
+function hideChangeError() { changeError.classList.remove('show'); }
+
+// Индикатор силы пароля
+document.getElementById('newPasswordInput').addEventListener('input', function() {
+    const password = this.value;
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+    bar.className = 'bar';
+    if (password.length === 0) { text.textContent = 'Введите пароль для оценки надёжности'; return; }
+    let score = 0;
+    if (password.length >= 6) score++; if (password.length >= 10) score++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++; if (/[^a-zA-Z0-9]/.test(password)) score++;
+    const levels = ['', 'weak', 'medium', 'strong', 'very-strong'];
+    const labels = ['', 'Слабый', 'Средний', 'Хороший', 'Отличный'];
+    const index = Math.min(score, 4);
+    if (index > 0) { bar.classList.add(levels[index]); text.textContent = `Надёжность: ${labels[index]}`; }
+});
+
+document.getElementById('confirmPasswordInput').addEventListener('input', function() {
+    const newPass = document.getElementById('newPasswordInput').value;
+    const hint = document.getElementById('confirmHint');
+    if (this.value.length > 0) {
+        if (this.value === newPass) { hint.textContent = '✅ Пароли совпадают'; hint.style.color = '#10B981'; } 
+        else { hint.textContent = '❌ Пароли не совпадают'; hint.style.color = '#EF4444'; }
+    } else { hint.textContent = 'Пароли должны совпадать'; hint.style.color = '#94A3B8'; }
+});
+
+// ============================================================
+// ОБРАБОТЧИКИ СОБЫТИЙ
+// ============================================================
+
+document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const login = loginInput.value.trim();
+    const password = passwordInput.value;
+    if (!login || !password) { showError('❌ Введите логин и пароль'); return; }
+
+    loginBtn.innerHTML = '<span class="login-loader"></span> Вход...';
+    loginBtn.disabled = true;
+
+    try {
+        const success = await handleLogin(login, password);
+        if (!success && !changeContainer.classList.contains('active')) {
+            loginBtn.innerHTML = '🔑 Войти';
+            loginBtn.disabled = false;
+        }
+    } catch (err) {
+        console.error('Ошибка:', err);
+        showError('❌ Ошибка при входе');
+        loginBtn.innerHTML = '🔑 Войти';
+        loginBtn.disabled = false;
+    }
+});
+
+loginInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });
+passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });
+
+document.getElementById('changeFormElement').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    await handleChangePassword();
+});
+
+document.getElementById('logoutChangeBtn').addEventListener('click', function() {
+    changeContainer.classList.remove('active');
+    loginForm.style.display = 'block';
+    loginInput.value = '';
+    passwordInput.value = '';
+    hideChangeError();
+});
+
+newPasswordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('changeBtn').click(); });
+confirmPasswordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('changeBtn').click(); });
+
+// ============================================================
+// ОБРАБОТКА ПЕРЕД ЗАКРЫТИЕМ СТРАНИЦЫ
+// ============================================================
+window.addEventListener('beforeunload', function() {
+    // Не завершаем сессию при закрытии вкладки, 
+    // чтобы пользователь мог вернуться без повторного входа
+});
+
+console.log('✅ Страница входа загружена');
+console.log('🆔 Текущий ID устройства:', currentDeviceSessionId);
+</script>
+
+</body>
+</html>
