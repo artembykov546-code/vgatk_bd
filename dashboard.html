@@ -202,8 +202,8 @@
 <header class="header">
     <div class="header-logo">
         <span class="college-name">
-            <h2>Учреждение образования<br>
-            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span>
+            Учреждение образования<br>
+            <span class="sub">"Витебский государственный аграрно-технический колледж"</span>
         </span>
     </div>
     <div class="header-user">
@@ -219,7 +219,7 @@
 <aside class="sidebar" id="sidebar">
     <ul class="sidebar-nav">
         <li class="nav-label">Главное</li>
-        <li><a href="/dashboard.html" class="active"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/dashboard.html" class="active"><span class="icon"></span> Главная</a></li>
         <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
         <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
         <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
@@ -243,7 +243,7 @@
                 <div class="label">Сотрудников</div>
             </div>
             <div class="stat-card">
-                <span class="icon">👨‍🎓</span>
+                <span class="icon">👨‍</span>
                 <div class="number" id="studentsCount">0</div>
                 <div class="label">Учащихся</div>
             </div>
@@ -266,12 +266,12 @@
         </div>
         <div class="menu-grid">
             <a href="/employees/index.html" class="menu-card">
-                <span class="icon">👨‍🏫</span>
+                <span class="icon">👨🏫</span>
                 <div class="label">Сотрудники</div>
                 <div class="desc">Управление персоналом</div>
             </a>
             <a href="/students/index.html" class="menu-card">
-                <span class="icon">👨‍🎓</span>
+                <span class="icon">👨‍</span>
                 <div class="label">Учащиеся</div>
                 <div class="desc">Управление учащимися</div>
             </a>
@@ -325,27 +325,27 @@
             <!-- Telegram -->
             <a href="https://t.me/vgatk" target="_blank" class="banner-card">
                 <img src="/images/banners/telegram.png" alt="telegram" class="banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <div class="banner-img-placeholder" style="display:none;">📚</div>
+                <div class="banner-img-placeholder" style="display:none;">✈️</div>
                 <div class="banner-body">
-                    <div class="banner-title">telegram</div>
-                    <div class="banner-desc">vgatk</div>
+                    <div class="banner-title">Telegram</div>
+                    <div class="banner-desc">@vgatk</div>
                 </div>
             </a>
             <!-- instagram -->
             <a href="https://www.instagram.com/vgatk_official/" target="_blank" class="banner-card">
                 <img src="/images/banners/instagram.png" alt="instagram" class="banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <div class="banner-img-placeholder" style="display:none;">📚</div>
+                <div class="banner-img-placeholder" style="display:none;">📷</div>
                 <div class="banner-body">
-                    <div class="banner-title">instagram</div>
-                    <div class="banner-desc">vgatk_official</div>
+                    <div class="banner-title">Instagram</div>
+                    <div class="banner-desc">@vgatk_official</div>
                 </div>
             </a>
             <!-- VK -->
             <a href="https://vk.ru/vgptk_sp" target="_blank" class="banner-card">
-                <img src="/images/banners/vk.png" alt="instagram" class="banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                <div class="banner-img-placeholder" style="display:none;">📚</div>
+                <img src="/images/banners/vk.png" alt="vk" class="banner-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="banner-img-placeholder" style="display:none;">💬</div>
                 <div class="banner-body">
-                    <div class="banner-title">VK</div>
+                    <div class="banner-title">VKontakte</div>
                     <div class="banner-desc">vgptk_sp</div>
                 </div>
             </a>
@@ -358,33 +358,41 @@
 // ============================================================
 // КОНФИГУРАЦИЯ SUPABASE
 // ============================================================
-
 const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Используем глобальный клиент, если он уже создан в components.js
+const supabaseClient = window.supabaseClient || window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let currentUser = null;
+let refreshInterval = null;
 
 // ============================================================
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
-
 function loadUser() {
     const savedUser = localStorage.getItem('currentUser');
     if (!savedUser) {
         window.location.href = '/index.html';
-        return;
+        return false;
     }
 
     try {
         currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login || 'Пользователь';
+        const roleMap = { 
+            'super_admin': 'Супер-Админ', 
+            'admin': 'Администратор', 
+            'teacher': 'Преподаватель', 
+            'viewer': 'Наблюдатель' 
+        };
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role || 'Роль не указана';
+        return true;
     } catch (e) {
+        console.error('Ошибка парсинга пользователя:', e);
         localStorage.removeItem('currentUser');
         window.location.href = '/index.html';
+        return false;
     }
 }
 
@@ -394,138 +402,72 @@ document.getElementById('logoutBtn').onclick = () => {
 };
 
 // ============================================================
-// ЗАГРУЗКА СТАТИСТИКИ
+// ЗАГРУЗКА СТАТИСТИКИ (ИСПРАВЛЕННАЯ И ОПТИМИЗИРОВАННАЯ)
 // ============================================================
-
 async function loadStats() {
     try {
-        // 1. Все сотрудники (активные)
-        const { count: employeesCount, error: employeesError } = await supabaseClient
+        // 1. Сотрудники (активные, не скрытые)
+        const { count: employeesCount, error: empErr } = await supabaseClient
             .from('employees')
             .select('*', { count: 'exact', head: true })
             .eq('is_hidden', false)
             .eq('status', 'active');
+        
+        if (empErr && empErr.code !== 'PGRST116') throw empErr;
 
-        if (employeesError && employeesError.code !== 'PGRST116') throw employeesError;
-
-        // 2. ВСЕ учащиеся (считаем по группам, как на странице groups)
-        // Получаем все группы
-        const { data: groups, error: groupsError } = await supabaseClient
+        // 2. Группы (активные)
+        const { data: groups, error: grpErr } = await supabaseClient
             .from('groups')
-            .select('id, name, type')
+            .select('id')
             .eq('is_archived', false);
+            
+        if (grpErr) throw grpErr;
+        const groupsCount = groups ? groups.length : 0;
 
-        if (groupsError) throw groupsError;
-
-        // Получаем всех студентов (кроме выпускников)
-        const { data: students, error: studentsError } = await supabaseClient
-            .from('students')
-            .select('group_id, status')
-            .neq('status', 'graduated');
-
-        if (studentsError) throw studentsError;
-
-        // Считаем количество учащихся по группам
+        // 3. Учащиеся (все активные студенты в активных группах)
         let totalStudents = 0;
-        const groupCounts = {};
+        if (groupsCount > 0) {
+            const groupIds = groups.map(g => g.id);
+            const { count: studCount, error: studErr } = await supabaseClient
+                .from('students')
+                .select('*', { count: 'exact', head: true })
+                .in('group_id', groupIds)
+                .neq('status', 'graduated'); // Исключаем выпущенных
+                
+            if (studErr && studErr.code !== 'PGRST116') throw studErr;
+            totalStudents = studCount || 0;
+        }
 
-        // Инициализируем счётчики для каждой группы
-        groups.forEach(g => {
-            groupCounts[g.id] = 0;
-        });
-
-        // Считаем студентов в каждой группе
-        students.forEach(s => {
-            if (s.group_id && groupCounts[s.group_id] !== undefined) {
-                groupCounts[s.group_id]++;
-                totalStudents++;
-            }
-        });
-
-        // 3. Все группы (активные, не архивные)
-        const groupsCount = groups.length;
-
-        // 4. ВСЕ выпускники (только из таблицы graduates)
-        const { count: graduatesCount, error: graduatesError } = await supabaseClient
+        // 4. Выпускники (из таблицы graduates)
+        const { count: gradCount, error: gradErr } = await supabaseClient
             .from('graduates')
             .select('*', { count: 'exact', head: true });
+            
+        if (gradErr && gradErr.code !== 'PGRST116') throw gradErr;
 
-        if (graduatesError && graduatesError.code !== 'PGRST116') throw graduatesError;
-
+        // Обновляем DOM безопасно
         document.getElementById('employeesCount').textContent = employeesCount || 0;
         document.getElementById('studentsCount').textContent = totalStudents;
         document.getElementById('groupsCount').textContent = groupsCount;
-        document.getElementById('graduatesCount').textContent = graduatesCount || 0;
-
-        console.log(`📊 Статистика обновлена:`);
-        console.log(`  Сотрудников: ${employeesCount || 0}`);
-        console.log(`  Учащихся: ${totalStudents} (по группам)`);
-        console.log(`  Групп: ${groupsCount}`);
-        console.log(`  Выпускников: ${graduatesCount || 0} (из таблицы graduates)`);
-        console.log(`  Детально по группам:`, groupCounts);
+        document.getElementById('graduatesCount').textContent = gradCount || 0;
 
     } catch (error) {
         console.error('❌ Ошибка загрузки статистики:', error);
-        document.getElementById('employeesCount').textContent = '?';
-        document.getElementById('studentsCount').textContent = '?';
-        document.getElementById('groupsCount').textContent = '?';
-        document.getElementById('graduatesCount').textContent = '?';
+        // При ошибке не ломаем интерфейс, просто показываем 0 или прочерк
+        const els = ['employeesCount', 'studentsCount', 'groupsCount', 'graduatesCount'];
+        els.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.textContent === '?') el.textContent = '—';
+        });
     }
 }
 
 // ============================================================
-// TOAST УВЕДОМЛЕНИЯ
+// АВТООБНОВЛЕНИЕ И УВЕДОМЛЕНИЯ
 // ============================================================
-
-function showToast(message, type = 'success') {
-    const existing = document.querySelector('.toast-notification');
-    if (existing) existing.remove();
-    
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-close" onclick="this.parentElement.remove()">×</span>
-        ${message}
-    `;
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast.parentElement) toast.remove();
-    }, 4000);
-}
-
-// ============================================================
-// МОБИЛЬНОЕ МЕНЮ
-// ============================================================
-
-document.getElementById('menuToggle').onclick = () => {
-    document.getElementById('sidebar').classList.toggle('open');
-};
-
-if (window.innerWidth <= 768) {
-    document.getElementById('menuToggle').style.display = 'inline-block';
-}
-
-window.onresize = () => {
-    if (window.innerWidth <= 768) {
-        document.getElementById('menuToggle').style.display = 'inline-block';
-    } else {
-        document.getElementById('menuToggle').style.display = 'none';
-        document.getElementById('sidebar').classList.remove('open');
-    }
-};
-
-// ============================================================
-// АВТООБНОВЛЕНИЕ
-// ============================================================
-
-let refreshInterval = null;
-
 function startAutoRefresh() {
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(() => {
-        loadStats();
-    }, 30000);
+    stopAutoRefresh();
+    refreshInterval = setInterval(loadStats, 30000); // Каждые 30 сек
 }
 
 function stopAutoRefresh() {
@@ -535,34 +477,66 @@ function stopAutoRefresh() {
     }
 }
 
+function showToast(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+}
+
+// ============================================================
+// МОБИЛЬНОЕ МЕНЮ
+// ============================================================
+const menuToggle = document.getElementById('menuToggle');
+const sidebar = document.getElementById('sidebar');
+
+if (menuToggle && sidebar) {
+    menuToggle.onclick = () => sidebar.classList.toggle('open');
+    
+    const handleResize = () => {
+        if (window.innerWidth <= 768) {
+            menuToggle.style.display = 'inline-block';
+        } else {
+            menuToggle.style.display = 'none';
+            sidebar.classList.remove('open');
+        }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Инициализация при загрузке
+}
+
 // ============================================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
-
 async function initDashboard() {
-    console.log('🚀 Инициализация дашборда...');
+    console.log(' Инициализация дашборда...');
     
-    loadUser();
-    if (!currentUser) return;
+    const isUserLoaded = loadUser();
+    if (!isUserLoaded) return;
     
     await loadStats();
     startAutoRefresh();
     
-    console.log('✅ Дашборд загружен');
+    console.log('✅ Дашборд успешно загружен');
 }
 
-document.addEventListener('DOMContentLoaded', initDashboard);
+// Запускаем только когда DOM готов
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+    initDashboard();
+}
 
+// Очистка интервала при уходе со страницы
 window.addEventListener('beforeunload', stopAutoRefresh);
-
-window.addEventListener('pageshow', function(event) {
-    if (event.persisted) {
-        console.log('🔄 Страница восстановлена из кеша');
-        initDashboard();
-    }
+window.addEventListener('pageshow', (e) => {
+    if (e.persisted) initDashboard(); // Перезагрузка из кеша браузера
 });
-
-console.log('✅ Страница dashboard загружена');
 </script>
 
 </body>

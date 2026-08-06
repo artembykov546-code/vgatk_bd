@@ -2,18 +2,12 @@ import { defineConfig } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Получаем абсолютный путь к корневой папке проекта (где лежит vite.config.js)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  // Указываем корневую папку с HTML-страницами
-  root: path.resolve(__dirname, 'frontend/pages'), 
-  
-  // ВАЖНО: Используем './' для корректной работы на Netlify и в подпапках
-  base: './', 
-  
-  // Папка со статикой (картинки, шрифты, css)
+  root: __dirname,
+  base: '/',
   publicDir: path.resolve(__dirname, 'frontend/assets'),
   
   resolve: {
@@ -27,11 +21,8 @@ export default defineConfig({
   },
   
   build: {
-    // Собираем всё в папку dist в корне проекта
-    outDir: path.resolve(__dirname, 'dist'), 
+    outDir: path.resolve(__dirname, 'dist'),
     emptyOutDir: true,
-    
-    // Явно перечисляем ВСЕ HTML-файлы, чтобы Vite их обработал
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'frontend/pages/index.html'),
@@ -43,9 +34,17 @@ export default defineConfig({
         graduateDistribution: path.resolve(__dirname, 'frontend/pages/students/graduate-distribution.html'),
         group: path.resolve(__dirname, 'frontend/pages/students/group.html'),
         profile: path.resolve(__dirname, 'frontend/pages/students/profile.html'),
+        addParent: path.resolve(__dirname, 'frontend/pages/students/add-parent.html'),
+        addSibling: path.resolve(__dirname, 'frontend/pages/students/add-sibling.html'),
         graduates: path.resolve(__dirname, 'frontend/pages/graduates/index.html'),
+        graduatesGroup: path.resolve(__dirname, 'frontend/pages/graduates/group.html'),
+        graduatesExpelled: path.resolve(__dirname, 'frontend/pages/graduates/expelled.html'),
+        graduatesAcademic: path.resolve(__dirname, 'frontend/pages/graduates/academic.html'),
+        graduatesDistribution: path.resolve(__dirname, 'frontend/pages/graduates/distribution.html'),
         employees: path.resolve(__dirname, 'frontend/pages/employees/index.html'),
         reports: path.resolve(__dirname, 'frontend/pages/reports/index.html'),
+        register: path.resolve(__dirname, 'frontend/pages/register/index.html'),
+        profilePage: path.resolve(__dirname, 'frontend/pages/profile/index.html'),
         admin: path.resolve(__dirname, 'frontend/pages/admin/index.html'),
         adminLogs: path.resolve(__dirname, 'frontend/pages/admin/logs.html'),
         adminPositions: path.resolve(__dirname, 'frontend/pages/admin/positions.html'),
@@ -56,6 +55,6 @@ export default defineConfig({
   
   server: {
     port: 3000,
-    open: '/index.html'
+    open: '/frontend/pages/index.html'
   }
 });

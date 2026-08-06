@@ -1,0 +1,11 @@
+# SPA маршрутизация
+/*    /index.html    200
+
+# Перенаправления для всех страниц
+/students/*   /students/index.html  200
+/employees/*  /employees/index.html  200
+/graduates/*  /graduates/index.html  200
+/reports/*    /reports/index.html  200
+/profile/*    /profile/index.html  200
+/register/*   /register/index.html  200
+/admin/*      /admin/index.html  200
