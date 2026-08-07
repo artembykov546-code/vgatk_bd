@@ -5,9 +5,6 @@ package-lock.json
 # Environment
 .env
 
-# Build
-dist/
-
 # System
 .DS_Store
 Thumbs.db

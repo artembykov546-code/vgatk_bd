@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр группы | vgatk_bd</title>
+    
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .info-card { background: var(--bg-card); padding: 16px 20px; border-radius: var(--border-radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
+        .info-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-card .value { font-size: 16px; font-weight: 600; color: var(--primary); margin-top: 4px; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+
+        .info-card .leaders {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .info-card .leaders .leader-group { font-size: 14px; }
+        .info-card .leaders .leader-group .leader-title { font-weight: 600; color: var(--text-secondary); }
+        .info-card .leaders .leader-group .leader-name { font-weight: 500; color: var(--primary); }
+
+        .table-container { overflow-x: auto; border-radius: var(--border-radius-lg); border: 1px solid var(--border); background: var(--bg-card); }
+        .table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+        .table thead { background: var(--bg-main); }
+        .table th { padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); font-size: 12px; white-space: nowrap; }
+        .table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .table tbody tr { cursor: pointer; transition: var(--transition); }
+        .table tbody tr:hover { background: rgba(44, 62, 143, 0.08); }
+
+        .table .student-name { font-weight: 600; color: var(--primary); }
+        .table .status-badge-small { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+        .table .status-graduated-small { background: rgba(16, 185, 129, 0.15); color: var(--success-dark); }
+        .table .status-expelled-small { background: rgba(239, 68, 68, 0.15); color: var(--danger-dark); }
+        .table .status-academic-small { background: rgba(59, 130, 246, 0.15); color: var(--primary-light); }
+        .table .org-name { font-weight: 500; color: var(--primary-light); }
+
+        .btn-secondary { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-primary { background: var(--primary); color: white; border: none; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; border: none; }
+        .btn-success:hover { background: var(--success-dark); }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 64px; display: block; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 20px; color: var(--text-primary); margin-bottom: 8px; }
+
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 16px 24px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px; box-shadow: var(--shadow-modal); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        .form-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--border); flex-wrap: wrap; }
+        .form-actions .btn { padding: 10px 24px; font-size: 14px; }
+
+        #pdfContent { background: white; padding: 20px; }
+
+        .badge-type { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .badge-sso { background: #D6EAF8; color: #1A5276; }
+        .badge-pto { background: #FDEBD0; color: #7E5109; }
+
+        /* ===== МОДАЛЬНОЕ ОКНО КАРТОЧКИ ===== */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; max-width: 800px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-modal); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+        .modal-title { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .modal-close { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-muted); transition: var(--transition); line-height: 1; }
+        .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
+        .modal-body { padding: 8px 0 20px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 2px solid var(--border); }
+
+        .graduate-card { padding: 8px 0; }
+        .graduate-card .name { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .graduate-card .sub { color: var(--text-secondary); margin: 4px 0 12px; }
+        .graduate-card .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+        .graduate-card .info-item { display: flex; padding: 4px 0; border-bottom: 1px solid var(--border); }
+        .graduate-card .info-item .label { font-weight: 600; color: var(--text-secondary); width: 140px; flex-shrink: 0; }
+        .graduate-card .info-item .value { color: var(--text-primary); }
+        .graduate-card .info-item .value .grade-tag { display: inline-block; padding: 1px 8px; border-radius: 8px; font-size: 12px; font-weight: 500; background: rgba(255,255,255,0.8); border: 1px solid var(--border); }
+        .graduate-card .info-item .value .grade-avg { font-weight: 700; color: var(--primary); font-size: 16px; }
+
+        .distribution-card { background: #F0FDF4; padding: 8px 12px; border-radius: var(--border-radius); border: 1px solid #86EFAC; margin-bottom: 4px; }
+        .distribution-card .org-name { font-weight: 600; color: var(--success-dark); }
+
+        .related-card-small { background: rgba(255, 255, 255, 0.8); padding: 8px 12px; border-radius: var(--border-radius); border: 1px solid var(--border); margin-bottom: 4px; }
+        .related-card-small .name { font-weight: 600; font-size: 14px; color: var(--primary); }
+        .related-card-small .info { font-size: 12px; color: var(--text-secondary); }
+
+        @media print {
+            .no-print { display: none !important; }
+            .table-container { border: 1px solid #ccc; }
+            .table td, .table th { border-color: #ccc; }
+            body { background: white; }
+            .header, .sidebar, .page-header .header-actions { display: none !important; }
+            .page-container { max-width: 100%; padding: 20px; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+            .info-card { box-shadow: none; border: 1px solid #ccc; }
+            .table-container { border: 1px solid #ccc; }
+            #pdfContent { padding: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; }
+            .info-grid { grid-template-columns: 1fr; }
+            .info-card .leaders { flex-direction: column; gap: 8px; }
+            .toast-notification { left: 20px; right: 20px; top: 80px; }
+            .table { font-size: 12px; }
+            .table th, .table td { padding: 4px 4px; }
+            .form-actions { flex-direction: column; }
+            .form-actions .btn { width: 100%; justify-content: center; }
+            .page-title { font-size: 20px; }
+            .modal { padding: 20px; }
+            .graduate-card .info-grid { grid-template-columns: 1fr; }
+            .graduate-card .info-item .label { width: 100px; }
+        }
+        @media (max-width: 480px) {
+            .header-actions .btn { font-size: 11px; padding: 6px 10px; }
+            .page-title { font-size: 18px; }
+            .table-container { overflow-x: auto; }
+            .table { font-size: 11px; }
+            .table th, .table td { padding: 2px 3px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header no-print">
+    <div class="header-logo">
+        <span class="college-name">
+            <h2>Учреждение образования<br>
+            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span></h2>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<aside class="sidebar no-print" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html" class="active"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm no-print" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+
+        <div class="page-header no-print">
+            <div>
+                <h1 class="page-title">👁️ Просмотр группы <small id="groupTitle">загрузка...</small></h1>
+            </div>
+            <div class="header-actions" id="headerActions">
+                <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+                <a href="#" id="distributionLink" class="btn btn-primary">📊 Распределение</a>
+                <button class="btn btn-success" id="exportPdfBtn">📄 Экспорт в PDF</button>
+            </div>
+        </div>
+
+        <div id="pdfContent">
+            <!-- Информация о группе -->
+            <div class="info-card" id="groupInfoCard">
+                <div class="info-grid" id="groupInfoGrid">
+                    <div><div class="label">Группа</div><div class="value" id="groupName">—</div></div>
+                    <div><div class="label">Тип</div><div class="value" id="groupType">—</div></div>
+                    <div><div class="label">Год выпуска</div><div class="value" id="graduationYear">—</div></div>
+                    <div><div class="label">Всего выпускников</div><div class="value" id="studentCount">0</div></div>
+                    <div><div class="label">Специальность</div><div class="value" id="specialtyName">—</div></div>
+                    <div><div class="label">Квалификация</div><div class="value" id="qualificationName">—</div></div>
+                </div>
+                <div class="leaders" id="leadersBlock">
+                    <div class="leader-group">
+                        <span class="leader-title">👨‍🏫 Кураторы:</span>
+                        <span class="leader-name" id="curatorsList">—</span>
+                    </div>
+                    <div class="leader-group">
+                        <span class="leader-title">🔧 Мастера ПО:</span>
+                        <span class="leader-name" id="mastersList">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Таблица выпускников -->
+            <div class="table-container">
+                <div style="padding:8px 12px;background:var(--bg-main);border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted);" class="no-print">
+                    📋 Список выпускников группы (нажмите на строку для просмотра полной карточки)
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width:45px;">№</th>
+                            <th style="min-width:180px;">ФИО</th>
+                            <th style="min-width:100px;">Статус</th>
+                            <th style="min-width:140px;">Телефон</th>
+                            <th style="min-width:100px;">Средний балл</th>
+                            <th style="min-width:200px;">Организация</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="6"><div class="empty-state"><span class="icon">📭</span><h3>Нет данных</h3><p style="color:var(--text-muted);">В этой группе пока нет выпускников</p></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="form-actions no-print">
+            <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+            <button class="btn btn-success" id="exportPdfBtnBottom">📄 Экспорт в PDF</button>
+        </div>
+
+    </div>
+</main>
+
+<!-- ===== МОДАЛЬНОЕ ОКНО КАРТОЧКИ ВЫПУСКНИКА ===== -->
+<div class="modal-overlay" id="graduateModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">🎓 Карточка выпускника</h2>
+            <button class="modal-close" id="modalCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="modalCancelBtn">Закрыть</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/components.js"></script>
+
+<script>
+if (typeof window.supabaseClient === 'undefined') {
+    window.supabaseClient = window.supabase.createClient(
+        'https://selbolepupendprhixas.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+    );
+}
+const sb = window.supabaseClient;
+
+const urlParams = new URLSearchParams(window.location.search);
+const groupId = urlParams.get('id');
+
+let currentUser = null;
+let currentGroup = null;
+let graduatesList = [];
+let distributionsMap = {};
+
+function showToast(msg, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+function loadUser() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) { window.location.href = '/index.html'; return; }
+    try {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+    } catch (e) { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
+}
+document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; };
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatDateFull(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getTypeBadge(type) {
+    return type === 'sso' ? 'badge-sso' : 'badge-pto';
+}
+
+function getStatusLabel(status) {
+    if (status === 'graduated') return 'Выпускник';
+    if (status === 'expelled') return 'Отчислен';
+    if (status === 'academic') return 'Академ. отпуск';
+    return status || '—';
+}
+
+function getStatusClass(status) {
+    if (status === 'graduated') return 'status-graduated-small';
+    if (status === 'expelled') return 'status-expelled-small';
+    if (status === 'academic') return 'status-academic-small';
+    return '';
+}
+
+function formatGrade(value) {
+    if (value === null || value === undefined || value === '') return '—';
+    const num = parseFloat(value);
+    if (isNaN(num)) return '—';
+    return num.toFixed(1).replace('.', ',');
+}
+
+function getMaxCourse(type) {
+    return type === 'sso' ? 4 : 3;
+}
+
+function calculateTotalAverage(student) {
+    if (!student) return null;
+    const type = student.type || 'pto';
+    const maxCourse = getMaxCourse(type);
+    
+    let grades = [];
+    for (let course = 1; course <= maxCourse; course++) {
+        const year = student[`grade_${course}_year`];
+        if (year !== null && year !== undefined && year !== '') {
+            const num = parseFloat(year);
+            if (!isNaN(num) && num >= 0 && num <= 10) {
+                grades.push(num);
+            }
+        }
+    }
+    
+    if (grades.length === 0) return null;
+    const sum = grades.reduce((a, b) => a + b, 0);
+    const avg = sum / grades.length;
+    return Math.ceil(avg * 10) / 10;
+}
+
+function calculateAge(birthDate) {
+    if (!birthDate) return '—';
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+}
+
+function getGenderLabel(gender) {
+    if (gender === 'male') return 'Мужской';
+    if (gender === 'female') return 'Женский';
+    return gender || '—';
+}
+
+// ============================================================
+// ЗАГРУЗКА ДАННЫХ ГРУППЫ
+// ============================================================
+
+async function loadGroupData() {
+    if (!groupId) {
+        document.getElementById('groupTitle').textContent = 'ID не указан';
+        document.getElementById('tableBody').innerHTML = `
+            <tr><td colspan="6">
+                <div class="empty-state">
+                    <span class="icon">❌</span>
+                    <h3>ID группы не указан</h3>
+                    <p style="color:var(--text-muted);">Перейдите из списка групп</p>
+                    <a href="/graduates/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>
+                </div>
+            </td></tr>
+        `;
+        return;
+    }
+
+    try {
+        // 1. Получаем информацию о группе
+        const { data: group, error: groupError } = await sb
+            .from('groups')
+            .select('*')
+            .eq('id', groupId)
+            .single();
+
+        if (groupError) throw groupError;
+
+        if (!group) {
+            document.getElementById('groupTitle').textContent = 'не найдена';
+            document.getElementById('tableBody').innerHTML = `
+                <tr><td colspan="6">
+                    <div class="empty-state">
+                        <span class="icon">❌</span>
+                        <h3>Группа не найдена</h3>
+                        <p style="color:var(--text-muted);">Группа с ID ${groupId} не существует</p>
+                        <a href="/graduates/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>
+                    </div>
+                </td></tr>
+            `;
+            return;
+        }
+
+        currentGroup = group;
+        document.getElementById('groupTitle').textContent = `группа ${group.name}`;
+
+        // 2. Получаем выпускников этой группы
+        const { data: graduates, error: gradError } = await sb
+            .from('graduates')
+            .select('*')
+            .eq('group_name', group.name)
+            .order('full_name');
+
+        if (gradError) throw gradError;
+
+        graduatesList = graduates || [];
+
+        // 3. Получаем распределение для этих выпускников
+        const studentIds = graduatesList.map(g => g.id).filter(Boolean);
+        let distributions = [];
+        if (studentIds.length > 0) {
+            const { data: distData, error: distError } = await sb
+                .from('graduate_distributions')
+                .select('*')
+                .in('student_id', studentIds);
+
+            if (!distError && distData) {
+                distributions = distData;
+                distributionsMap = {};
+                distributions.forEach(d => {
+                    distributionsMap[d.student_id] = d;
+                });
+            }
+        }
+
+        // 4. Получаем руководителей группы (кураторов и мастеров)
+        const { data: employees } = await sb
+            .from('employees')
+            .select('full_name, category, groups')
+            .eq('is_hidden', false);
+
+        let curators = [];
+        let masters = [];
+
+        if (employees) {
+            curators = employees
+                .filter(e => e.category === 'teachers' && Array.isArray(e.groups) && e.groups.includes(groupId))
+                .map(e => e.full_name);
+            masters = employees
+                .filter(e => e.category === 'masters' && Array.isArray(e.groups) && e.groups.includes(groupId))
+                .map(e => e.full_name);
+        }
+
+        // 5. Рендерим информацию
+        renderGroupInfo(group, graduatesList, curators, masters);
+        renderTable(graduatesList, distributionsMap);
+
+        // 6. Устанавливаем ссылку на распределение
+        document.getElementById('distributionLink').href = `/graduates/distribution.html?group_id=${groupId}`;
+
+        showToast(`✅ Загружено ${graduatesList.length} выпускников`, 'success');
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
+        document.getElementById('tableBody').innerHTML = `
+            <tr><td colspan="6">
+                <div class="empty-state">
+                    <span class="icon">❌</span>
+                    <h3>Ошибка загрузки</h3>
+                    <p style="color:var(--text-muted);">${error.message}</p>
+                    <a href="/graduates/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>
+                </div>
+            </td></tr>
+        `;
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// ОТОБРАЖЕНИЕ ИНФОРМАЦИИ О ГРУППЕ
+// ============================================================
+
+function renderGroupInfo(group, graduates, curators, masters) {
+    const year = group.date_end ? new Date(group.date_end).getFullYear() : (group.date_start ? new Date(group.date_start).getFullYear() : '—');
+    const specialty = group.specialty ? (Array.isArray(group.specialty) ? group.specialty.join(', ') : group.specialty) : '—';
+    const qualification = group.qualification ? (Array.isArray(group.qualification) ? group.qualification.join(', ') : group.qualification) : '—';
+
+    document.getElementById('groupName').textContent = group.name;
+    document.getElementById('groupType').textContent = getTypeLabel(group.type);
+    document.getElementById('graduationYear').textContent = String(year);
+    document.getElementById('studentCount').textContent = graduates.length;
+    document.getElementById('specialtyName').textContent = specialty;
+    document.getElementById('qualificationName').textContent = qualification;
+
+    document.getElementById('curatorsList').textContent = curators.length > 0 ? curators.join(', ') : '—';
+    document.getElementById('mastersList').textContent = masters.length > 0 ? masters.join(', ') : '—';
+}
+
+// ============================================================
+// ОТОБРАЖЕНИЕ ТАБЛИЦЫ
+// ============================================================
+
+function renderTable(graduates, distributionsMap) {
+    const tbody = document.getElementById('tableBody');
+
+    if (!graduates || graduates.length === 0) {
+        tbody.innerHTML = `
+            <tr><td colspan="6">
+                <div class="empty-state">
+                    <span class="icon">📭</span>
+                    <h3>Нет выпускников</h3>
+                    <p style="color:var(--text-muted);">В этой группе пока нет выпускников</p>
+                </div>
+            </td></tr>
+        `;
+        return;
+    }
+
+    let html = '';
+    graduates.forEach((s, index) => {
+        let status = 'graduated';
+        if (s.expulsion_date && !s.restoration_date) {
+            status = 'expelled';
+        }
+        if (s.academic_leave_date && !s.academic_restore_date) {
+            status = 'academic';
+        }
+        if (s.expulsion_date && s.restoration_date) {
+            status = 'graduated';
+        }
+        if (s.academic_leave_date && s.academic_restore_date) {
+            status = 'graduated';
+        }
+
+        const statusLabel = getStatusLabel(status);
+        const statusClass = getStatusClass(status);
+        const totalAvg = calculateTotalAverage(s);
+        const avgDisplay = totalAvg !== null ? totalAvg.toFixed(1).replace('.', ',') : '—';
+
+        const dist = distributionsMap[s.id];
+        const orgName = dist?.organization_name || '—';
+
+        html += `
+            <tr onclick="viewGraduate('${s.id}')">
+                <td>${index + 1}.</td>
+                <td><span class="student-name">${s.full_name}</span></td>
+                <td><span class="status-badge-small ${statusClass}">${statusLabel}</span></td>
+                <td>${s.phone || '—'}</td>
+                <td>${avgDisplay}</td>
+                <td>${orgName}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// ЗАГРУЗКА РОДИТЕЛЕЙ И БРАТЬЕВ/СЁСТЕР ДЛЯ ВЫПУСКНИКА
+// ============================================================
+
+async function loadParentsAndSiblings(studentId) {
+    try {
+        // Загружаем родителей
+        const { data: parentLinks } = await sb
+            .from('student_parents')
+            .select('parent_id')
+            .eq('student_id', studentId);
+
+        let parents = [];
+        if (parentLinks && parentLinks.length > 0) {
+            const parentIds = parentLinks.map(l => l.parent_id);
+            const { data: parentsData } = await sb
+                .from('parents')
+                .select('*')
+                .in('id', parentIds);
+            if (parentsData) parents = parentsData;
+        }
+
+        // Загружаем братьев/сестёр
+        const { data: siblingLinks } = await sb
+            .from('student_siblings')
+            .select('sibling_id')
+            .eq('student_id', studentId);
+
+        let siblings = [];
+        if (siblingLinks && siblingLinks.length > 0) {
+            const siblingIds = siblingLinks.map(l => l.sibling_id);
+            const { data: siblingsData } = await sb
+                .from('siblings')
+                .select('*')
+                .in('id', siblingIds);
+            if (siblingsData) siblings = siblingsData;
+        }
+
+        return { parents, siblings };
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки родственников:', error);
+        return { parents: [], siblings: [] };
+    }
+}
+
+// ============================================================
+// ПРОСМОТР КАРТОЧКИ ВЫПУСКНИКА (МОДАЛЬНОЕ ОКНО)
+// ============================================================
+
+async function viewGraduate(id) {
+    try {
+        // Ищем выпускника в уже загруженном списке
+        let graduate = graduatesList.find(g => g.id === id);
+        
+        if (!graduate) {
+            const { data: g, error } = await sb
+                .from('graduates')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error || !g) {
+                showToast('❌ Запись не найдена', 'error');
+                return;
+            }
+            graduate = g;
+        }
+
+        // Загружаем распределение
+        const { data: distributions } = await sb
+            .from('graduate_distributions')
+            .select('*')
+            .eq('student_id', id);
+
+        // Загружаем родителей и братьев/сестёр
+        const { parents, siblings } = await loadParentsAndSiblings(id);
+
+        // Формируем HTML для родителей
+        let parentsHtml = '';
+        if (parents && parents.length > 0) {
+            parentsHtml = parents.map(p => `
+                <div class="related-card-small">
+                    <div class="name">${p.full_name}</div>
+                    <div class="info">
+                        ${p.relation ? `<span class="badge-type">${p.relation}</span>` : ''}
+                        ${p.birth_date ? ` • ${formatDateFull(p.birth_date)} (${calculateAge(p.birth_date)} лет)` : ''}
+                        ${p.marital_status ? ` • ${p.marital_status}` : ''}
+                        ${p.work_place ? ` • 🏢 ${p.work_place}` : ''}
+                        ${p.phone ? ` • 📱 ${p.phone}` : ''}
+                        ${p.address ? ` • 📍 ${p.address}` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            parentsHtml = '<span style="color:var(--text-muted);font-size:13px;">Нет данных</span>';
+        }
+
+        // Формируем HTML для братьев/сестёр
+        let siblingsHtml = '';
+        if (siblings && siblings.length > 0) {
+            siblingsHtml = siblings.map(s => `
+                <div class="related-card-small">
+                    <div class="name">${s.full_name}</div>
+                    <div class="info">
+                        ${s.type ? `<span class="badge-type">${s.type}</span>` : ''}
+                        ${s.birth_date ? ` • ${formatDateFull(s.birth_date)} (${calculateAge(s.birth_date)} лет)` : ''}
+                        ${s.study_work ? ` • 📚 ${s.study_work}` : ''}
+                        ${s.address ? ` • 📍 ${s.address}` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            siblingsHtml = '<span style="color:var(--text-muted);font-size:13px;">Нет данных</span>';
+        }
+
+        const birthDate = graduate.birth_date ? formatDateFull(graduate.birth_date) : '—';
+        const age = graduate.birth_date ? calculateAge(graduate.birth_date) : '—';
+        const genderLabel = getGenderLabel(graduate.gender);
+
+        let status = 'Выпускник';
+        if (graduate.expulsion_date && !graduate.restoration_date) {
+            status = '❌ Отчислен';
+        }
+        if (graduate.academic_leave_date && !graduate.academic_restore_date) {
+            status = '📚 Академ. отпуск';
+        }
+
+        const type = graduate.type || 'pto';
+        const maxCourse = getMaxCourse(type);
+        let gradesHtml = '';
+        let totalAvg = calculateTotalAverage(graduate);
+        
+        for (let course = 1; course <= maxCourse; course++) {
+            const sem1 = graduate[`grade_${course}_sem1`];
+            const sem2 = graduate[`grade_${course}_sem2`];
+            const year = graduate[`grade_${course}_year`];
+            gradesHtml += `
+                <div class="info-item">
+                    <span class="label">📘 ${course} курс</span>
+                    <span class="value">
+                        1 полугодие: ${formatGrade(sem1)} | 2 полугодие: ${formatGrade(sem2)} | <strong>год: ${formatGrade(year)}</strong>
+                    </span>
+                </div>
+            `;
+        }
+
+        let distHtml = '';
+        if (distributions && distributions.length > 0) {
+            distHtml = `
+                <div class="info-item" style="grid-column:1/-1;">
+                    <span class="label">🏢 Распределение</span>
+                    <span class="value">
+                        ${distributions.map(d => `
+                            <div class="distribution-card">
+                                <div class="org-name">${d.organization_name || '—'}</div>
+                                ${d.organization_address ? `<div style="font-size:12px;color:var(--text-secondary);">📍 ${d.organization_address}</div>` : ''}
+                                ${d.notes ? `<div style="font-size:12px;color:var(--text-secondary);">📝 ${d.notes}</div>` : ''}
+                            </div>
+                        `).join('')}
+                    </span>
+                </div>
+            `;
+        }
+
+        const modalBody = document.getElementById('modalBody');
+        modalBody.innerHTML = `
+            <div class="graduate-card">
+                <div class="name">${graduate.full_name}</div>
+                <div class="sub">
+                    <span style="font-weight:600;">${status}</span>
+                    <span class="badge-type ${getTypeBadge(graduate.type)}">${getTypeLabel(graduate.type)}</span>
+                    ${graduate.group_name ? ` • Группа: ${graduate.group_name}` : ''}
+                    ${graduate.graduation_year ? ` • Выпуск: ${graduate.graduation_year}` : ''}
+                    ${totalAvg !== null ? ` • 📊 <strong>Средний балл: ${totalAvg.toFixed(1).replace('.', ',')}</strong>` : ''}
+                </div>
+                <hr style="margin:12px 0;border-color:var(--border);">
+                <div class="info-grid">
+                    <div class="info-item"><span class="label">📅 Дата рождения</span><span class="value">${birthDate} (${age} лет)</span></div>
+                    <div class="info-item"><span class="label">📱 Телефон</span><span class="value">${graduate.phone || '—'}</span></div>
+                    <div class="info-item"><span class="label">🧑‍🤝‍🧑 Пол</span><span class="value">${genderLabel}</span></div>
+                    <div class="info-item"><span class="label">🌍 Гражданство</span><span class="value">${graduate.citizenship || '—'}</span></div>
+                    <div class="info-item"><span class="label">📊 Средний балл аттестата</span><span class="value">${formatGrade(graduate.avg_grade)}</span></div>
+                    <div class="info-item"><span class="label">🏫 Школа</span><span class="value">${graduate.school || '—'} ${graduate.school_year ? `(${graduate.school_year} г.)` : ''}</span></div>
+                    <div class="info-item"><span class="label">📚 Класс</span><span class="value">${graduate.school_class || '—'}</span></div>
+                    <div class="info-item"><span class="label">📍 Адрес регистрации</span><span class="value">${graduate.address_reg || '—'}</span></div>
+                    <div class="info-item"><span class="label">📍 Адрес проживания</span><span class="value">${graduate.address_live || '—'}</span></div>
+                    <div class="info-item"><span class="label">📌 Область</span><span class="value">${graduate.address_region || '—'}</span></div>
+                    <div class="info-item"><span class="label">📌 Район</span><span class="value">${graduate.address_district || '—'}</span></div>
+                    <div class="info-item"><span class="label">📌 Населённый пункт</span><span class="value">${graduate.address_locality || '—'}</span></div>
+                    <div class="info-item"><span class="label">📋 Учёт</span><span class="value">${graduate.accounting_type ? graduate.accounting_type.join(', ') : '—'}</span></div>
+                    ${graduate.target_training ? `
+                    <div class="info-item" style="grid-column:1/-1;background:#F0FDF4;padding:8px 12px;border-radius:var(--border-radius);border:1px solid #86EFAC;">
+                        <span class="label">🎯 Целевое обучение</span>
+                        <span class="value">
+                            <strong>Заказчик:</strong> ${graduate.target_customer || '—'} | 
+                            <strong>№ договора:</strong> ${graduate.target_contract || '—'} | 
+                            <strong>Срок:</strong> ${graduate.target_years ? graduate.target_years + ' лет' : '—'}
+                        </span>
+                    </div>
+                    ` : ''}
+                    ${gradesHtml}
+                    ${distHtml}
+                    <!-- РОДИТЕЛИ -->
+                    <div class="info-item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;padding:8px 0;border-bottom:1px solid var(--border);">
+                        <span class="label" style="width:100%;margin-bottom:8px;">👨‍👩‍👦 Родители</span>
+                        <span class="value" style="width:100%;">
+                            ${parentsHtml}
+                        </span>
+                    </div>
+                    <!-- БРАТЬЯ/СЁСТРЫ -->
+                    <div class="info-item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;padding:8px 0;border-bottom:1px solid var(--border);">
+                        <span class="label" style="width:100%;margin-bottom:8px;">👨‍👧‍👦 Братья и сёстры</span>
+                        <span class="value" style="width:100%;">
+                            ${siblingsHtml}
+                        </span>
+                    </div>
+                    <div class="info-item"><span class="label">📅 Дата записи</span><span class="value">${formatDateFull(graduate.created_at)}</span></div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('graduateModal').classList.add('active');
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки карточки:', error);
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА
+// ============================================================
+
+function closeModal() {
+    document.getElementById('graduateModal').classList.remove('active');
+}
+
+document.getElementById('modalCloseBtn').onclick = closeModal;
+document.getElementById('modalCancelBtn').onclick = closeModal;
+document.getElementById('graduateModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// ============================================================
+// ЭКСПОРТ В PDF
+// ============================================================
+
+document.getElementById('exportPdfBtn').onclick = function() {
+    if (!currentGroup) {
+        showToast('❌ Нет данных для экспорта', 'error');
+        return;
+    }
+    const btn = this;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+    const el = document.getElementById('pdfContent');
+    html2pdf().set({
+        margin: [10,10,10,10],
+        filename: `Группа_${currentGroup?.name || 'группа'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    }).from(el).save().then(() => {
+        btn.innerHTML = '📄 Экспорт в PDF';
+        btn.disabled = false;
+        showToast('✅ PDF готов');
+    }).catch((err) => { 
+        console.error(err);
+        btn.innerHTML = '📄 Экспорт в PDF'; 
+        btn.disabled = false; 
+        showToast('❌ Ошибка PDF', 'error');
+    });
+};
+
+document.getElementById('exportPdfBtnBottom').onclick = document.getElementById('exportPdfBtn').onclick;
+
+// ============================================================
+// МОБИЛЬНОЕ МЕНЮ
+// ============================================================
+
+document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+window.onresize = () => {
+    if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+    else { document.getElementById('menuToggle').style.display = 'none'; document.getElementById('sidebar').classList.remove('open'); }
+};
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+
+loadUser();
+loadGroupData();
+</script>
+
+</body>
+</html>

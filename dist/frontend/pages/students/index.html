@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Группы | vgatk_bd</title>
+    
+    <!-- ===== FAVICON ===== -->
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    
+    <!-- ===== ШРИФТЫ ===== -->
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    
+    <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
+    <link rel="stylesheet" href="/css/components.css">
+    
+    <!-- ===== SUPABASE ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        /* ===== ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ГРУПП ===== */
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .page-title small {
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .type-section {
+            margin-bottom: 32px;
+        }
+
+        .type-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .type-header .icon {
+            font-size: 28px;
+        }
+
+        .type-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .type-header .count {
+            font-size: 14px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 12px;
+            border-radius: 20px;
+        }
+
+        .year-block {
+            margin-bottom: 16px;
+        }
+
+        .year-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
+            border: 1px solid var(--border);
+        }
+
+        .year-header:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: var(--primary-light);
+        }
+
+        .year-header .year-label {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .year-header .year-count {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .year-header .arrow {
+            font-size: 14px;
+            color: var(--text-muted);
+            transition: transform 0.3s;
+            margin-left: auto;
+        }
+
+        .year-header .arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .year-groups {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            padding: 12px 0 12px 16px;
+        }
+
+        .year-groups.hidden {
+            display: none;
+        }
+
+        .group-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            padding: 16px 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .group-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-light);
+        }
+
+        .group-card .group-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .group-card .group-name:hover {
+            text-decoration: underline;
+        }
+
+        .group-card .group-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 4px 0 8px;
+        }
+
+        .group-card .group-students {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .group-card .group-footer {
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group-card .group-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-xl);
+            padding: 32px;
+            max-width: 450px;
+            width: 95%;
+            box-shadow: var(--shadow-modal);
+            animation: slideUp 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 8px 0 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 2px solid var(--border);
+        }
+
+        .modal-body .warning {
+            color: var(--danger);
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .modal-body .info {
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        /* ===== TOAST УВЕДОМЛЕНИЯ ===== */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .toast-notification {
+            padding: 14px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+            box-shadow: var(--shadow-modal);
+            animation: slideUp 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .toast-success {
+            background: var(--success);
+        }
+
+        .toast-error {
+            background: var(--danger);
+        }
+
+        .toast-info {
+            background: var(--primary-light);
+        }
+
+        .toast-notification .toast-close {
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.7;
+            transition: var(--transition);
+            background: none;
+            border: none;
+            color: white;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .toast-notification .toast-close:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .toast-notification .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            animation: toastProgress 4s linear forwards;
+        }
+
+        @keyframes toastProgress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        .toast-notification {
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .year-groups { grid-template-columns: 1fr 1fr; padding-left: 0; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; }
+            .page-title { font-size: 20px; }
+            .toast-container { left: 16px; right: 16px; top: 80px; max-width: none; }
+        }
+
+        @media (max-width: 480px) {
+            .year-groups { grid-template-columns: 1fr; }
+            .search-bar { flex-direction: column; }
+            .search-bar input { width: 100%; }
+            .group-card { padding: 12px; }
+            .header-actions .btn { font-size: 11px; padding: 6px 12px; }
+            .page-title { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header">
+    <div class="header-logo">
+        <span class="college-name">
+            <h2>Учреждение образования<br>
+            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html" class="active"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📚 Группы <small>учебные группы</small></h1>
+            </div>
+            <button class="btn btn-success" id="createGroupBtn">➕ Создать группу</button>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Поиск по названию группы...">
+            <button class="btn btn-secondary" id="clearSearchBtn">Сбросить</button>
+        </div>
+
+        <div id="groupsContainer">
+            <div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div>
+        </div>
+
+    </div>
+</main>
+
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">⚠️ Подтверждение удаления</h2>
+            <button class="modal-close" id="confirmModalClose">&times;</button>
+        </div>
+        <div class="modal-body" id="confirmModalBody">
+            <div class="warning">❗ Внимание!</div>
+            <div class="info" id="confirmMessage">Вы уверены, что хотите удалить эту группу?</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="confirmCancelBtn">Отмена</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">🗑️ Удалить</button>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+   SCRIPT — ИСПОЛЬЗУЕМ ТОЛЬКО ОДИН РАЗ!
+   components.js уже создал window.supabaseClient
+   ============================================================ -->
+<script src="/js/components.js"></script>
+
+<script>
+// ============================================================
+// НЕ СОЗДАЁМ НОВЫЙ supabase — ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ!
+// components.js уже создал window.supabaseClient
+// ============================================================
+
+// Проверяем, что supabaseClient доступен
+if (typeof window.supabaseClient === 'undefined') {
+    console.warn('⚠️ components.js не загружен, создаём supabaseClient локально');
+    window.supabaseClient = window.supabase.createClient(
+        'https://selbolepupendprhixas.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+    );
+}
+
+// БЕРЁМ ГОТОВЫЙ КЛИЕНТ, НЕ СОЗДАЁМ НОВЫЙ!
+console.log('✅ Supabase готов к использованию');
+
+// ============================================================
+// TOAST УВЕДОМЛЕНИЯ (АВТОМАТИЧЕСКИ ИСЧЕЗАЮТ)
+// ============================================================
+
+function showToast(message, type = 'success', duration = 4000) {
+    // Удаляем старые тосты
+    const existingContainer = document.querySelector('.toast-container');
+    if (!existingContainer) {
+        const container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    
+    const container = document.querySelector('.toast-container');
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `
+        <span>${message}</span>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+        <div class="toast-progress"></div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Автоматическое удаление через duration
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 300);
+        }
+    }, duration);
+}
+
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+
+let currentUser = null;
+let groupToDelete = null;
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ
+// ============================================================
+
+function loadUser() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) { window.location.href = '/index.html'; return; }
+    try {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+    }
+}
+
+document.getElementById('logoutBtn').onclick = () => {
+    localStorage.removeItem('currentUser');
+    window.location.href = '/index.html';
+};
+
+// ============================================================
+// ФУНКЦИИ
+// ============================================================
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getTypeBadge(type) {
+    return type === 'sso' ? 'badge-sso' : 'badge-pto';
+}
+
+function getGroupYear(dateStart) {
+    if (!dateStart) return '—';
+    return new Date(dateStart).getFullYear();
+}
+
+// ============================================================
+// ЗАГРУЗКА ГРУПП
+// ============================================================
+
+async function loadGroups() {
+    const container = document.getElementById('groupsContainer');
+
+    try {
+        const { data: groups, error } = await window.supabaseClient
+            .from('groups')
+            .select('*')
+            .eq('is_archived', false)
+            .order('date_start', { ascending: true });
+
+        if (error) throw error;
+
+        if (!groups || groups.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">📭</span>
+                    <p>Нет групп</p>
+                    <p style="font-size:13px;color:var(--text-muted);">Нажмите "Создать группу"</p>
+                </div>
+            `;
+            return;
+        }
+
+        const { data: students, error: studentsError } = await window.supabaseClient
+            .from('students')
+            .select('group_id, status');
+
+        if (studentsError) throw studentsError;
+
+        const studentCounts = {};
+        students.forEach(s => {
+            if (s.status === 'active') {
+                studentCounts[s.group_id] = (studentCounts[s.group_id] || 0) + 1;
+            }
+        });
+
+        const search = document.getElementById('searchInput').value.toLowerCase().trim();
+        let filtered = groups;
+        if (search) {
+            filtered = filtered.filter(g => g.name.toLowerCase().includes(search));
+        }
+
+        const ssoGroups = filtered.filter(g => g.type === 'sso');
+        const ptoGroups = filtered.filter(g => g.type === 'pto');
+
+        let html = '';
+        html += renderTypeSection('ССО', '🎓', ssoGroups, studentCounts);
+        html += renderTypeSection('ПТО', '🔧', ptoGroups, studentCounts);
+
+        container.innerHTML = html;
+
+        document.querySelectorAll('.year-header').forEach(header => {
+            header.onclick = () => {
+                const groupsBlock = header.nextElementSibling;
+                const arrow = header.querySelector('.arrow');
+                if (groupsBlock) {
+                    groupsBlock.classList.toggle('hidden');
+                    if (arrow) arrow.classList.toggle('open');
+                }
+            };
+        });
+
+        document.querySelectorAll('.delete-group-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const groupId = btn.dataset.id;
+                const groupName = btn.dataset.name;
+                showDeleteConfirm(groupId, groupName);
+            };
+        });
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки групп:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <span class="icon">❌</span>
+                <p>Ошибка загрузки</p>
+                <p style="font-size:13px;color:var(--text-muted);">${error.message}</p>
+            </div>
+        `;
+        showToast('❌ Ошибка загрузки групп: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// РЕНДЕРИНГ СЕКЦИИ ПО ТИПУ
+// ============================================================
+
+function renderTypeSection(title, icon, groups, studentCounts) {
+    if (groups.length === 0) {
+        return `
+            <div class="type-section">
+                <div class="type-header">
+                    <span class="icon">${icon}</span>
+                    <h2>${title}</h2>
+                    <span class="count">0 групп</span>
+                </div>
+                <div class="empty-state" style="padding:20px;">
+                    <p style="font-size:14px;">Нет групп</p>
+                </div>
+            </div>
+        `;
+    }
+
+    const yearMap = {};
+    groups.forEach(g => {
+        const year = getGroupYear(g.date_start);
+        if (!yearMap[year]) yearMap[year] = [];
+        yearMap[year].push(g);
+    });
+
+    const sortedYears = Object.keys(yearMap).sort((a, b) => b - a);
+
+    let html = `
+        <div class="type-section">
+            <div class="type-header">
+                <span class="icon">${icon}</span>
+                <h2>${title}</h2>
+                <span class="count">${groups.length} групп</span>
+            </div>
+    `;
+
+    sortedYears.forEach(year => {
+        const yearGroups = yearMap[year];
+        html += `
+            <div class="year-block">
+                <div class="year-header">
+                    <span class="year-label">📅 ${year} год</span>
+                    <span class="year-count">(${yearGroups.length} групп)</span>
+                    <span class="arrow open">▶</span>
+                </div>
+                <div class="year-groups">
+        `;
+
+        yearGroups.forEach(g => {
+            const count = studentCounts[g.id] || 0;
+            const typeLabel = getTypeLabel(g.type);
+            const typeBadge = getTypeBadge(g.type);
+            const period = g.date_start && g.date_end ? `${formatDate(g.date_start)} — ${formatDate(g.date_end)}` : '';
+
+            html += `
+                <div class="group-card">
+                    <a href="/students/group.html?id=${g.id}" class="group-name">${g.name}</a>
+                    <div class="group-meta">
+                        <span class="badge-type ${typeBadge}">${typeLabel}</span>
+                        ${period ? ` • ${period}` : ''}
+                    </div>
+                    <div class="group-students">👨‍🎓 ${count} учащихся</div>
+                    <div class="group-footer">
+                        <span>${g.specialty ? (Array.isArray(g.specialty) ? g.specialty[0] || '—' : g.specialty) || '—' : '—'}</span>
+                        <div class="group-actions">
+                            <button class="btn btn-danger btn-xs delete-group-btn" data-id="${g.id}" data-name="${g.name}">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+            </div>
+        `;
+    });
+
+    html += `</div>`;
+    return html;
+}
+
+// ============================================================
+// ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ
+// ============================================================
+
+function showDeleteConfirm(groupId, groupName) {
+    groupToDelete = groupId;
+    document.getElementById('confirmMessage').textContent = `Вы уверены, что хотите удалить группу "${groupName}"?`;
+    document.getElementById('confirmModal').classList.add('active');
+}
+
+async function confirmDelete() {
+    if (!groupToDelete) return;
+
+    try {
+        const { data: students, error: checkError } = await window.supabaseClient
+            .from('students')
+            .select('id')
+            .eq('group_id', groupToDelete)
+            .eq('status', 'active');
+
+        if (checkError) throw checkError;
+
+        if (students && students.length > 0) {
+            showToast(`❌ Нельзя удалить группу, в которой есть активные студенты (${students.length} чел.)`, 'error');
+            closeConfirmModal();
+            return;
+        }
+
+        const { error } = await window.supabaseClient
+            .from('groups')
+            .delete()
+            .eq('id', groupToDelete);
+
+        if (error) throw error;
+
+        showToast('✅ Группа успешно удалена', 'success');
+        closeConfirmModal();
+        loadGroups();
+
+    } catch (error) {
+        console.error('❌ Ошибка удаления:', error);
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+    groupToDelete = null;
+}
+
+// ============================================================
+// ОБРАБОТЧИКИ
+// ============================================================
+
+document.getElementById('confirmDeleteBtn').onclick = confirmDelete;
+document.getElementById('confirmCancelBtn').onclick = closeConfirmModal;
+document.getElementById('confirmModalClose').onclick = closeConfirmModal;
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+    if (e.target === this) closeConfirmModal();
+});
+
+document.getElementById('searchInput').addEventListener('input', loadGroups);
+document.getElementById('clearSearchBtn').onclick = () => {
+    document.getElementById('searchInput').value = '';
+    loadGroups();
+};
+
+document.getElementById('createGroupBtn').onclick = () => {
+    window.location.href = '/students/create-group.html';
+};
+
+// ============================================================
+// МОБИЛЬНОЕ МЕНЮ
+// ============================================================
+
+document.getElementById('menuToggle').onclick = () => {
+    document.getElementById('sidebar').classList.toggle('open');
+};
+
+if (window.innerWidth <= 768) {
+    document.getElementById('menuToggle').style.display = 'inline-block';
+}
+
+window.onresize = () => {
+    if (window.innerWidth <= 768) {
+        document.getElementById('menuToggle').style.display = 'inline-block';
+    } else {
+        document.getElementById('menuToggle').style.display = 'none';
+        document.getElementById('sidebar').classList.remove('open');
+    }
+};
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+
+loadUser();
+loadGroups();
+</script>
+
+</body>
+</html>

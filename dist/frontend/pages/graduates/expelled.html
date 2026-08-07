@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчисленные студенты | vgatk_bd</title>
+    
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+        .header-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-box { background: var(--bg-card); padding: 16px 20px; border-radius: var(--border-radius-lg); border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow); transition: var(--transition); }
+        .stat-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+        .stat-box .number { font-size: 28px; font-weight: 700; color: var(--danger); }
+        .stat-box .label { font-size: 13px; color: var(--text-muted); }
+
+        .filters-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .filters-bar select, .filters-bar input { padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; background: var(--bg-card); transition: var(--transition); }
+        .filters-bar select:focus, .filters-bar input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .filters-bar input { flex: 1; min-width: 200px; }
+
+        .badge-type { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .badge-sso { background: #D6EAF8; color: #1A5276; }
+        .badge-pto { background: #FDEBD0; color: #7E5109; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 64px; display: block; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 20px; color: var(--text-primary); margin-bottom: 8px; }
+
+        .student-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            padding: 16px 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            cursor: pointer;
+        }
+        .student-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--danger);
+        }
+        .student-card .student-info { display: flex; flex-direction: column; gap: 4px; }
+        .student-card .student-name { font-weight: 700; font-size: 18px; color: var(--primary); }
+        .student-card .student-details { font-size: 13px; color: var(--text-secondary); }
+        .student-card .student-status { font-weight: 600; color: var(--danger); }
+        .student-card .student-actions { display: flex; gap: 6px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-modal); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+        .modal-title { font-size: 22px; font-weight: 700; color: var(--danger); }
+        .modal-close { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-muted); transition: var(--transition); line-height: 1; }
+        .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
+        .modal-body { padding: 8px 0 20px; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 2px solid var(--border); }
+
+        .student-full-card { padding: 8px 0; }
+        .student-full-card .name { font-size: 22px; font-weight: 700; color: var(--primary); }
+        .student-full-card .sub { color: var(--text-secondary); margin: 4px 0 12px; }
+        .student-full-card .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+        .student-full-card .info-item { display: flex; padding: 4px 0; border-bottom: 1px solid var(--border); }
+        .student-full-card .info-item .label { font-weight: 600; color: var(--text-secondary); width: 140px; flex-shrink: 0; }
+        .student-full-card .info-item .value { color: var(--text-primary); }
+        .student-full-card .expulsion-info { background: #FEF2F2; padding: 12px 16px; border-radius: var(--border-radius); border: 1px solid #FECACA; margin: 8px 0; }
+
+        .toast-notification {
+            position: fixed; top: 80px; right: 20px; padding: 16px 24px;
+            border-radius: var(--border-radius); color: white; font-weight: 600;
+            z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px;
+            box-shadow: var(--shadow-modal);
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        .btn-restore { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; }
+        .btn-restore:hover { transform: translateY(-2px); }
+
+        .year-block { margin-bottom: 16px; }
+        .year-header { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: rgba(255, 255, 255, 0.8); border-radius: var(--border-radius); cursor: pointer; user-select: none; transition: var(--transition); border: 1px solid var(--border); }
+        .year-header:hover { background: rgba(255, 255, 255, 0.95); border-color: var(--danger); }
+        .year-header .year-label { font-weight: 600; font-size: 15px; color: var(--text-secondary); }
+        .year-header .year-count { font-size: 13px; color: var(--text-muted); }
+        .year-header .arrow { font-size: 14px; color: var(--text-muted); transition: transform 0.3s; margin-left: auto; }
+        .year-header .arrow.open { transform: rotate(90deg); }
+
+        .students-grid { display: grid; grid-template-columns: 1fr; gap: 12px; padding: 12px 0; }
+        .students-grid.hidden { display: none; }
+
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .filters-bar { flex-direction: column; }
+            .filters-bar input { width: 100%; }
+            .filters-bar select { width: 100%; }
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; }
+            .page-title { font-size: 20px; }
+            .toast-notification { left: 20px; right: 20px; top: 80px; }
+            .student-card { flex-direction: column; align-items: stretch; }
+            .student-card .student-actions { justify-content: center; }
+            .student-full-card .info-grid { grid-template-columns: 1fr; }
+            .student-full-card .info-item .label { width: 100px; }
+            .modal { padding: 20px; }
+        }
+        @media (max-width: 480px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .page-title { font-size: 18px; }
+            .header-actions .btn { font-size: 11px; padding: 6px 10px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-logo">
+        <span class="college-name">
+            <h2>Учреждение образования<br>
+            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<aside class="sidebar" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html" class="active"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">❌ Отчисленные студенты <small>архив</small></h1>
+            </div>
+            <div class="header-actions">
+                <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+                <button class="btn btn-success" id="exportBtn">📥 Экспорт в Excel</button>
+            </div>
+        </div>
+
+        <div class="stats-row" id="statsRow">
+            <div class="stat-box">
+                <div class="number" id="totalCount">0</div>
+                <div class="label">Всего отчисленных</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="ssoCount" style="color: var(--primary-light);">0</div>
+                <div class="label">🎓 ССО</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="ptoCount" style="color: var(--warning);">0</div>
+                <div class="label">🔧 ПТО</div>
+            </div>
+            <div class="stat-box">
+                <div class="number" id="groupsCount" style="color: var(--primary);">0</div>
+                <div class="label">📁 Групп</div>
+            </div>
+        </div>
+
+        <div class="filters-bar">
+            <select id="typeFilter">
+                <option value="all">Все типы</option>
+                <option value="sso">🎓 ССО</option>
+                <option value="pto">🔧 ПТО</option>
+            </select>
+            <select id="yearFilter">
+                <option value="all">Все годы</option>
+            </select>
+            <input type="text" id="searchInput" placeholder="🔍 Поиск по ФИО...">
+            <button class="btn btn-secondary" id="clearFiltersBtn">Сбросить</button>
+        </div>
+
+        <div id="studentsContainer">
+            <div class="empty-state"><span class="icon">⏳</span><h3>Загрузка...</h3></div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ===== МОДАЛЬНОЕ ОКНО ===== -->
+<div class="modal-overlay" id="studentModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">❌ Карточка отчисленного</h2>
+            <button class="modal-close" id="modalCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="modalCancelBtn">Закрыть</button>
+            <button class="btn btn-restore" id="restoreBtn" style="display:none;">🔄 Восстановить</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/components.js"></script>
+
+<script>
+if (typeof window.supabaseClient === 'undefined') {
+    window.supabaseClient = window.supabase.createClient(
+        'https://selbolepupendprhixas.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+    );
+}
+const sb = window.supabaseClient;
+
+let currentUser = null;
+let hasEditRights = false;
+let allStudents = [];
+let currentStudentId = null;
+
+function showToast(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+function loadUser() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) { window.location.href = '/index.html'; return; }
+    try {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+        hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
+    } catch (e) { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
+}
+document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; };
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatDateFull(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getTypeBadge(type) {
+    return type === 'sso' ? 'badge-sso' : 'badge-pto';
+}
+
+function getGenderLabel(gender) {
+    if (gender === 'male') return 'Мужской';
+    if (gender === 'female') return 'Женский';
+    return gender || '—';
+}
+
+function calculateAge(birthDate) {
+    if (!birthDate) return '—';
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+}
+
+function formatGrade(value) {
+    if (value === null || value === undefined || value === '') return '—';
+    const num = parseFloat(value);
+    if (isNaN(num)) return '—';
+    return num.toFixed(1).replace('.', ',');
+}
+
+function getMaxCourse(type) {
+    return type === 'sso' ? 4 : 3;
+}
+
+function calculateTotalAverage(student) {
+    if (!student) return null;
+    const type = student.type || 'pto';
+    const maxCourse = getMaxCourse(type);
+    
+    let grades = [];
+    for (let course = 1; course <= maxCourse; course++) {
+        const year = student[`grade_${course}_year`];
+        if (year !== null && year !== undefined && year !== '') {
+            const num = parseFloat(year);
+            if (!isNaN(num) && num >= 0 && num <= 10) {
+                grades.push(num);
+            }
+        }
+    }
+    
+    if (grades.length === 0) return null;
+    const sum = grades.reduce((a, b) => a + b, 0);
+    const avg = sum / grades.length;
+    return Math.ceil(avg * 10) / 10;
+}
+
+async function loadStudents() {
+    const container = document.getElementById('studentsContainer');
+    const typeFilter = document.getElementById('typeFilter').value;
+    const yearFilter = document.getElementById('yearFilter').value;
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    try {
+        const { data: students, error } = await sb
+            .from('expelled_students')
+            .select('*')
+            .order('full_name');
+
+        if (error) throw error;
+
+        allStudents = students || [];
+
+        // Применяем фильтры
+        let filtered = allStudents;
+
+        if (typeFilter !== 'all') {
+            filtered = filtered.filter(s => s.type === typeFilter);
+        }
+
+        if (yearFilter !== 'all') {
+            filtered = filtered.filter(s => {
+                if (s.expulsion_date) {
+                    return new Date(s.expulsion_date).getFullYear().toString() === yearFilter;
+                }
+                return false;
+            });
+        }
+
+        if (search) {
+            filtered = filtered.filter(s => 
+                s.full_name.toLowerCase().includes(search)
+            );
+        }
+
+        updateStats(allStudents);
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">📭</span>
+                    <h3>Нет отчисленных студентов</h3>
+                    <p style="color:var(--text-muted);">Студенты, отчисленные из колледжа, появятся здесь</p>
+                </div>
+            `;
+            loadYearsFilter(allStudents);
+            return;
+        }
+
+        // Группируем по году отчисления
+        const yearMap = {};
+        filtered.forEach(s => {
+            const year = s.expulsion_date ? new Date(s.expulsion_date).getFullYear().toString() : '—';
+            if (!yearMap[year]) yearMap[year] = [];
+            yearMap[year].push(s);
+        });
+
+        const sortedYears = Object.keys(yearMap).sort((a, b) => {
+            if (a === '—') return 1;
+            if (b === '—') return -1;
+            return parseInt(b) - parseInt(a);
+        });
+
+        let html = '';
+
+        sortedYears.forEach(year => {
+            const students = yearMap[year];
+            
+            html += `
+                <div class="year-block">
+                    <div class="year-header" onclick="toggleYear(this)">
+                        <span class="year-label">📅 ${year} год</span>
+                        <span class="year-count">(${students.length} чел.)</span>
+                        <span class="arrow">▶</span>
+                    </div>
+                    <div class="students-grid hidden">
+            `;
+
+            students.forEach((s, index) => {
+                const typeLabel = getTypeLabel(s.type);
+                const typeBadge = getTypeBadge(s.type);
+                const totalAvg = calculateTotalAverage(s);
+                const avgDisplay = totalAvg !== null ? totalAvg.toFixed(1).replace('.', ',') : '—';
+
+                html += `
+                    <div class="student-card" onclick="viewStudent('${s.id}')">
+                        <div class="student-info">
+                            <div class="student-name">${index + 1}. ${s.full_name}</div>
+                            <div class="student-details">
+                                <span class="badge-type ${typeBadge}">${typeLabel}</span>
+                                ${s.group_name ? ` • Группа: ${s.group_name}` : ''}
+                                ${s.expulsion_date ? ` • Отчислен: ${formatDate(s.expulsion_date)}` : ''}
+                                ${avgDisplay !== '—' ? ` • 📊 ${avgDisplay}` : ''}
+                            </div>
+                        </div>
+                        <div class="student-actions">
+                            <button class="btn btn-info btn-xs" onclick="event.stopPropagation();viewStudent('${s.id}')">👁️</button>
+                            ${hasEditRights ? `<button class="btn btn-restore btn-xs" onclick="event.stopPropagation();restoreStudent('${s.id}')">🔄</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        loadYearsFilter(allStudents);
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
+        container.innerHTML = `
+            <div class="empty-state">
+                <span class="icon">❌</span>
+                <h3>Ошибка загрузки</h3>
+                <p style="color:var(--text-muted);">${error.message}</p>
+            </div>
+        `;
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+function updateStats(students) {
+    const total = students.length;
+    const sso = students.filter(s => s.type === 'sso').length;
+    const pto = students.filter(s => s.type === 'pto').length;
+    const groups = new Set(students.map(s => s.group_name).filter(Boolean));
+
+    document.getElementById('totalCount').textContent = total;
+    document.getElementById('ssoCount').textContent = sso;
+    document.getElementById('ptoCount').textContent = pto;
+    document.getElementById('groupsCount').textContent = groups.size;
+}
+
+function loadYearsFilter(students) {
+    const select = document.getElementById('yearFilter');
+    const years = new Set();
+    students.forEach(s => {
+        if (s.expulsion_date) {
+            years.add(new Date(s.expulsion_date).getFullYear().toString());
+        }
+    });
+    const sortedYears = Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="all">Все годы</option>';
+    sortedYears.forEach(year => {
+        select.innerHTML += `<option value="${year}">${year}</option>`;
+    });
+    select.value = currentValue;
+}
+
+function toggleYear(header) {
+    const content = header.nextElementSibling;
+    const arrow = header.querySelector('.arrow');
+    if (content) {
+        content.classList.toggle('hidden');
+        if (arrow) arrow.classList.toggle('open');
+    }
+}
+
+async function viewStudent(id) {
+    try {
+        const { data: student, error } = await sb
+            .from('expelled_students')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (error || !student) {
+            showToast('❌ Запись не найдена', 'error');
+            return;
+        }
+
+        currentStudentId = id;
+
+        const birthDate = student.birth_date ? formatDateFull(student.birth_date) : '—';
+        const age = student.birth_date ? calculateAge(student.birth_date) : '—';
+        const genderLabel = getGenderLabel(student.gender);
+        const totalAvg = calculateTotalAverage(student);
+        const avgDisplay = totalAvg !== null ? totalAvg.toFixed(1).replace('.', ',') : '—';
+
+        const type = student.type || 'pto';
+        const maxCourse = getMaxCourse(type);
+        let gradesHtml = '';
+        
+        for (let course = 1; course <= maxCourse; course++) {
+            const sem1 = student[`grade_${course}_sem1`];
+            const sem2 = student[`grade_${course}_sem2`];
+            const year = student[`grade_${course}_year`];
+            if (sem1 || sem2 || year) {
+                gradesHtml += `
+                    <div class="info-item">
+                        <span class="label">📘 ${course} курс</span>
+                        <span class="value">
+                            1 сем: ${formatGrade(sem1)} | 2 сем: ${formatGrade(sem2)} | <strong>год: ${formatGrade(year)}</strong>
+                        </span>
+                    </div>
+                `;
+            }
+        }
+
+        const modalBody = document.getElementById('modalBody');
+        modalBody.innerHTML = `
+            <div class="student-full-card">
+                <div class="name">${student.full_name}</div>
+                <div class="sub">
+                    <span style="font-weight:600;color:var(--danger);">❌ Отчислен</span>
+                    <span class="badge-type ${getTypeBadge(student.type)}">${getTypeLabel(student.type)}</span>
+                    ${student.group_name ? ` • Группа: ${student.group_name}` : ''}
+                    ${avgDisplay !== '—' ? ` • 📊 <strong>Средний балл: ${avgDisplay}</strong>` : ''}
+                </div>
+                <hr style="margin:12px 0;border-color:var(--border);">
+                
+                <div class="expulsion-info">
+                    <strong>📄 Информация об отчислении</strong><br>
+                    <strong>Дата:</strong> ${formatDateFull(student.expulsion_date)}<br>
+                    <strong>Приказ:</strong> ${student.expulsion_order || '—'}<br>
+                    <strong>Статья:</strong> ${student.expulsion_article || '—'}
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-item"><span class="label">📅 Дата рождения</span><span class="value">${birthDate} (${age} лет)</span></div>
+                    <div class="info-item"><span class="label">📱 Телефон</span><span class="value">${student.phone || '—'}</span></div>
+                    <div class="info-item"><span class="label">🧑‍🤝‍🧑 Пол</span><span class="value">${genderLabel}</span></div>
+                    <div class="info-item"><span class="label">🌍 Гражданство</span><span class="value">${student.citizenship || '—'}</span></div>
+                    <div class="info-item"><span class="label">📊 Средний балл аттестата</span><span class="value">${formatGrade(student.avg_grade)}</span></div>
+                    <div class="info-item"><span class="label">🏫 Школа</span><span class="value">${student.school || '—'} ${student.school_year ? `(${student.school_year} г.)` : ''}</span></div>
+                    <div class="info-item"><span class="label">📚 Класс</span><span class="value">${student.school_class || '—'}</span></div>
+                    <div class="info-item"><span class="label">📍 Адрес регистрации</span><span class="value">${student.address_reg || '—'}</span></div>
+                    <div class="info-item"><span class="label">📍 Адрес проживания</span><span class="value">${student.address_live || '—'}</span></div>
+                    <div class="info-item"><span class="label">📌 Область</span><span class="value">${student.address_region || '—'}</span></div>
+                    <div class="info-item"><span class="label">📌 Район</span><span class="value">${student.address_district || '—'}</span></div>
+                    <div class="info-item"><span class="label">📌 Населённый пункт</span><span class="value">${student.address_locality || '—'}</span></div>
+                    <div class="info-item"><span class="label">📋 Учёт</span><span class="value">${student.accounting_type ? student.accounting_type.join(', ') : '—'}</span></div>
+                    ${student.target_training ? `
+                    <div class="info-item" style="grid-column:1/-1;background:#F0FDF4;padding:8px 12px;border-radius:var(--border-radius);border:1px solid #86EFAC;">
+                        <span class="label">🎯 Целевое обучение</span>
+                        <span class="value">
+                            <strong>Заказчик:</strong> ${student.target_customer || '—'} | 
+                            <strong>№ договора:</strong> ${student.target_contract || '—'} | 
+                            <strong>Срок:</strong> ${student.target_years ? student.target_years + ' лет' : '—'}
+                        </span>
+                    </div>
+                    ` : ''}
+                    ${gradesHtml}
+                    <div class="info-item"><span class="label">📅 Дата записи</span><span class="value">${formatDateFull(student.created_at)}</span></div>
+                </div>
+            </div>
+        `;
+
+        const restoreBtn = document.getElementById('restoreBtn');
+        if (hasEditRights) {
+            restoreBtn.style.display = 'inline-flex';
+            restoreBtn.onclick = () => {
+                document.getElementById('studentModal').classList.remove('active');
+                restoreStudent(id);
+            };
+        } else {
+            restoreBtn.style.display = 'none';
+        }
+
+        document.getElementById('studentModal').classList.add('active');
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+async function restoreStudent(id) {
+    if (!hasEditRights) {
+        showToast('❌ У вас нет прав на восстановление', 'error');
+        return;
+    }
+
+    if (!confirm('🔄 Восстановить этого студента?')) return;
+
+    try {
+        const { data: student } = await sb
+            .from('expelled_students')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (!student) {
+            showToast('❌ Студент не найден', 'error');
+            return;
+        }
+
+        // Восстанавливаем в таблицу students
+        const studentData = {
+            full_name: student.full_name,
+            group_id: student.group_id,
+            birth_date: student.birth_date || null,
+            phone: student.phone || null,
+            citizenship: student.citizenship || null,
+            school: student.school || null,
+            school_year: student.school_year || null,
+            school_class: student.school_class || null,
+            avg_grade: student.avg_grade || null,
+            gender: student.gender || null,
+            address_reg: student.address_reg || null,
+            address_live: student.address_live || null,
+            address_region: student.address_region || null,
+            address_district: student.address_district || null,
+            address_locality: student.address_locality || null,
+            accounting_type: student.accounting_type || [],
+            addresses: student.addresses || [],
+            target_training: student.target_training || false,
+            target_customer: student.target_customer || null,
+            target_contract: student.target_contract || null,
+            target_years: student.target_years || null,
+            status: 'active',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        };
+
+        const maxCourse = getMaxCourse(student.type || 'pto');
+        for (let course = 1; course <= maxCourse; course++) {
+            studentData[`grade_${course}_sem1`] = student[`grade_${course}_sem1`] || null;
+            studentData[`grade_${course}_sem2`] = student[`grade_${course}_sem2`] || null;
+            studentData[`grade_${course}_year`] = student[`grade_${course}_year`] || null;
+        }
+
+        await sb.from('students').insert([studentData]);
+        await sb.from('expelled_students').delete().eq('id', id);
+
+        showToast(`✅ Студент ${student.full_name} восстановлен!`, 'success');
+        loadStudents();
+
+    } catch (error) {
+        console.error('❌ Ошибка восстановления:', error);
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+
+document.getElementById('exportBtn').onclick = function() {
+    if (allStudents.length === 0) {
+        showToast('❌ Нет данных для экспорта', 'error');
+        return;
+    }
+
+    const exportData = allStudents.map(s => ({
+        'ФИО': s.full_name,
+        'Группа': s.group_name || '—',
+        'Тип': getTypeLabel(s.type),
+        'Дата отчисления': s.expulsion_date ? formatDateFull(s.expulsion_date) : '—',
+        'Приказ': s.expulsion_order || '—',
+        'Статья': s.expulsion_article || '—',
+        'Телефон': s.phone || '—',
+        'Средний балл': s.avg_grade || '—'
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 20 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Отчисленные');
+    XLSX.writeFile(wb, `Отчисленные_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast(`✅ Экспортировано ${exportData.length} записей`, 'success');
+};
+
+document.getElementById('typeFilter').addEventListener('change', loadStudents);
+document.getElementById('yearFilter').addEventListener('change', loadStudents);
+document.getElementById('searchInput').addEventListener('input', loadStudents);
+
+document.getElementById('clearFiltersBtn').onclick = () => {
+    document.getElementById('typeFilter').value = 'all';
+    document.getElementById('yearFilter').value = 'all';
+    document.getElementById('searchInput').value = '';
+    loadStudents();
+};
+
+function closeModal() {
+    document.getElementById('studentModal').classList.remove('active');
+}
+
+document.getElementById('modalCloseBtn').onclick = closeModal;
+document.getElementById('modalCancelBtn').onclick = closeModal;
+document.getElementById('studentModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+window.onresize = () => {
+    if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+    else { document.getElementById('menuToggle').style.display = 'none'; document.getElementById('sidebar').classList.remove('open'); }
+};
+
+loadUser();
+loadStudents();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Распределение выпускников | vgatk_bd</title>
+    
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .info-card { background: var(--bg-card); padding: 16px 20px; border-radius: var(--border-radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
+        .info-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-card .value { font-size: 16px; font-weight: 600; color: var(--primary); margin-top: 4px; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+
+        .table-container { overflow-x: auto; border-radius: var(--border-radius-lg); border: 1px solid var(--border); background: var(--bg-card); }
+        .table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+        .table thead { background: var(--bg-main); }
+        .table th { padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); font-size: 12px; white-space: nowrap; }
+        .table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .table tbody tr:hover { background: rgba(44, 62, 143, 0.04); }
+
+        .table .student-name { font-weight: 600; color: var(--primary); }
+        .table .org-name { font-weight: 500; }
+        .table .empty-org { color: var(--text-muted); font-style: italic; }
+
+        .btn-secondary { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-primary { background: var(--primary); color: white; border: none; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; border: none; }
+        .btn-success:hover { background: var(--success-dark); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 16px 24px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px; box-shadow: var(--shadow-modal); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        .form-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--border); flex-wrap: wrap; }
+        .form-actions .btn { padding: 10px 24px; font-size: 14px; }
+
+        .signature-block {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .signature-block .signature-group { min-width: 250px; }
+        .signature-block .signature-group .signature-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+        .signature-block .signature-group .signature-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .signature-block .signature-group .signature-row .name { font-weight: 500; min-width: 150px; }
+        .signature-block .signature-group .signature-row .line { flex: 1; border-bottom: 1px solid #000; min-width: 100px; padding-bottom: 2px; }
+        .signature-block .signature-group .signature-row .label { font-size: 12px; color: var(--text-muted); }
+
+        #pdfContent { background: white; padding: 20px; }
+
+        .group-select-container { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
+        .group-select-container select { padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; background: var(--bg-card); min-width: 200px; }
+        .group-select-container select:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+
+        @media print {
+            .no-print { display: none !important; }
+            .table-container { border: 1px solid #ccc; }
+            .table td, .table th { border-color: #ccc; }
+            body { background: white; }
+            .header, .sidebar, .page-header .header-actions { display: none !important; }
+            .page-container { max-width: 100%; padding: 20px; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+            .info-card { box-shadow: none; border: 1px solid #ccc; }
+            .table-container { border: 1px solid #ccc; }
+            #pdfContent { padding: 0; }
+            .signature-block .signature-row .line { border-bottom: 1px solid #000; }
+        }
+
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; }
+            .info-grid { grid-template-columns: 1fr; }
+            .toast-notification { left: 20px; right: 20px; top: 80px; }
+            .table { font-size: 12px; }
+            .table th, .table td { padding: 4px 4px; }
+            .form-actions { flex-direction: column; }
+            .form-actions .btn { width: 100%; justify-content: center; }
+            .signature-block { flex-direction: column; }
+            .group-select-container { flex-direction: column; align-items: stretch; }
+        }
+        @media (max-width: 480px) {
+            .header-actions .btn { font-size: 11px; padding: 6px 10px; }
+            .page-title { font-size: 18px; }
+            .table-container { overflow-x: auto; }
+            .table { font-size: 11px; }
+            .table th, .table td { padding: 2px 3px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header no-print">
+    <div class="header-logo">
+        <span class="college-name">
+            <h2>Учреждение образования<br>
+                <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span></h2>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<aside class="sidebar no-print" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html" class="active"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm no-print" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+
+        <div class="page-header no-print">
+            <div>
+                <h1 class="page-title">🎓 Распределение выпускников <small>просмотр</small></h1>
+            </div>
+            <div class="header-actions" id="headerActions">
+                <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+                <button class="btn btn-primary" id="exportPdfBtn">📄 Экспорт в PDF</button>
+            </div>
+        </div>
+
+        <!-- Выбор группы -->
+        <div class="group-select-container no-print">
+            <label style="font-weight:600;font-size:14px;color:var(--text-secondary);">Выберите группу:</label>
+            <select id="groupSelect">
+                <option value="">— Загрузка групп —</option>
+            </select>
+            <button class="btn btn-success" id="loadGroupBtn">📊 Показать распределение</button>
+        </div>
+
+        <div id="pdfContent">
+            <div class="info-card" style="border: 1px solid #ddd; display:none;" id="groupInfoCard">
+                <div class="info-grid" id="groupInfoGrid">
+                    <div><div class="label">Группа</div><div class="value" id="groupName">—</div></div>
+                    <div><div class="label">Тип</div><div class="value" id="groupType">—</div></div>
+                    <div><div class="label">Всего выпускников</div><div class="value" id="studentCount">0</div></div>
+                    <div><div class="label">Специальность</div><div class="value" id="specialtyName">—</div></div>
+                    <div><div class="label">Квалификация</div><div class="value" id="qualificationName">—</div></div>
+                </div>
+            </div>
+
+            <div class="table-container" style="border: 1px solid #ddd; display:none;" id="tableContainer">
+                <div style="padding:8px 12px;background:var(--bg-main);border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted);" class="no-print">
+                    📋 Распределение выпускников по организациям
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width:45px;">№</th>
+                            <th style="min-width:180px;">ФИО</th>
+                            <th style="min-width:250px;">Наименование организации</th>
+                            <th style="min-width:200px;">Адрес организации</th>
+                            <th style="min-width:140px;">Примечание</th>
+                            <th style="min-width:100px;">Статус</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="6"><div class="empty-state"><span class="icon">📭</span><p>Нет данных о распределении</p></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="signature-block" id="signatureBlock" style="display:none;"></div>
+        </div>
+
+        <div class="form-actions no-print">
+            <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+            <button class="btn btn-primary" id="exportPdfBtnBottom">📄 Экспорт в PDF</button>
+        </div>
+
+    </div>
+</main>
+
+<script src="/js/components.js"></script>
+
+<script>
+if (typeof window.supabaseClient === 'undefined') {
+    window.supabaseClient = window.supabase.createClient(
+        'https://selbolepupendprhixas.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+    );
+}
+const sb = window.supabaseClient;
+
+let currentUser = null;
+let hasEditRights = false;
+let currentGroupData = null;
+let distributionsData = [];
+
+function showToast(msg, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${msg}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+function loadUser() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) { window.location.href = '/index.html'; return; }
+    try {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+        hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
+    } catch (e) { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
+}
+document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; };
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getTypeBadge(type) {
+    return type === 'sso' ? 'badge-sso' : 'badge-pto';
+}
+
+// Загрузка списка групп
+async function loadGroups() {
+    const select = document.getElementById('groupSelect');
+    try {
+        const { data: groups, error } = await sb
+            .from('groups')
+            .select('id, name, type, specialty, qualification')
+            .eq('is_archived', true)
+            .order('name');
+
+        if (error) throw error;
+
+        select.innerHTML = '<option value="">— Выберите группу —</option>';
+        if (groups && groups.length > 0) {
+            groups.forEach(g => {
+                select.innerHTML += `<option value="${g.id}">${g.name} (${getTypeLabel(g.type)})</option>`;
+            });
+        } else {
+            select.innerHTML = '<option value="">— Нет выпущенных групп —</option>';
+        }
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки групп:', error);
+        select.innerHTML = '<option value="">— Ошибка загрузки —</option>';
+    }
+}
+
+// Загрузка распределения по группе
+async function loadDistribution() {
+    const groupId = document.getElementById('groupSelect').value;
+    if (!groupId) {
+        showToast('❌ Выберите группу', 'error');
+        return;
+    }
+
+    try {
+        // Получаем информацию о группе
+        const { data: group, error: groupError } = await sb
+            .from('groups')
+            .select('*')
+            .eq('id', groupId)
+            .single();
+
+        if (groupError) throw groupError;
+        currentGroupData = group;
+
+        // Получаем распределение
+        const { data: distributions, error: distError } = await sb
+            .from('graduate_distributions')
+            .select('*')
+            .eq('group_id', groupId)
+            .order('full_name');
+
+        if (distError) throw distError;
+        distributionsData = distributions || [];
+
+        // Получаем всех выпускников группы из таблицы graduates
+        const { data: graduates, error: gradError } = await sb
+            .from('graduates')
+            .select('full_name, phone, graduation_year')
+            .eq('group_name', group.name)
+            .order('full_name');
+
+        if (gradError) throw gradError;
+
+        // Если нет распределения, но есть выпускники - показываем всех
+        if (distributionsData.length === 0 && graduates && graduates.length > 0) {
+            // Создаём пустые записи для всех выпускников
+            distributionsData = graduates.map(g => ({
+                full_name: g.full_name,
+                organization_name: null,
+                organization_address: null,
+                notes: null,
+                phone: g.phone || '—'
+            }));
+        }
+
+        renderInfo(group);
+        renderTable(distributionsData, graduates);
+        renderSignatures(group);
+
+        // Показываем блоки
+        document.getElementById('groupInfoCard').style.display = 'block';
+        document.getElementById('tableContainer').style.display = 'block';
+        document.getElementById('signatureBlock').style.display = 'block';
+
+        showToast(`✅ Загружено ${distributionsData.length} записей`, 'success');
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки:', error);
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+function renderInfo(group) {
+    document.getElementById('groupName').textContent = group.name;
+    document.getElementById('groupType').textContent = getTypeLabel(group.type);
+    document.getElementById('studentCount').textContent = distributionsData.length || 0;
+    document.getElementById('specialtyName').textContent = group.specialty ? (Array.isArray(group.specialty) ? group.specialty.join(', ') : group.specialty) : '—';
+    document.getElementById('qualificationName').textContent = group.qualification ? (Array.isArray(group.qualification) ? group.qualification.join(', ') : group.qualification) : '—';
+}
+
+function renderTable(distributions, graduates) {
+    const tbody = document.getElementById('tableBody');
+    if (!distributions || distributions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="icon">📭</span><p>Нет данных о распределении</p></div></td></tr>`;
+        return;
+    }
+
+    // Создаём map для быстрого поиска выпускников
+    const gradMap = {};
+    if (graduates) {
+        graduates.forEach(g => {
+            gradMap[g.full_name] = g;
+        });
+    }
+
+    let html = '';
+    distributions.forEach((d, i) => {
+        const hasOrg = d.organization_name && d.organization_name.trim() !== '';
+        const grad = gradMap[d.full_name] || {};
+
+        html += `
+            <tr>
+                <td>${i + 1}.</td>
+                <td><span class="student-name">${d.full_name}</span></td>
+                <td>
+                    ${hasOrg ? `<span class="org-name">${d.organization_name}</span>` : `<span class="empty-org">Не распределён</span>`}
+                </td>
+                <td>${d.organization_address || '—'}</td>
+                <td>${d.notes || '—'}</td>
+                <td>
+                    ${hasOrg ? '<span style="color:var(--success-dark);font-weight:600;">✅ Распределён</span>' : '<span style="color:var(--text-muted);">⏳ Не распределён</span>'}
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+async function renderSignatures(group) {
+    const block = document.getElementById('signatureBlock');
+    const groupType = group?.type || 'sso';
+    let html = '';
+
+    // Получаем сотрудников, привязанных к группе
+    const { data: employees } = await sb
+        .from('employees')
+        .select('full_name, category, groups')
+        .eq('is_hidden', false);
+
+    const category = groupType === 'sso' ? 'teachers' : 'masters';
+    const title = groupType === 'sso' ? '👨‍🏫 Кураторы' : '🔧 Мастера ПО';
+
+    let people = [];
+    if (employees) {
+        people = employees
+            .filter(e => e.category === category && Array.isArray(e.groups) && e.groups.includes(group.id))
+            .map(e => e.full_name);
+    }
+
+    if (people.length > 0) {
+        html += `<div class="signature-group"><div class="signature-title">${title}:</div>`;
+        people.forEach(p => {
+            html += `<div class="signature-row"><span class="name">${p}</span><span class="line"></span><span class="label">подпись</span></div>`;
+        });
+        html += `</div>`;
+    } else {
+        html += `<div class="signature-group"><div class="signature-title">${title}:</div>
+            <div class="signature-row"><span class="name">__________________</span><span class="line"></span><span class="label">подпись</span></div></div>`;
+    }
+    block.innerHTML = html;
+}
+
+// Экспорт в PDF
+document.getElementById('exportPdfBtn').onclick = function() {
+    if (!currentGroupData) {
+        showToast('❌ Сначала выберите группу', 'error');
+        return;
+    }
+    const btn = this;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+    const el = document.getElementById('pdfContent');
+    html2pdf().set({
+        margin: [10,10,10,10],
+        filename: `Распределение_${currentGroupData?.name || 'группа'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    }).from(el).save().then(() => {
+        btn.innerHTML = '📄 Экспорт в PDF';
+        btn.disabled = false;
+        showToast('✅ PDF готов');
+    }).catch((err) => { 
+        console.error(err);
+        btn.innerHTML = '📄 Экспорт в PDF'; 
+        btn.disabled = false; 
+        showToast('❌ Ошибка PDF', 'error');
+    });
+};
+
+document.getElementById('exportPdfBtnBottom').onclick = document.getElementById('exportPdfBtn').onclick;
+
+document.getElementById('loadGroupBtn').onclick = loadDistribution;
+document.getElementById('groupSelect').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        loadDistribution();
+    }
+});
+
+document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+window.onresize = () => {
+    if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+    else { document.getElementById('menuToggle').style.display = 'none'; document.getElementById('sidebar').classList.remove('open'); }
+};
+
+loadUser();
+loadGroups();
+</script>
+
+</body>
+</html>
