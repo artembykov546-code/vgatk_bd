@@ -6,19 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  root: __dirname,
+  root: path.resolve(__dirname, 'frontend/pages'),
   base: '/',
   publicDir: path.resolve(__dirname, 'frontend/assets'),
-  
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'frontend'),
-      '@assets': path.resolve(__dirname, 'frontend/assets'),
-      '@pages': path.resolve(__dirname, 'frontend/pages'),
-      '@shared': path.resolve(__dirname, 'frontend/shared'),
-      '@backend': path.resolve(__dirname, 'backend')
-    }
-  },
   
   build: {
     outDir: path.resolve(__dirname, 'dist'),
@@ -55,6 +45,6 @@ export default defineConfig({
   
   server: {
     port: 3000,
-    open: '/frontend/pages/index.html'
+    open: '/index.html'
   }
 });

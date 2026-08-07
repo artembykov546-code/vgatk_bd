@@ -1,14 +1,25 @@
 services:
-  - type: web
+  - type: static
     name: vgatk-bd
-    runtime: node
-    plan: free
-    buildCommand: bash render-build.sh
-    startCommand: node server.js
+    buildCommand: npx vite build
+    publishDir: dist
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
-      - key: SUPABASE_URL
-        value: https://selbolepupendprhixas.supabase.co
-      - key: SUPABASE_ANON_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /css/*
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /js/*
+        name: Cache-Control
+        value: public, max-age=86400
+      - path: /images/*
+        name: Cache-Control
+        value: public, max-age=86400
