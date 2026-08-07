@@ -25,75 +25,52 @@ console.log(`📁 Путь к dist: ${distPath}`);
 // Проверяем, что dist существует
 if (!fs.existsSync(distPath)) {
     console.error('❌ Папка dist не найдена!');
+    // Создаем dist если нет
     fs.mkdirSync(distPath, { recursive: true });
 }
 
 // Раздаем все статические файлы из dist
 app.use(express.static(distPath));
 
-// Обработчик для всех запросов
+// Для SPA: если запрашивают страницу, которая не найдена как файл
+// и это не запрос к API, отдаем index.html
 app.get('*', (req, res) => {
-    // Убираем ведущий слэш для поиска
-    let requestPath = req.path;
-    if (requestPath.startsWith('/')) {
-        requestPath = requestPath.substring(1);
+    // Проверяем, существует ли запрошенный файл
+    const requestedPath = path.join(distPath, req.path);
+    
+    // Если запрос заканчивается на .html, пробуем найти файл
+    if (req.path.endsWith('.html')) {
+        // Ищем файл в dist
+        const possiblePaths = [
+            path.join(distPath, req.path),
+            path.join(distPath, 'frontend', 'pages', req.path),
+            path.join(distPath, 'frontend', req.path),
+            path.join(distPath, req.path.replace(/^\//, ''))
+        ];
+        
+        for (const filePath of possiblePaths) {
+            if (fs.existsSync(filePath)) {
+                console.log(`📄 Отдаю файл: ${filePath}`);
+                return res.sendFile(filePath);
+            }
+        }
     }
     
-    // Если запрос пустой или корневой
-    if (!requestPath || requestPath === '') {
-        requestPath = 'index.html';
-    }
+    // Если это не HTML файл или файл не найден, отдаем index.html
+    console.log(`🔄 SPA маршрут: ${req.path} -> index.html`);
+    const indexPath = path.join(distPath, 'index.html');
     
-    // Возможные пути для поиска файла
-    const possiblePaths = [
-        // Прямой путь в dist
-        path.join(distPath, requestPath),
-        // Через frontend/pages
-        path.join(distPath, 'frontend', 'pages', requestPath),
-        // Через frontend
-        path.join(distPath, 'frontend', requestPath),
-        // Если запрос заканчивается на .html, ищем в подпапках
-        path.join(distPath, 'frontend', 'pages', requestPath),
-        // Для корневого index.html
-        path.join(distPath, 'index.html')
+    // Пробуем найти index.html в разных местах
+    const possibleIndexPaths = [
+        path.join(distPath, 'index.html'),
+        path.join(distPath, 'frontend', 'pages', 'index.html'),
+        path.join(distPath, 'frontend', 'index.html')
     ];
     
-    // Ищем файл
-    for (const filePath of possiblePaths) {
-        if (fs.existsSync(filePath)) {
-            console.log(`📄 Отдаю файл: ${filePath}`);
-            return res.sendFile(filePath);
+    for (const indexFile of possibleIndexPaths) {
+        if (fs.existsSync(indexFile)) {
+            return res.sendFile(indexFile);
         }
-    }
-    
-    // Если это запрос к папке (например /students/)
-    if (req.path.endsWith('/') || !req.path.includes('.')) {
-        // Пробуем найти index.html в этой папке
-        const indexPath = path.join(distPath, req.path, 'index.html');
-        if (fs.existsSync(indexPath)) {
-            console.log(`📄 Отдаю index.html из папки: ${indexPath}`);
-            return res.sendFile(indexPath);
-        }
-        
-        // Пробуем через frontend/pages
-        const altIndexPath = path.join(distPath, 'frontend', 'pages', req.path, 'index.html');
-        if (fs.existsSync(altIndexPath)) {
-            console.log(`📄 Отдаю index.html из папки: ${altIndexPath}`);
-            return res.sendFile(altIndexPath);
-        }
-    }
-    
-    // Если ничего не найдено - SPA маршрутизация, отдаём index.html
-    console.log(`🔄 SPA маршрут: ${req.path} -> index.html`);
-    const mainIndex = path.join(distPath, 'frontend', 'pages', 'index.html');
-    if (fs.existsSync(mainIndex)) {
-        return res.sendFile(mainIndex);
-    }
-    
-    // Последняя попытка - любой index.html в dist
-    const fallbackIndex = path.join(distPath, 'index.html');
-    if (fs.existsSync(fallbackIndex)) {
-        return res.sendFile(fallbackIndex);
     }
     
     res.status(404).send('Страница не найдена');
