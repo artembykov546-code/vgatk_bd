@@ -6,8 +6,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
+  // Используем корень проекта
   root: __dirname,
+  
   base: '/',
+  
   publicDir: path.resolve(__dirname, 'frontend/assets'),
   
   resolve: {
