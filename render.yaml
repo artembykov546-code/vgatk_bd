@@ -3,29 +3,12 @@ services:
     name: vgatk-bd
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: bash render-build.sh
     startCommand: node server.js
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
-    headers:
-      # Отключаем кэширование для HTML файлов
-      - path: /*.html
-        name: Cache-Control
-        value: no-cache, no-store, must-revalidate
-      - path: /*.html
-        name: Pragma
-        value: no-cache
-      - path: /*.html
-        name: Expires
-        value: 0
-      # Кэшируем только статику (CSS, JS, картинки) на 1 день
-      - path: /css/*
-        name: Cache-Control
-        value: public, max-age=86400
-      - path: /js/*
-        name: Cache-Control
-        value: public, max-age=86400
-      - path: /images/*
-        name: Cache-Control
-        value: public, max-age=86400
+      - key: SUPABASE_URL
+        value: https://selbolepupendprhixas.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE

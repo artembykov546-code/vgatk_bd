@@ -25,52 +25,53 @@ console.log(`📁 Путь к dist: ${distPath}`);
 // Проверяем, что dist существует
 if (!fs.existsSync(distPath)) {
     console.error('❌ Папка dist не найдена!');
-    // Создаем dist если нет
     fs.mkdirSync(distPath, { recursive: true });
 }
 
-// Раздаем все статические файлы из dist
+// Раздаем статику
 app.use(express.static(distPath));
 
-// Для SPA: если запрашивают страницу, которая не найдена как файл
-// и это не запрос к API, отдаем index.html
+// Обработчик для всех запросов
 app.get('*', (req, res) => {
-    // Проверяем, существует ли запрошенный файл
-    const requestedPath = path.join(distPath, req.path);
+    const requestPath = req.path;
     
-    // Если запрос заканчивается на .html, пробуем найти файл
-    if (req.path.endsWith('.html')) {
-        // Ищем файл в dist
-        const possiblePaths = [
-            path.join(distPath, req.path),
-            path.join(distPath, 'frontend', 'pages', req.path),
-            path.join(distPath, 'frontend', req.path),
-            path.join(distPath, req.path.replace(/^\//, ''))
+    // Ищем файл в разных местах
+    const possiblePaths = [
+        path.join(distPath, requestPath),
+        path.join(distPath, 'frontend', 'pages', requestPath),
+        path.join(distPath, 'frontend', requestPath),
+        path.join(distPath, 'frontend', 'pages', requestPath.replace(/^\//, '')),
+        path.join(distPath, requestPath.replace(/^\//, ''))
+    ];
+    
+    // Если запрос к папке, ищем index.html
+    if (!requestPath.includes('.') || requestPath.endsWith('/')) {
+        const indexPaths = [
+            path.join(distPath, requestPath, 'index.html'),
+            path.join(distPath, 'frontend', 'pages', requestPath, 'index.html'),
+            path.join(distPath, 'frontend', 'pages', requestPath.replace(/^\//, ''), 'index.html')
         ];
-        
-        for (const filePath of possiblePaths) {
-            if (fs.existsSync(filePath)) {
-                console.log(`📄 Отдаю файл: ${filePath}`);
-                return res.sendFile(filePath);
-            }
+        possiblePaths.push(...indexPaths);
+    }
+    
+    // Ищем файл
+    for (const filePath of possiblePaths) {
+        if (fs.existsSync(filePath)) {
+            console.log(`📄 Отдаю: ${filePath}`);
+            return res.sendFile(filePath);
         }
     }
     
-    // Если это не HTML файл или файл не найден, отдаем index.html
-    console.log(`🔄 SPA маршрут: ${req.path} -> index.html`);
-    const indexPath = path.join(distPath, 'index.html');
+    // Если ничего не найдено - SPA маршрутизация
+    const mainIndex = path.join(distPath, 'frontend', 'pages', 'index.html');
+    if (fs.existsSync(mainIndex)) {
+        console.log(`🔄 SPA маршрут: ${req.path} -> index.html`);
+        return res.sendFile(mainIndex);
+    }
     
-    // Пробуем найти index.html в разных местах
-    const possibleIndexPaths = [
-        path.join(distPath, 'index.html'),
-        path.join(distPath, 'frontend', 'pages', 'index.html'),
-        path.join(distPath, 'frontend', 'index.html')
-    ];
-    
-    for (const indexFile of possibleIndexPaths) {
-        if (fs.existsSync(indexFile)) {
-            return res.sendFile(indexFile);
-        }
+    const fallbackIndex = path.join(distPath, 'index.html');
+    if (fs.existsSync(fallbackIndex)) {
+        return res.sendFile(fallbackIndex);
     }
     
     res.status(404).send('Страница не найдена');
@@ -78,5 +79,4 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
-    console.log(`🌐 Open: https://vgatk-bd.onrender.com`);
 });

@@ -31,16 +31,39 @@
         .table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         .table tbody tr:hover { background: rgba(44, 62, 143, 0.04); }
 
-        .table .student-name { font-weight: 600; color: var(--primary); }
-        .table .org-name { font-weight: 500; }
-        .table .empty-org { color: var(--text-muted); font-style: italic; }
+        .table .editable-input {
+            width: 100%;
+            border: none;
+            padding: 6px 8px;
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            background: transparent;
+            transition: var(--transition);
+            min-width: 60px;
+            box-sizing: border-box;
+        }
+        .table .editable-input:focus {
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 2px var(--primary-light);
+            border: 1px solid var(--primary-light);
+        }
+        .table .editable-input:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .table .student-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
 
+        .btn-success { background: var(--success); color: white; border: none; }
+        .btn-success:hover { background: var(--success-dark); }
         .btn-secondary { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); }
         .btn-secondary:hover { background: var(--bg-hover); }
         .btn-primary { background: var(--primary); color: white; border: none; }
         .btn-primary:hover { background: var(--primary-dark); }
-        .btn-success { background: var(--success); color: white; border: none; }
-        .btn-success:hover { background: var(--success-dark); }
+        .btn-danger { background: var(--danger); color: white; border: none; }
+        .btn-danger:hover { background: var(--danger-dark); }
 
         .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
@@ -75,9 +98,11 @@
 
         #pdfContent { background: white; padding: 20px; }
 
-        .group-select-container { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 20px; }
-        .group-select-container select { padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; background: var(--bg-card); min-width: 200px; }
-        .group-select-container select:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .table td .editable-input[type="text"] { min-width: 80px; }
+        .table td:nth-child(1) { text-align: center; }
+
+        /* Стили для кнопок в фокусе */
+        .btn:focus-visible { outline: 2px solid var(--primary-light); outline-offset: 2px; }
 
         @media print {
             .no-print { display: none !important; }
@@ -91,6 +116,7 @@
             .table-container { border: 1px solid #ccc; }
             #pdfContent { padding: 0; }
             .signature-block .signature-row .line { border-bottom: 1px solid #000; }
+            .editable-input { border: none !important; background: transparent !important; }
         }
 
         @media (max-width: 768px) {
@@ -101,10 +127,10 @@
             .toast-notification { left: 20px; right: 20px; top: 80px; }
             .table { font-size: 12px; }
             .table th, .table td { padding: 4px 4px; }
+            .table .editable-input { font-size: 12px; padding: 4px 6px; }
             .form-actions { flex-direction: column; }
             .form-actions .btn { width: 100%; justify-content: center; }
             .signature-block { flex-direction: column; }
-            .group-select-container { flex-direction: column; align-items: stretch; }
         }
         @media (max-width: 480px) {
             .header-actions .btn { font-size: 11px; padding: 6px 10px; }
@@ -112,6 +138,7 @@
             .table-container { overflow-x: auto; }
             .table { font-size: 11px; }
             .table th, .table td { padding: 2px 3px; }
+            .table .editable-input { font-size: 11px; padding: 3px 4px; min-width: 40px; }
         }
     </style>
 </head>
@@ -120,8 +147,8 @@
 <header class="header no-print">
     <div class="header-logo">
         <span class="college-name">
-            <h2>Учреждение образования<br>
-                <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span></h2>
+            Учреждение образования<br>
+            <span class="sub">"Витебский государственный аграрно-технический колледж"</span>
         </span>
     </div>
     <div class="header-user">
@@ -138,8 +165,8 @@
         <li class="nav-label">Главное</li>
         <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
         <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
-        <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
-        <li><a href="/graduates/index.html" class="active"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/students/index.html" class="active"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
         <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
         <li class="nav-label" style="margin-top:12px;">Система</li>
         <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
@@ -153,37 +180,29 @@
 
         <div class="page-header no-print">
             <div>
-                <h1 class="page-title">🎓 Распределение выпускников <small>просмотр</small></h1>
+                <h1 class="page-title">🎓 Распределение выпускников <small id="groupTitle">загрузка...</small></h1>
             </div>
             <div class="header-actions" id="headerActions">
-                <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+                <button class="btn btn-secondary" id="backBtn">← Назад</button>
+                <button class="btn btn-success" id="saveAllBtn">💾 Сохранить и выпустить</button>
                 <button class="btn btn-primary" id="exportPdfBtn">📄 Экспорт в PDF</button>
             </div>
         </div>
 
-        <!-- Выбор группы -->
-        <div class="group-select-container no-print">
-            <label style="font-weight:600;font-size:14px;color:var(--text-secondary);">Выберите группу:</label>
-            <select id="groupSelect">
-                <option value="">— Загрузка групп —</option>
-            </select>
-            <button class="btn btn-success" id="loadGroupBtn">📊 Показать распределение</button>
-        </div>
-
         <div id="pdfContent">
-            <div class="info-card" style="border: 1px solid #ddd; display:none;" id="groupInfoCard">
+            <div class="info-card" style="border: 1px solid #ddd;">
                 <div class="info-grid" id="groupInfoGrid">
                     <div><div class="label">Группа</div><div class="value" id="groupName">—</div></div>
                     <div><div class="label">Тип</div><div class="value" id="groupType">—</div></div>
-                    <div><div class="label">Всего выпускников</div><div class="value" id="studentCount">0</div></div>
+                    <div><div class="label">Всего студентов</div><div class="value" id="studentCount">0</div></div>
                     <div><div class="label">Специальность</div><div class="value" id="specialtyName">—</div></div>
                     <div><div class="label">Квалификация</div><div class="value" id="qualificationName">—</div></div>
                 </div>
             </div>
 
-            <div class="table-container" style="border: 1px solid #ddd; display:none;" id="tableContainer">
+            <div class="table-container" style="border: 1px solid #ddd;">
                 <div style="padding:8px 12px;background:var(--bg-main);border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted);" class="no-print">
-                    📋 Распределение выпускников по организациям
+                    📝 Укажите для каждого студента организацию, куда он направляется на работу (можно оставить пустым)
                 </div>
                 <table class="table">
                     <thead>
@@ -193,21 +212,20 @@
                             <th style="min-width:250px;">Наименование организации</th>
                             <th style="min-width:200px;">Адрес организации</th>
                             <th style="min-width:140px;">Примечание</th>
-                            <th style="min-width:100px;">Статус</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="6"><div class="empty-state"><span class="icon">📭</span><p>Нет данных о распределении</p></div></td></tr>
+                        <tr><td colspan="5"><div class="empty-state"><span class="icon">📭</span><p>Нет студентов для распределения</p></div></td></tr>
                     </tbody>
                 </table>
             </div>
 
-            <div class="signature-block" id="signatureBlock" style="display:none;"></div>
+            <div class="signature-block" id="signatureBlock"></div>
         </div>
 
         <div class="form-actions no-print">
-            <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
-            <button class="btn btn-primary" id="exportPdfBtnBottom">📄 Экспорт в PDF</button>
+            <button class="btn btn-secondary" id="backBtnBottom">← Назад</button>
+            <button class="btn btn-success" id="saveAllBtnBottom">💾 Сохранить и выпустить</button>
         </div>
 
     </div>
@@ -224,10 +242,13 @@ if (typeof window.supabaseClient === 'undefined') {
 }
 const sb = window.supabaseClient;
 
+const urlParams = new URLSearchParams(window.location.search);
+const groupId = urlParams.get('group_id');
+
 let currentUser = null;
-let hasEditRights = false;
-let currentGroupData = null;
-let distributionsData = [];
+let currentGroup = null;
+let students = [];
+let staffData = { curators: [], masters: [] };
 
 function showToast(msg, type = 'success') {
     const existing = document.querySelector('.toast-notification');
@@ -247,188 +268,93 @@ function loadUser() {
         document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
         const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
         document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-        hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
     } catch (e) { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
 }
 document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; };
 
-function formatDate(dateStr) {
-    if (!dateStr) return '—';
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+async function loadStaff() {
+    const { data: employees } = await sb.from('employees').select('id, full_name, category, groups').eq('is_hidden', false);
+    if (!employees) return { curators: [], masters: [] };
+    return {
+        curators: employees.filter(e => e.category === 'teachers' && Array.isArray(e.groups) && e.groups.includes(groupId)).map(e => e.full_name),
+        masters: employees.filter(e => e.category === 'masters' && Array.isArray(e.groups) && e.groups.includes(groupId)).map(e => e.full_name)
+    };
 }
 
-function getTypeLabel(type) {
-    return type === 'sso' ? 'ССО' : 'ПТО';
-}
-
-function getTypeBadge(type) {
-    return type === 'sso' ? 'badge-sso' : 'badge-pto';
-}
-
-// Загрузка списка групп
-async function loadGroups() {
-    const select = document.getElementById('groupSelect');
+async function loadData() {
+    if (!groupId) { showToast('❌ ID группы не указан', 'error'); return; }
     try {
-        const { data: groups, error } = await sb
-            .from('groups')
-            .select('id, name, type, specialty, qualification')
-            .eq('is_archived', true)
-            .order('name');
+        const { data: group } = await sb.from('groups').select('*').eq('id', groupId).single();
+        currentGroup = group;
+        document.getElementById('groupTitle').textContent = `группа ${group.name}`;
+        document.getElementById('groupName').textContent = group.name;
+        document.getElementById('groupType').textContent = group.type === 'sso' ? 'ССО' : 'ПТО';
+        document.getElementById('specialtyName').textContent = (group.specialty || []).join(', ') || '—';
+        document.getElementById('qualificationName').textContent = (group.qualification || []).join(', ') || '—';
 
-        if (error) throw error;
+        staffData = await loadStaff();
 
-        select.innerHTML = '<option value="">— Выберите группу —</option>';
-        if (groups && groups.length > 0) {
-            groups.forEach(g => {
-                select.innerHTML += `<option value="${g.id}">${g.name} (${getTypeLabel(g.type)})</option>`;
-            });
-        } else {
-            select.innerHTML = '<option value="">— Нет выпущенных групп —</option>';
-        }
-
-    } catch (error) {
-        console.error('❌ Ошибка загрузки групп:', error);
-        select.innerHTML = '<option value="">— Ошибка загрузки —</option>';
-    }
-}
-
-// Загрузка распределения по группе
-async function loadDistribution() {
-    const groupId = document.getElementById('groupSelect').value;
-    if (!groupId) {
-        showToast('❌ Выберите группу', 'error');
-        return;
-    }
-
-    try {
-        // Получаем информацию о группе
-        const { data: group, error: groupError } = await sb
-            .from('groups')
-            .select('*')
-            .eq('id', groupId)
-            .single();
-
-        if (groupError) throw groupError;
-        currentGroupData = group;
-
-        // Получаем распределение
-        const { data: distributions, error: distError } = await sb
-            .from('graduate_distributions')
-            .select('*')
+        const { data: studentsData } = await sb
+            .from('students')
+            .select('id, full_name, address_reg, address_live, phone, birth_date, avg_grade, gender, citizenship')
             .eq('group_id', groupId)
+            .eq('status', 'active')
             .order('full_name');
+        students = studentsData || [];
+        document.getElementById('studentCount').textContent = students.length;
 
-        if (distError) throw distError;
-        distributionsData = distributions || [];
+        renderTable();
+        renderSignatures();
 
-        // Получаем всех выпускников группы из таблицы graduates
-        const { data: graduates, error: gradError } = await sb
-            .from('graduates')
-            .select('full_name, phone, graduation_year')
-            .eq('group_name', group.name)
-            .order('full_name');
-
-        if (gradError) throw gradError;
-
-        // Если нет распределения, но есть выпускники - показываем всех
-        if (distributionsData.length === 0 && graduates && graduates.length > 0) {
-            // Создаём пустые записи для всех выпускников
-            distributionsData = graduates.map(g => ({
-                full_name: g.full_name,
-                organization_name: null,
-                organization_address: null,
-                notes: null,
-                phone: g.phone || '—'
-            }));
-        }
-
-        renderInfo(group);
-        renderTable(distributionsData, graduates);
-        renderSignatures(group);
-
-        // Показываем блоки
-        document.getElementById('groupInfoCard').style.display = 'block';
-        document.getElementById('tableContainer').style.display = 'block';
-        document.getElementById('signatureBlock').style.display = 'block';
-
-        showToast(`✅ Загружено ${distributionsData.length} записей`, 'success');
-
-    } catch (error) {
-        console.error('❌ Ошибка загрузки:', error);
-        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
-    }
+    } catch (e) { console.error(e); showToast('❌ Ошибка загрузки', 'error'); }
 }
 
-function renderInfo(group) {
-    document.getElementById('groupName').textContent = group.name;
-    document.getElementById('groupType').textContent = getTypeLabel(group.type);
-    document.getElementById('studentCount').textContent = distributionsData.length || 0;
-    document.getElementById('specialtyName').textContent = group.specialty ? (Array.isArray(group.specialty) ? group.specialty.join(', ') : group.specialty) : '—';
-    document.getElementById('qualificationName').textContent = group.qualification ? (Array.isArray(group.qualification) ? group.qualification.join(', ') : group.qualification) : '—';
-}
-
-function renderTable(distributions, graduates) {
+function renderTable() {
     const tbody = document.getElementById('tableBody');
-    if (!distributions || distributions.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><span class="icon">📭</span><p>Нет данных о распределении</p></div></td></tr>`;
+    if (students.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><span class="icon">📭</span><p>Нет активных студентов для распределения</p></div></td></tr>`;
         return;
     }
-
-    // Создаём map для быстрого поиска выпускников
-    const gradMap = {};
-    if (graduates) {
-        graduates.forEach(g => {
-            gradMap[g.full_name] = g;
-        });
-    }
-
     let html = '';
-    distributions.forEach((d, i) => {
-        const hasOrg = d.organization_name && d.organization_name.trim() !== '';
-        const grad = gradMap[d.full_name] || {};
-
+    students.forEach((s, i) => {
         html += `
-            <tr>
-                <td>${i + 1}.</td>
-                <td><span class="student-name">${d.full_name}</span></td>
-                <td>
-                    ${hasOrg ? `<span class="org-name">${d.organization_name}</span>` : `<span class="empty-org">Не распределён</span>`}
-                </td>
-                <td>${d.organization_address || '—'}</td>
-                <td>${d.notes || '—'}</td>
-                <td>
-                    ${hasOrg ? '<span style="color:var(--success-dark);font-weight:600;">✅ Распределён</span>' : '<span style="color:var(--text-muted);">⏳ Не распределён</span>'}
-                </td>
+            <tr data-student-id="${s.id}">
+                <td>${i+1}.</td>
+                <td><span class="student-name">${s.full_name}</span></td>
+                <td><input type="text" class="editable-input" data-field="organization" placeholder="" data-student="${s.id}"></td>
+                <td><input type="text" class="editable-input" data-field="address" placeholder="" data-student="${s.id}"></td>
+                <td><input type="text" class="editable-input" data-field="notes" placeholder="" data-student="${s.id}"></td>
             </tr>
         `;
     });
-
     tbody.innerHTML = html;
+
+    // Обработчик Enter для полей ввода
+    document.querySelectorAll('.editable-input').forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                // Переход к следующему полю или кнопке
+                const inputs = Array.from(document.querySelectorAll('.editable-input'));
+                const idx = inputs.indexOf(this);
+                if (idx < inputs.length - 1) {
+                    inputs[idx + 1].focus();
+                } else {
+                    // Если последнее поле - фокус на кнопку сохранения
+                    document.getElementById('saveAllBtn').focus();
+                }
+            }
+        });
+    });
 }
 
-async function renderSignatures(group) {
+function renderSignatures() {
     const block = document.getElementById('signatureBlock');
-    const groupType = group?.type || 'sso';
+    const groupType = currentGroup?.type || 'sso';
     let html = '';
-
-    // Получаем сотрудников, привязанных к группе
-    const { data: employees } = await sb
-        .from('employees')
-        .select('full_name, category, groups')
-        .eq('is_hidden', false);
-
-    const category = groupType === 'sso' ? 'teachers' : 'masters';
-    const title = groupType === 'sso' ? '👨‍🏫 Кураторы' : '🔧 Мастера ПО';
-
-    let people = [];
-    if (employees) {
-        people = employees
-            .filter(e => e.category === category && Array.isArray(e.groups) && e.groups.includes(group.id))
-            .map(e => e.full_name);
-    }
-
-    if (people.length > 0) {
+    const people = groupType === 'pto' ? staffData.masters : staffData.curators;
+    const title = groupType === 'pto' ? '🔧 Мастера ПО' : '👨‍🏫 Кураторы';
+    if (people.length) {
         html += `<div class="signature-group"><div class="signature-title">${title}:</div>`;
         people.forEach(p => {
             html += `<div class="signature-row"><span class="name">${p}</span><span class="line"></span><span class="label">подпись</span></div>`;
@@ -441,19 +367,114 @@ async function renderSignatures(group) {
     block.innerHTML = html;
 }
 
-// Экспорт в PDF
-document.getElementById('exportPdfBtn').onclick = function() {
-    if (!currentGroupData) {
-        showToast('❌ Сначала выберите группу', 'error');
-        return;
+async function saveAndGraduate() {
+    if (students.length === 0) { showToast('❌ Нет студентов для выпуска', 'error'); return; }
+
+    const btn = document.getElementById('saveAllBtn');
+    const btnBottom = document.getElementById('saveAllBtnBottom');
+    btn.innerHTML = '⏳ Сохранение...';
+    btn.disabled = true;
+    btnBottom.innerHTML = '⏳ Сохранение...';
+    btnBottom.disabled = true;
+
+    let saved = 0;
+    let graduated = 0;
+    try {
+        const rows = document.querySelectorAll('#tableBody tr[data-student-id]');
+        const currentYear = new Date().getFullYear();
+
+        for (const row of rows) {
+            const studentId = row.dataset.studentId;
+            const org = row.querySelector('[data-field="organization"]')?.value.trim() || null;
+            const addr = row.querySelector('[data-field="address"]')?.value.trim() || null;
+            const notes = row.querySelector('[data-field="notes"]')?.value.trim() || null;
+
+            const student = students.find(s => s.id === studentId);
+            if (!student) continue;
+
+            // 1. Если организация указана - сохраняем распределение
+            if (org) {
+                const distData = {
+                    group_id: groupId,
+                    student_id: studentId,
+                    full_name: student.full_name,
+                    organization_name: org,
+                    organization_address: addr,
+                    notes: notes,
+                    has_target_contract: false,
+                    is_redistributed: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                await sb.from('graduate_distributions').insert([distData]);
+                saved++;
+            }
+
+            // 2. Обновляем статус студента на "graduated"
+            await sb.from('students').update({ status: 'graduated' }).eq('id', studentId);
+            graduated++;
+
+            // 3. Добавляем в выпускники
+            await sb.from('graduates').insert([{
+                full_name: student.full_name,
+                group_name: currentGroup.name,
+                type: currentGroup.type,
+                graduation_year: String(currentYear),
+                phone: student.phone || '—',
+                birth_date: student.birth_date || null,
+                avg_grade: student.avg_grade || null,
+                gender: student.gender || null,
+                citizenship: student.citizenship || null,
+                created_at: new Date().toISOString()
+            }]);
+        }
+
+        // 4. Обновляем статус группы на "archived"
+        await sb.from('groups').update({ is_archived: true }).eq('id', groupId);
+
+        showToast(`✅ Группа выпущена! Выпущено ${graduated} студентов, распределено ${saved}`, 'success');
+        setTimeout(() => {
+            window.location.href = `/students/group.html?id=${groupId}`;
+        }, 1500);
+
+    } catch (error) {
+        console.error(error);
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    } finally {
+        btn.innerHTML = '💾 Сохранить и выпустить';
+        btn.disabled = false;
+        btnBottom.innerHTML = '💾 Сохранить и выпустить';
+        btnBottom.disabled = false;
     }
+}
+
+// Обработка Enter на всей странице
+document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter или Cmd+Enter - сохранение
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        saveAndGraduate();
+    }
+});
+
+document.getElementById('saveAllBtn').onclick = saveAndGraduate;
+document.getElementById('saveAllBtnBottom').onclick = saveAndGraduate;
+
+document.getElementById('backBtn').onclick = () => {
+    window.location.href = `/students/group.html?id=${groupId}`;
+};
+document.getElementById('backBtnBottom').onclick = () => {
+    window.location.href = `/students/group.html?id=${groupId}`;
+};
+
+document.getElementById('exportPdfBtn').onclick = function() {
     const btn = this;
     btn.innerHTML = '⏳ ...';
     btn.disabled = true;
     const el = document.getElementById('pdfContent');
     html2pdf().set({
         margin: [10,10,10,10],
-        filename: `Распределение_${currentGroupData?.name || 'группа'}.pdf`,
+        filename: `Распределение_${currentGroup?.name || 'группа'}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
@@ -469,16 +490,6 @@ document.getElementById('exportPdfBtn').onclick = function() {
     });
 };
 
-document.getElementById('exportPdfBtnBottom').onclick = document.getElementById('exportPdfBtn').onclick;
-
-document.getElementById('loadGroupBtn').onclick = loadDistribution;
-document.getElementById('groupSelect').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        loadDistribution();
-    }
-});
-
 document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
 if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
 window.onresize = () => {
@@ -487,7 +498,7 @@ window.onresize = () => {
 };
 
 loadUser();
-loadGroups();
+loadData();
 </script>
 
 </body>

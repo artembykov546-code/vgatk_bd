@@ -390,6 +390,25 @@
             overflow: hidden;
         }
 
+        /* ===== БЭЙДЖИ ТИПОВ ===== */
+        .badge-type {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-pto {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .badge-sso {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
         @media (max-width: 768px) {
             .page-header { flex-direction: column; align-items: flex-start; }
             .year-groups { grid-template-columns: 1fr 1fr; padding-left: 0; }
@@ -415,8 +434,8 @@
 <header class="header">
     <div class="header-logo">
         <span class="college-name">
-            <h2>Учреждение образования<br>
-            <span class="sub"><h2>"Витебский государственный аграрно-технический колледж"</span>
+            Учреждение образования<br>
+            <span class="sub">"Витебский государственный аграрно-технический колледж"</span>
         </span>
     </div>
     <div class="header-user">
@@ -479,7 +498,7 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="confirmCancelBtn">Отмена</button>
-            <button class="btn btn-danger" id="confirmDeleteBtn">🗑️ Удалить</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">️ Удалить</button>
         </div>
     </div>
 </div>
@@ -644,12 +663,16 @@ async function loadGroups() {
             filtered = filtered.filter(g => g.name.toLowerCase().includes(search));
         }
 
-        const ssoGroups = filtered.filter(g => g.type === 'sso');
+        // Разделяем на ПТО и ССО
         const ptoGroups = filtered.filter(g => g.type === 'pto');
+        const ssoGroups = filtered.filter(g => g.type === 'sso');
 
         let html = '';
-        html += renderTypeSection('ССО', '🎓', ssoGroups, studentCounts);
+        
+        // Сначала ПТО
         html += renderTypeSection('ПТО', '🔧', ptoGroups, studentCounts);
+        // Потом ССО
+        html += renderTypeSection('ССО', '🎓', ssoGroups, studentCounts);
 
         container.innerHTML = html;
 
@@ -793,7 +816,7 @@ async function confirmDelete() {
         if (checkError) throw checkError;
 
         if (students && students.length > 0) {
-            showToast(`❌ Нельзя удалить группу, в которой есть активные студенты (${students.length} чел.)`, 'error');
+            showToast(` Нельзя удалить группу, в которой есть активные студенты (${students.length} чел.)`, 'error');
             closeConfirmModal();
             return;
         }

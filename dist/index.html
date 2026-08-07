@@ -233,18 +233,30 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let tempUserId = null;
 
 // ============================================================
-// ПОЛУЧАЕМ БАЗОВЫЙ ПУТЬ
+// ФУНКЦИЯ ДЛЯ ПЕРЕХОДА НА СТРАНИЦУ (ИСПРАВЛЕНО ДЛЯ RENDER)
 // ============================================================
-function getBasePath() {
-    // Определяем путь в зависимости от окружения
-    const isGitHubPages = window.location.hostname.includes('github.io');
-    if (isGitHubPages) {
-        return '/vgatk_bd';
+function navigateTo(page) {
+    const hostname = window.location.hostname;
+    console.log('🌐 Hostname:', hostname);
+    
+    let url;
+    
+    // Для Render - все файлы в корне
+    if (hostname.includes('onrender.com')) {
+        url = page; // просто /dashboard.html
     }
-    return '';
+    // Для GitHub Pages
+    else if (hostname.includes('github.io')) {
+        url = '/vgatk_bd' + page;
+    }
+    // Для localhost
+    else {
+        url = page;
+    }
+    
+    console.log('🔗 Переход на:', url);
+    window.location.href = url;
 }
-
-const BASE_PATH = getBasePath();
 
 // ============================================================
 // ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ
@@ -261,7 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .single()
                 .then(({ data }) => {
                     if (data) {
-                        window.location.href = BASE_PATH + 'dashboard.html';
+                        navigateTo('/dashboard.html');
                     } else {
                         localStorage.removeItem('currentUser');
                     }
@@ -282,7 +294,7 @@ document.addEventListener('DOMContentLoaded', function() {
         registerLink.addEventListener('click', function(e) {
             e.preventDefault();
             console.log('🔗 Переход на страницу регистрации...');
-            window.location.href = BASE_PATH + '/frontend/pages/register/index.html';
+            navigateTo('/register/index.html');
         });
     }
 });
@@ -371,7 +383,7 @@ function loginSuccess(user, fullName) {
     localStorage.setItem('currentUser', JSON.stringify(userData));
     
     console.log('✅ Вход выполнен, перенаправление на dashboard...');
-    window.location.href = BASE_PATH + 'dashboard.html';
+    navigateTo('/dashboard.html');
 }
 
 async function handleChangePassword() {
@@ -512,7 +524,6 @@ document.getElementById('logoutChangeBtn').addEventListener('click', function() 
 });
 
 console.log('✅ Страница входа загружена');
-console.log('📁 Базовый путь:', BASE_PATH);
 </script>
 
 </body>
