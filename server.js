@@ -36,18 +36,17 @@ app.get('*', (req, res) => {
     // Ищем файл в разных местах
     const possiblePaths = [
         path.join(distPath, req.path),
+        path.join(distPath, req.path.replace(/^\//, '')),
         path.join(distPath, 'frontend', 'pages', req.path),
-        path.join(distPath, 'frontend', req.path),
-        path.join(distPath, 'frontend', 'pages', req.path.replace(/^\//, '')),
-        path.join(distPath, req.path.replace(/^\//, ''))
+        path.join(distPath, 'frontend', req.path)
     ];
     
     // Если запрос к папке, ищем index.html
     if (!req.path.includes('.') || req.path.endsWith('/')) {
         const indexPaths = [
             path.join(distPath, req.path, 'index.html'),
-            path.join(distPath, 'frontend', 'pages', req.path, 'index.html'),
-            path.join(distPath, 'frontend', 'pages', req.path.replace(/^\//, ''), 'index.html')
+            path.join(distPath, req.path.replace(/^\//, ''), 'index.html'),
+            path.join(distPath, 'frontend', 'pages', req.path, 'index.html')
         ];
         possiblePaths.push(...indexPaths);
     }
@@ -61,15 +60,10 @@ app.get('*', (req, res) => {
     }
     
     // SPA маршрутизация - отдаем index.html
-    const mainIndex = path.join(distPath, 'frontend', 'pages', 'index.html');
+    const mainIndex = path.join(distPath, 'index.html');
     if (fs.existsSync(mainIndex)) {
         console.log(`🔄 SPA маршрут: ${req.path} -> index.html`);
         return res.sendFile(mainIndex);
-    }
-    
-    const fallbackIndex = path.join(distPath, 'index.html');
-    if (fs.existsSync(fallbackIndex)) {
-        return res.sendFile(fallbackIndex);
     }
     
     res.status(404).send('Страница не найдена');
@@ -77,5 +71,4 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
-    console.log(`🌐 Open: https://vgatk-bd.onrender.com`);
 });

@@ -3,11 +3,12 @@
 echo "🚀 Установка зависимостей..."
 npm install
 
+echo "🚀 Переустановка проблемных модулей..."
+npm install debug@4.3.4
+
 echo "🚀 Сборка проекта..."
 npx vite build
 
 echo "✅ Сборка завершена!"
 echo "📁 Содержимое папки dist:"
 ls -la dist/
-echo "📁 Содержимое dist/frontend/pages:"
-ls -la dist/frontend/pages/ 2>/dev/null || echo "Папка не найдена"
