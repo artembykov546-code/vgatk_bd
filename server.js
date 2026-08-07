@@ -22,9 +22,9 @@ const distPath = path.join(__dirname, 'dist');
 
 console.log(`📁 Путь к dist: ${distPath}`);
 
-// Проверяем, что dist существует
+// Проверяем и создаем dist
 if (!fs.existsSync(distPath)) {
-    console.error('❌ Папка dist не найдена!');
+    console.error('❌ Папка dist не найдена! Создаю...');
     fs.mkdirSync(distPath, { recursive: true });
 }
 
@@ -33,23 +33,21 @@ app.use(express.static(distPath));
 
 // Обработчик для всех запросов
 app.get('*', (req, res) => {
-    const requestPath = req.path;
-    
     // Ищем файл в разных местах
     const possiblePaths = [
-        path.join(distPath, requestPath),
-        path.join(distPath, 'frontend', 'pages', requestPath),
-        path.join(distPath, 'frontend', requestPath),
-        path.join(distPath, 'frontend', 'pages', requestPath.replace(/^\//, '')),
-        path.join(distPath, requestPath.replace(/^\//, ''))
+        path.join(distPath, req.path),
+        path.join(distPath, 'frontend', 'pages', req.path),
+        path.join(distPath, 'frontend', req.path),
+        path.join(distPath, 'frontend', 'pages', req.path.replace(/^\//, '')),
+        path.join(distPath, req.path.replace(/^\//, ''))
     ];
     
     // Если запрос к папке, ищем index.html
-    if (!requestPath.includes('.') || requestPath.endsWith('/')) {
+    if (!req.path.includes('.') || req.path.endsWith('/')) {
         const indexPaths = [
-            path.join(distPath, requestPath, 'index.html'),
-            path.join(distPath, 'frontend', 'pages', requestPath, 'index.html'),
-            path.join(distPath, 'frontend', 'pages', requestPath.replace(/^\//, ''), 'index.html')
+            path.join(distPath, req.path, 'index.html'),
+            path.join(distPath, 'frontend', 'pages', req.path, 'index.html'),
+            path.join(distPath, 'frontend', 'pages', req.path.replace(/^\//, ''), 'index.html')
         ];
         possiblePaths.push(...indexPaths);
     }
@@ -62,7 +60,7 @@ app.get('*', (req, res) => {
         }
     }
     
-    // Если ничего не найдено - SPA маршрутизация
+    // SPA маршрутизация - отдаем index.html
     const mainIndex = path.join(distPath, 'frontend', 'pages', 'index.html');
     if (fs.existsSync(mainIndex)) {
         console.log(`🔄 SPA маршрут: ${req.path} -> index.html`);
@@ -79,4 +77,5 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
+    console.log(`🌐 Open: https://vgatk-bd.onrender.com`);
 });
