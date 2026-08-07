@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
-  root: __dirname,
+  root: path.resolve(__dirname, 'frontend/pages'),
   base: '/',
   publicDir: path.resolve(__dirname, 'frontend/assets'),
   
@@ -55,6 +55,6 @@ export default defineConfig({
   
   server: {
     port: 3000,
-    open: '/frontend/pages/index.html'
+    open: '/index.html'
   }
 });
