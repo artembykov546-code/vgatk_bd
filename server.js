@@ -16,9 +16,18 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Проверка наличия папки dist
+// Путь к папке dist (на Render это /opt/render/project/src/dist)
 const distPath = path.join(__dirname, 'dist');
 console.log(`📁 Путь к dist: ${distPath}`);
+
+// Проверяем существование папки
+import fs from 'fs';
+if (fs.existsSync(distPath)) {
+  console.log('✅ Папка dist существует');
+  console.log('📄 Файлы в dist:', fs.readdirSync(distPath));
+} else {
+  console.log('❌ Папка dist не найдена!');
+}
 
 // Раздача статики
 app.use(express.static(distPath));
@@ -26,8 +35,11 @@ app.use(express.static(distPath));
 // SPA маршрутизация
 app.get('*', (req, res) => {
   const indexPath = path.join(distPath, 'index.html');
-  console.log(`📄 Запрос: ${req.url} -> ${indexPath}`);
-  res.sendFile(indexPath);
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Файл index.html не найден');
+  }
 });
 
 app.listen(PORT, '0.0.0.0', () => {

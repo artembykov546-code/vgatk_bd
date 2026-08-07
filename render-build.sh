@@ -4,7 +4,7 @@ echo "🚀 Установка зависимостей..."
 npm install
 
 echo "🚀 Сборка проекта..."
-npx vite build
+node_modules/.bin/vite build
 
 echo "✅ Сборка завершена!"
 echo "📁 Содержимое папки dist:"
