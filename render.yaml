@@ -1,25 +1,25 @@
 services:
   - type: static
     name: vgatk-bd
-    publishDir: dist
-    buildCommand: echo "Сборка не требуется, dist уже готов"
+    publishDir: frontend
+    buildCommand: echo "Сборка не требуется, frontend уже готов"
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
     routes:
       - type: rewrite
         source: /*
-        destination: /index.html
+        destination: /pages/index.html
     headers:
       - path: /*
         name: X-Frame-Options
         value: DENY
-      - path: /css/*
+      - path: /assets/css/*
         name: Cache-Control
         value: public, max-age=86400
-      - path: /js/*
+      - path: /assets/js/*
         name: Cache-Control
         value: public, max-age=86400
-      - path: /images/*
+      - path: /assets/images/*
         name: Cache-Control
         value: public, max-age=86400

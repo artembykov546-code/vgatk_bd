@@ -233,7 +233,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let tempUserId = null;
 
 // ============================================================
-// ФУНКЦИЯ ДЛЯ ПЕРЕХОДА НА СТРАНИЦУ (ИСПРАВЛЕНО)
+// ФУНКЦИЯ ДЛЯ ПЕРЕХОДА НА СТРАНИЦУ (ИСПРАВЛЕНО ДЛЯ RENDER)
 // ============================================================
 function navigateTo(page) {
     const hostname = window.location.hostname;
@@ -243,6 +243,7 @@ function navigateTo(page) {
     
     // Для Render - все файлы в корне
     if (hostname.includes('onrender.com')) {
+        // Убираем ведущий слэш для красоты
         url = page;
     }
     // Для GitHub Pages
@@ -273,7 +274,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 .single()
                 .then(({ data }) => {
                     if (data) {
-                        navigateTo('/dashboard.html');
+                        // Простой переход без лишних проверок
+                        window.location.href = '/dashboard.html';
                     } else {
                         localStorage.removeItem('currentUser');
                     }
@@ -294,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
         registerLink.addEventListener('click', function(e) {
             e.preventDefault();
             console.log('🔗 Переход на страницу регистрации...');
-            navigateTo('/register/index.html');
+            window.location.href = '/register/index.html';
         });
     }
 });
@@ -383,7 +385,8 @@ function loginSuccess(user, fullName) {
     localStorage.setItem('currentUser', JSON.stringify(userData));
     
     console.log('✅ Вход выполнен, перенаправление на dashboard...');
-    navigateTo('/dashboard.html');
+    // Прямой переход без лишних функций
+    window.location.href = '/dashboard.html';
 }
 
 async function handleChangePassword() {

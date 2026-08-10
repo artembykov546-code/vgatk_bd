@@ -11,8 +11,8 @@ export default defineConfig({
   publicDir: path.resolve(__dirname, 'frontend/assets'),
   
   build: {
-    outDir: path.resolve(__dirname, 'dist'),
-    emptyOutDir: true,
+    outDir: path.resolve(__dirname, 'frontend'),
+    emptyOutDir: false,
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'frontend/pages/index.html'),
