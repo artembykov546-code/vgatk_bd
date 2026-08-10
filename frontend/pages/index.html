@@ -233,7 +233,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
 let tempUserId = null;
 
 // ============================================================
-// ФУНКЦИЯ ДЛЯ ПЕРЕХОДА НА СТРАНИЦУ (ИСПРАВЛЕНО ДЛЯ RENDER)
+// ФУНКЦИЯ ДЛЯ ПЕРЕХОДА НА СТРАНИЦУ (ИСПРАВЛЕНО)
 // ============================================================
 function navigateTo(page) {
     const hostname = window.location.hostname;
@@ -243,7 +243,7 @@ function navigateTo(page) {
     
     // Для Render - все файлы в корне
     if (hostname.includes('onrender.com')) {
-        url = page; // просто /dashboard.html
+        url = page;
     }
     // Для GitHub Pages
     else if (hostname.includes('github.io')) {
