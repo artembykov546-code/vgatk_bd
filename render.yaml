@@ -2,7 +2,7 @@ services:
   - type: static
     name: vgatk-bd
     publishDir: dist
-    buildCommand: echo "Сборка уже выполнена локально, пропускаем..."
+    buildCommand: echo "✅ Используем готовую сборку из папки dist"
     envVars:
       - key: NODE_VERSION
         value: 20.11.0
