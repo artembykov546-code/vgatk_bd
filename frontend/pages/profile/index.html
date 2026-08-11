@@ -15,21 +15,24 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
+        /* ===== БАЗОВЫЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary: #1E3A8A; --primary-light: #3B82F6; --secondary: #2563EB;
             --success: #10B981; --success-dark: #059669; --warning: #F59E0B; --warning-dark: #D97706;
             --danger: #EF4444; --danger-dark: #DC2626;
             --bg-main: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
-            --bg-card: rgba(255, 255, 255, 0.96);
-            --text-primary: #1E293B; --text-secondary: #475569; --text-muted: #64748B;
+            --bg-card: rgba(255, 255, 255, 0.96); --bg-hover: rgba(59, 130, 246, 0.08); --bg-active: rgba(59, 130, 246, 0.12);
+            --text-primary: #1E293B; --text-secondary: #475569; --text-muted: #64748B; --text-light: #94A3B8;
             --border: #dbeafe; --border-radius: 8px; --border-radius-lg: 12px; --border-radius-xl: 16px;
-            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08); --shadow-hover: 0 8px 30px rgba(59, 130, 246, 0.15);
+            --shadow-modal: 0 20px 60px rgba(37, 99, 235, 0.15);
             --header-height: 74px; --sidebar-width: 220px; --transition: all 0.3s ease;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.6; }
         a { text-decoration: none; color: inherit; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .header { background: var(--bg-card); backdrop-filter: blur(12px); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); border-bottom: 1px solid var(--border); min-height: var(--header-height); }
@@ -46,10 +49,10 @@
         .sidebar { position: fixed; left: 0; top: var(--header-height); width: var(--sidebar-width); height: calc(100vh - var(--header-height)); background: var(--bg-card); backdrop-filter: blur(12px); padding: 20px 0; overflow-y: auto; z-index: 90; border-right: 1px solid var(--border); box-shadow: 4px 0 20px rgba(59, 130, 246, 0.08); }
         .sidebar-nav { list-style: none; padding: 0 16px; }
         .sidebar-nav li { margin-bottom: 4px; }
-        .sidebar-nav .nav-label { padding: 12px 16px 6px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .sidebar-nav .nav-label { padding: 12px 16px 6px; color: var(--text-light); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
         .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: var(--border-radius); color: var(--text-secondary); font-weight: 500; font-size: 14px; transition: var(--transition); text-decoration: none; }
-        .sidebar-nav a:hover { background: rgba(59, 130, 246, 0.08); color: var(--primary-light); }
-        .sidebar-nav a.active { background: rgba(59, 130, 246, 0.12); color: var(--primary-light); }
+        .sidebar-nav a:hover { background: var(--bg-hover); color: var(--primary-light); }
+        .sidebar-nav a.active { background: var(--bg-active); color: var(--primary-light); }
         .sidebar-nav a .icon { font-size: 20px; width: 24px; text-align: center; }
 
         .main-content { margin-left: var(--sidebar-width); padding: 24px 32px; min-height: calc(100vh - var(--header-height)); animation: fadeIn 0.6s ease; }
@@ -61,7 +64,11 @@
         .btn-secondary { background: linear-gradient(135deg, #94A3B8, #64748B); color: white; box-shadow: 0 4px 15px rgba(148, 163, 184, 0.3); }
         .btn-secondary:hover { background: linear-gradient(135deg, #64748B, #475569); box-shadow: 0 8px 25px rgba(148, 163, 184, 0.4); }
         .btn-primary { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
-        .btn-primary:hover { background: linear-gradient(135deg, var(--secondary), #1D4ED8); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--secondary), var(--primary-dark)); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
+        .btn-warning { background: linear-gradient(135deg, var(--warning), var(--warning-dark)); color: white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
+        .btn-warning:hover { background: linear-gradient(135deg, var(--warning-dark), #B45309); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4); }
+        .btn-danger { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+        .btn-danger:hover { background: linear-gradient(135deg, var(--danger-dark), #B91C1C); box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4); }
         .btn-sm { padding: 6px 14px; font-size: 12px; }
 
         .page-container { max-width: 1000px; margin: 0 auto; }
@@ -69,8 +76,10 @@
         .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
         .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
 
+        /* ===== PROFILE CARD ===== */
         .profile-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px; }
         .profile-card .avatar { font-size: 72px; text-align: center; display: block; margin-bottom: 4px; }
+        .profile-card .name { font-size: 24px; font-weight: 700; color: var(--primary); text-align: center; }
         .profile-card .sub-info { text-align: center; color: var(--text-secondary); margin-top: 2px; font-size: 14px; }
         .profile-card .position-text { text-align: center; color: var(--text-muted); margin-top: 2px; font-size: 13px; font-style: italic; }
         .profile-divider { margin: 16px 0 20px; border: none; border-top: 2px solid var(--border); }
@@ -80,23 +89,42 @@
         .profile-info .item .value { color: var(--text-primary); flex: 1; }
         .profile-info .item .value .tag-item { background: var(--bg-main); padding: 2px 10px; border-radius: 12px; font-size: 13px; border: 1px solid var(--border); display: inline-block; margin: 2px 4px 2px 0; }
 
+        /* ===== EDITABLE POSITION ===== */
         .position-edit-wrapper { display: flex; align-items: center; gap: 8px; flex: 1; }
         .position-edit-wrapper .form-control { height: 36px; padding: 4px 10px; font-size: 14px; border: 2px solid var(--border); border-radius: var(--border-radius); transition: var(--transition); background: var(--bg-card); flex: 1; min-width: 150px; }
         .position-edit-wrapper .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .position-edit-wrapper .form-control:disabled { opacity: 0.7; cursor: not-allowed; background: #f1f5f9; }
         .position-edit-wrapper .btn { padding: 4px 12px; font-size: 12px; height: 36px; }
 
+        /* ===== EDITABLE NAME ===== */
         .name-edit-wrapper { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; }
         .name-edit-wrapper .form-control { height: 42px; padding: 6px 14px; font-size: 18px; font-weight: 700; border: 2px solid var(--border); border-radius: var(--border-radius); transition: var(--transition); background: var(--bg-card); flex: 1; max-width: 500px; text-align: center; color: var(--primary); }
         .name-edit-wrapper .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
         .name-edit-wrapper .form-control:disabled { opacity: 0.7; cursor: not-allowed; background: #f1f5f9; }
         .name-edit-wrapper .btn { padding: 4px 12px; font-size: 12px; height: 42px; }
 
-        .info-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px; }
-        .info-card .info-title { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
-        .info-card .info-message { padding: 24px; background: #FEF3C7; border-radius: var(--border-radius-lg); border-left: 4px solid var(--warning); }
-        .info-card .info-message .icon { font-size: 32px; display: block; margin-bottom: 8px; }
-        .info-card .info-message p { font-size: 15px; color: var(--text-primary); line-height: 1.7; }
-        .info-card .info-message p strong { color: var(--warning-dark); }
+        /* ===== FORM CARD ===== */
+        .form-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px; }
+        .form-card .form-title { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-weight: 600; font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-label .required { color: var(--danger); margin-left: 2px; }
+        .form-control { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; transition: var(--transition); background: var(--bg-card); height: 48px; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .form-control:disabled { opacity: 0.6; cursor: not-allowed; }
+        .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        .form-actions { display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--border); }
+        .form-actions .btn { padding: 10px 28px; font-size: 14px; }
+
+        /* ===== ALERT ===== */
+        .alert { padding: 12px 16px; border-radius: var(--border-radius); margin-bottom: 16px; font-size: 14px; display: none; }
+        .alert.show { display: block; }
+        .alert-success { background: #D1FAE5; color: var(--success-dark); border-left: 4px solid var(--success); }
+        .alert-danger { background: #FEE2E2; color: var(--danger-dark); border-left: 4px solid var(--danger); }
+        .alert .close-btn { float: right; cursor: pointer; font-weight: 700; font-size: 18px; line-height: 1; color: inherit; opacity: 0.6; }
+        .alert .close-btn:hover { opacity: 1; }
+
+        .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease infinite; vertical-align: middle; margin-right: 8px; }
 
         .badge-role { display: inline-block; padding: 4px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; }
         .badge-super_admin { background: #FADBD8; color: #78281F; }
@@ -104,11 +132,23 @@
         .badge-teacher { background: #D5F5E3; color: #1A6E3A; }
         .badge-viewer { background: #D6EAF8; color: #1A5276; }
 
+        .password-wrapper { position: relative; }
+        .password-wrapper .form-control { padding-right: 48px; }
+        .password-wrapper .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; color: var(--text-muted); background: none; border: none; padding: 4px; transition: var(--transition); line-height: 1; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; }
+        .password-wrapper .toggle-password:hover { color: var(--primary-light); background: var(--bg-hover); }
+
+        .password-strength { height: 4px; border-radius: 4px; margin-top: 8px; background: #e2e8f0; transition: var(--transition); overflow: hidden; }
+        .password-strength .bar { height: 100%; width: 0%; border-radius: 4px; transition: var(--transition); }
+        .password-strength .bar.weak { width: 25%; background: linear-gradient(90deg, var(--danger), var(--danger-dark)); }
+        .password-strength .bar.medium { width: 50%; background: linear-gradient(90deg, var(--warning), var(--warning-dark)); }
+        .password-strength .bar.strong { width: 75%; background: linear-gradient(90deg, var(--primary-light), var(--secondary)); }
+        .password-strength .bar.very-strong { width: 100%; background: linear-gradient(90deg, var(--success), var(--success-dark)); }
+
         .toast-notification {
             position: fixed; top: 80px; right: 20px; padding: 16px 24px;
             border-radius: var(--border-radius); color: white; font-weight: 600;
-            z-index: 9999; animation: fadeIn 0.3s ease; max-width: 400px;
-            box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15);
+            z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px;
+            box-shadow: var(--shadow-modal);
         }
         .toast-success { background: var(--success); }
         .toast-error { background: var(--danger); }
@@ -123,16 +163,17 @@
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 16px; }
             .profile-card { padding: 20px; }
-            .info-card { padding: 20px; }
+            .form-card { padding: 20px; }
             .profile-info { grid-template-columns: 1fr; }
             .profile-info .item .label { width: 120px; }
+            .form-actions { flex-direction: column; }
+            .form-actions .btn { width: 100%; justify-content: center; }
             .page-title { font-size: 20px; }
             #menuToggle { display: inline-block !important; }
             .position-edit-wrapper { flex-wrap: wrap; }
             .position-edit-wrapper .form-control { width: 100%; }
             .name-edit-wrapper { flex-wrap: wrap; }
             .name-edit-wrapper .form-control { width: 100%; max-width: 100%; }
-            .info-card .info-message { padding: 16px; }
         }
 
         @media (max-width: 480px) {
@@ -148,6 +189,7 @@
 </head>
 <body>
 
+<!-- ===== HEADER ===== -->
 <header class="header">
     <div class="header-logo">
         <span class="college-name">
@@ -164,6 +206,7 @@
     </div>
 </header>
 
+<!-- ===== SIDEBAR ===== -->
 <aside class="sidebar" id="sidebar">
     <ul class="sidebar-nav">
         <li class="nav-label">Главное</li>
@@ -177,6 +220,7 @@
     </ul>
 </aside>
 
+<!-- ===== MAIN CONTENT ===== -->
 <main class="main-content">
     <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
 
@@ -188,6 +232,7 @@
             </div>
         </div>
 
+        <!-- Информация о пользователе -->
         <div class="profile-card" id="profileCard">
             <span class="avatar">👤</span>
             <div class="name-edit-wrapper" id="nameEditWrapper">
@@ -202,30 +247,124 @@
             <div class="profile-info" id="profileInfo"></div>
         </div>
 
-        <!-- ИНФОРМАЦИОННОЕ СООБЩЕНИЕ ВМЕСТО ФОРМЫ СМЕНЫ ПАРОЛЯ -->
-        <div class="info-card">
-            <div class="info-title">🔐 Смена логина и пароля</div>
-            <div class="info-message">
-                <span class="icon">ℹ️</span>
-                <p>
-                    <strong>Для смены логина или пароля обратитесь к программисту или администратору.</strong><br>
-                    Только пользователи с правами <strong>Администратора</strong> или <strong>Супер-Админа</strong> могут изменять учётные данные.
-                </p>
+        <!-- Смена логина и пароля -->
+        <div class="form-card" id="changeCredentialsCard">
+            <div class="form-title">🔐 Смена логина и пароля</div>
+
+            <div id="changeAlert" class="alert alert-danger">
+                <span id="changeMessage"></span>
+                <span class="close-btn" onclick="this.parentElement.classList.remove('show')">×</span>
             </div>
+
+            <form id="changeCredentialsForm" onsubmit="return false;">
+                <!-- Логин -->
+                <div class="form-group">
+                    <label class="form-label" for="newLogin">Новый логин</label>
+                    <input type="text" class="form-control" id="newLogin" placeholder="Введите новый логин (мин. 3 символа)" minlength="3">
+                    <div class="form-hint">Логин должен содержать минимум 3 символа. Оставьте пустым, чтобы не менять.</div>
+                </div>
+
+                <!-- Текущий пароль -->
+                <div class="form-group">
+                    <label class="form-label" for="currentPassword">Текущий пароль <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="currentPassword" placeholder="Введите текущий пароль" required>
+                        <button type="button" class="toggle-password" onclick="togglePassword('currentPassword')">👁️</button>
+                    </div>
+                </div>
+
+                <!-- Новый пароль -->
+                <div class="form-group">
+                    <label class="form-label" for="newPassword">Новый пароль</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="newPassword" placeholder="Введите новый пароль (мин. 6 символов)" minlength="6">
+                        <button type="button" class="toggle-password" onclick="togglePassword('newPassword')">👁️</button>
+                    </div>
+                    <div class="password-strength">
+                        <div class="bar" id="strengthBar"></div>
+                    </div>
+                    <div class="form-hint" id="strengthText">Введите пароль для оценки надёжности</div>
+                </div>
+
+                <!-- Подтверждение пароля -->
+                <div class="form-group">
+                    <label class="form-label" for="confirmPassword">Подтверждение пароля</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="confirmPassword" placeholder="Повторите новый пароль">
+                        <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">👁️</button>
+                    </div>
+                    <div class="form-hint" id="confirmHint">Пароли должны совпадать</div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="saveCredentialsBtn">💾 Сохранить изменения</button>
+                </div>
+            </form>
         </div>
 
     </div>
 </main>
 
 <script>
+// ============================================================
+// КОНФИГУРАЦИЯ SUPABASE
+// ============================================================
+
 const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 console.log('✅ Supabase инициализирован');
+
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
 
 let currentUser = null;
 let currentEmployee = null;
 let groups = [];
+
+// Генерируем уникальный ID устройства при загрузке
+const currentDeviceSessionId = generateDeviceSessionId();
+console.log('🆔 ID устройства:', currentDeviceSessionId);
+
+// ============================================================
+// ГЕНЕРАЦИЯ УНИКАЛЬНОГО ID СЕССИИ ДЛЯ УСТРОЙСТВА
+// ============================================================
+function generateDeviceSessionId() {
+    const ua = navigator.userAgent || '';
+    const screen = `${window.screen?.width || 0}x${window.screen?.height || 0}`;
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    return `device_${btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20)}_${timestamp}_${random}`;
+}
+
+// ============================================================
+// ЗАВЕРШЕНИЕ СЕССИИ НА ВСЕХ УСТРОЙСТВАХ
+// ============================================================
+async function invalidateAllSessions(userId) {
+    try {
+        const { error } = await supabaseClient
+            .from('users')
+            .update({ 
+                active_session_id: null,
+                session_invalidated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+
+        if (error) throw error;
+        console.log('✅ Все сессии пользователя завершены');
+        return true;
+    } catch (error) {
+        console.error('❌ Ошибка завершения сессий:', error);
+        return false;
+    }
+}
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ
+// ============================================================
 
 function loadUser() {
     const savedUser = localStorage.getItem('currentUser');
@@ -233,12 +372,14 @@ function loadUser() {
         window.location.href = '/index.html';
         return;
     }
+
     try {
         const user = JSON.parse(savedUser);
         document.getElementById('userNameDisplay').textContent = user.full_name || user.name || user.login;
         const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
         document.getElementById('userRoleDisplay').textContent = roleMap[user.role] || user.role;
         currentUser = user;
+        
         loadUserData();
     } catch (e) {
         localStorage.removeItem('currentUser');
@@ -251,58 +392,90 @@ document.getElementById('logoutBtn').onclick = () => {
     window.location.href = '/index.html';
 };
 
+// ============================================================
+// ЗАГРУЗКА ДАННЫХ
+// ============================================================
+
 async function loadUserData() {
     try {
-        if (currentUser.employee_id) {
-            const { data: employee, error: empError } = await supabaseClient
-                .from('employees')
+        // Загружаем данные сотрудника (employee)
+        const { data: employee, error: empError } = await supabaseClient
+            .from('employees')
+            .select('*')
+            .eq('id', currentUser.employee_id)
+            .single();
+
+        if (empError) {
+            console.error('❌ Ошибка загрузки сотрудника:', empError);
+            // Если нет связи с employee, пробуем загрузить только пользователя
+            const { data: user, error: userError } = await supabaseClient
+                .from('users')
                 .select('*')
-                .eq('id', currentUser.employee_id)
+                .eq('id', currentUser.id)
                 .single();
-            if (empError) {
-                console.warn('⚠️ Сотрудник не найден:', empError);
-                currentEmployee = null;
-            } else {
-                currentEmployee = employee;
-                currentUser.full_name = employee.full_name;
-                currentUser.position = employee.position;
-                currentUser.category = employee.category;
-                currentUser.groups = employee.groups || [];
-            }
+            if (userError) throw userError;
+            currentUser = { ...currentUser, ...user };
+            currentEmployee = null;
+        } else {
+            currentEmployee = employee;
+            // Объединяем данные
+            currentUser = { ...currentUser, ...employee };
         }
+
+        // Загружаем группы
         const { data: groupsData, error: groupsError } = await supabaseClient
             .from('groups')
             .select('id, name, type')
             .eq('is_archived', false)
             .order('name');
+
         if (!groupsError && groupsData) {
             groups = groupsData;
         }
+
         renderProfile();
+
     } catch (error) {
         console.error('❌ Ошибка загрузки данных:', error);
         showToast('❌ Ошибка загрузки данных: ' + error.message, 'error');
     }
 }
 
+// ============================================================
+// РЕНДЕРИНГ ПРОФИЛЯ
+// ============================================================
+
 function renderProfile() {
     if (!currentUser) return;
+
+    const roleMap = {
+        'super_admin': 'Супер-Администратор',
+        'admin': 'Администратор',
+        'teacher': 'Преподаватель',
+        'viewer': 'Наблюдатель'
+    };
+
     const roleBadge = {
         'super_admin': 'badge-super_admin',
         'admin': 'badge-admin',
         'teacher': 'badge-teacher',
         'viewer': 'badge-viewer'
     };
+
     const categoryLabels = {
         'teachers': 'Преподаватель (Куратор)',
         'masters': 'Мастер ПО',
         'administration': 'Администрация',
         'other': 'Другие'
     };
+
+    // ФИО в карточке профиля
     const fullName = currentEmployee?.full_name || currentUser.full_name || currentUser.login || '';
     const nameInput = document.getElementById('fullNameInput');
     nameInput.value = fullName;
     nameInput.disabled = true;
+    
+    // Права доступа
     const accessMap = {
         'super_admin': 'Полный доступ ко всем данным',
         'admin': 'Полный доступ (кроме супер-админов)',
@@ -310,6 +483,8 @@ function renderProfile() {
         'viewer': 'Только просмотр'
     };
     document.getElementById('profileRole').innerHTML = `<span class="badge-role ${roleBadge[currentUser.role]}">${accessMap[currentUser.role] || '—'}</span>`;
+    
+    // Должность (из employee, если есть)
     const positionEl = document.getElementById('profilePosition');
     const positionValue = currentEmployee?.position || currentUser.position || '';
     if (positionValue && positionValue.trim() !== '') {
@@ -319,8 +494,11 @@ function renderProfile() {
         positionEl.textContent = '';
         positionEl.style.display = 'none';
     }
+
     const infoDiv = document.getElementById('profileInfo');
     let html = '';
+
+    // Должность (с возможностью редактирования) - обновляем в таблице employees
     html += `
         <div class="item" style="grid-column:1/-1;">
             <span class="label">💼 Должность</span>
@@ -330,14 +508,19 @@ function renderProfile() {
             </div>
         </div>
     `;
+
     html += `
         <div class="item"><span class="label">🔑 Логин</span><span class="value">${currentUser.login}</span></div>
         <div class="item"><span class="label">🆔 ID</span><span class="value">${currentUser.id}</span></div>
     `;
+
+    // Категория
     const category = currentEmployee?.category || currentUser.category || 'other';
     html += `
         <div class="item"><span class="label">📋 Категория</span><span class="value">${categoryLabels[category] || category || '—'}</span></div>
     `;
+
+    // Группы (куратор или мастер ПО)
     if (currentEmployee?.groups && Array.isArray(currentEmployee.groups) && currentEmployee.groups.length > 0) {
         const groupNames = currentEmployee.groups.map(gid => {
             const g = groups.find(gr => gr.id === gid);
@@ -358,6 +541,8 @@ function renderProfile() {
             </div>
         `;
     }
+
+    // Права доступа (детально)
     const accessDetails = {
         'super_admin': '🔓 Полный доступ ко всем данным',
         'admin': '🔓 Полный доступ (кроме супер-админов)',
@@ -370,18 +555,29 @@ function renderProfile() {
             <span class="value">${accessDetails[currentUser.role] || '—'}</span>
         </div>
     `;
+
     infoDiv.innerHTML = html;
+
+    // Обработчик сохранения должности
     document.getElementById('savePositionBtn').onclick = savePosition;
+    
+    // Сохранение должности по Enter
     document.getElementById('positionInput').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             savePosition();
         }
     });
+
+    // Обработчики для редактирования ФИО
     document.getElementById('editNameBtn').onclick = enableNameEditing;
     document.getElementById('saveNameBtn').onclick = saveFullName;
     document.getElementById('cancelNameBtn').onclick = cancelNameEditing;
 }
+
+// ============================================================
+// РЕДАКТИРОВАНИЕ ФИО
+// ============================================================
 
 function enableNameEditing() {
     const input = document.getElementById('fullNameInput');
@@ -406,40 +602,69 @@ function cancelNameEditing() {
 async function saveFullName() {
     const input = document.getElementById('fullNameInput');
     const newFullName = input.value.trim();
+    
     if (!newFullName) {
         showToast('❌ Введите ФИО', 'error');
         return;
     }
+
     const btn = document.getElementById('saveNameBtn');
     const originalText = btn.innerHTML;
+    
     try {
-        btn.innerHTML = '⏳';
+        btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;"></span>';
         btn.disabled = true;
-        if (currentUser.employee_id) {
+
+        // Определяем, где обновлять ФИО
+        if (currentEmployee) {
+            // Обновляем в таблице employees
             const { error } = await supabaseClient
                 .from('employees')
-                .update({ full_name: newFullName })
-                .eq('id', currentUser.employee_id);
+                .update({ 
+                    full_name: newFullName,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', currentEmployee.id);
+
             if (error) throw error;
-            if (currentEmployee) currentEmployee.full_name = newFullName;
+            
+            currentEmployee.full_name = newFullName;
             currentUser.full_name = newFullName;
+            
         } else {
+            // Если нет employee, обновляем в users
             const { error } = await supabaseClient
                 .from('users')
-                .update({ full_name: newFullName })
+                .update({ 
+                    full_name: newFullName,
+                    updated_at: new Date().toISOString()
+                })
                 .eq('id', currentUser.id);
+
             if (error) throw error;
+            
             currentUser.full_name = newFullName;
         }
+
+        // Обновляем localStorage
         const savedUser = JSON.parse(localStorage.getItem('currentUser'));
         savedUser.full_name = newFullName;
         localStorage.setItem('currentUser', JSON.stringify(savedUser));
+
+        // Обновляем отображение
         input.disabled = true;
         document.getElementById('editNameBtn').style.display = 'inline-flex';
         document.getElementById('saveNameBtn').style.display = 'none';
         document.getElementById('cancelNameBtn').style.display = 'none';
+        
+        // Обновляем заголовок
         document.getElementById('userNameDisplay').textContent = newFullName;
+
         showToast('✅ ФИО успешно обновлено!', 'success');
+        
+        // Перерисовываем профиль для обновления всех данных
+        renderProfile();
+
     } catch (error) {
         console.error('❌ Ошибка сохранения ФИО:', error);
         showToast('❌ Ошибка: ' + error.message, 'error');
@@ -449,28 +674,55 @@ async function saveFullName() {
     }
 }
 
+// ============================================================
+// СОХРАНЕНИЕ ДОЛЖНОСТИ (в таблице employees)
+// ============================================================
+
 async function savePosition() {
     const input = document.getElementById('positionInput');
     const newPosition = input.value.trim();
     const btn = document.getElementById('savePositionBtn');
     const originalText = btn.innerHTML;
-    const tableName = currentUser.employee_id ? 'employees' : 'users';
+
+    // Если нет employee_id, обновляем в users (как запасной вариант)
     const targetId = currentUser.employee_id || currentUser.id;
+    const tableName = currentUser.employee_id ? 'employees' : 'users';
+
     try {
-        btn.innerHTML = '⏳';
+        btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;"></span>';
         btn.disabled = true;
+
+        // Обновляем в базе данных
         const { error } = await supabaseClient
             .from(tableName)
-            .update({ position: newPosition || null })
+            .update({ 
+                position: newPosition || null,
+                updated_at: new Date().toISOString()
+            })
             .eq('id', targetId);
-        if (error) throw error;
-        if (currentEmployee) currentEmployee.position = newPosition || null;
+
+        if (error) {
+            console.error('❌ Ошибка Supabase:', error);
+            showToast('❌ Ошибка сохранения: ' + error.message, 'error');
+            return;
+        }
+
+        // Обновляем локальные данные
+        if (currentEmployee) {
+            currentEmployee.position = newPosition || null;
+        }
         currentUser.position = newPosition || null;
+        
+        // Обновляем localStorage
         const savedUser = JSON.parse(localStorage.getItem('currentUser'));
         savedUser.position = newPosition || null;
         localStorage.setItem('currentUser', JSON.stringify(savedUser));
+
+        // Перерисовываем профиль
         renderProfile();
+
         showToast('✅ Должность обновлена!', 'success');
+
     } catch (error) {
         console.error('❌ Ошибка сохранения должности:', error);
         showToast('❌ Ошибка: ' + (error.message || 'Неизвестная ошибка'), 'error');
@@ -480,9 +732,14 @@ async function savePosition() {
     }
 }
 
+// ============================================================
+// TOAST УВЕДОМЛЕНИЯ
+// ============================================================
+
 function showToast(message, type = 'success') {
     const existing = document.querySelector('.toast-notification');
     if (existing) existing.remove();
+
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
     toast.innerHTML = `
@@ -490,17 +747,253 @@ function showToast(message, type = 'success') {
         ${message}
     `;
     document.body.appendChild(toast);
+
     setTimeout(() => {
         if (toast.parentElement) toast.remove();
     }, 4000);
 }
 
+// ============================================================
+// ФУНКЦИИ
+// ============================================================
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.parentElement.querySelector('.toggle-password');
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+    }
+}
+
+function showAlert(type, message) {
+    const container = document.getElementById('changeAlert');
+    const msgSpan = document.getElementById('changeMessage');
+    msgSpan.textContent = message;
+    container.className = `alert alert-${type} show`;
+}
+
+function hideAlert() {
+    document.getElementById('changeAlert').classList.remove('show');
+}
+
+function checkPasswordStrength(password) {
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 10) score++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^a-zA-Z0-9]/.test(password)) score++;
+    
+    const levels = ['', 'weak', 'medium', 'strong', 'very-strong'];
+    const labels = ['', 'Слабый', 'Средний', 'Хороший', 'Отличный'];
+    return { level: levels[Math.min(score, 4)], label: labels[Math.min(score, 4)] };
+}
+
+// ============================================================
+// ИНДИКАТОР СИЛЫ ПАРОЛЯ
+// ============================================================
+
+document.getElementById('newPassword').addEventListener('input', function() {
+    const result = checkPasswordStrength(this.value);
+    const bar = document.getElementById('strengthBar');
+    const text = document.getElementById('strengthText');
+    
+    bar.className = 'bar';
+    if (this.value.length > 0 && result.level) {
+        bar.classList.add(result.level);
+        text.textContent = `Надёжность: ${result.label}`;
+    } else {
+        text.textContent = 'Введите пароль для оценки надёжности';
+    }
+});
+
+document.getElementById('confirmPassword').addEventListener('input', function() {
+    const newPass = document.getElementById('newPassword').value;
+    const hint = document.getElementById('confirmHint');
+    if (this.value.length > 0) {
+        hint.textContent = this.value === newPass ? '✅ Пароли совпадают' : '❌ Пароли не совпадают';
+        hint.style.color = this.value === newPass ? '#10B981' : '#EF4444';
+    } else {
+        hint.textContent = 'Пароли должны совпадать';
+        hint.style.color = '#94A3B8';
+    }
+});
+
+// ============================================================
+// ОБРАБОТЧИК ENTER
+// ============================================================
+
+document.getElementById('changeCredentialsForm').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('saveCredentialsBtn').click();
+    }
+});
+
+// ============================================================
+// СОХРАНЕНИЕ ИЗМЕНЕНИЙ (Логин + Пароль) С ЗАВЕРШЕНИЕМ ВСЕХ СЕССИЙ
+// ============================================================
+
+document.getElementById('saveCredentialsBtn').onclick = async function() {
+    hideAlert();
+
+    const newLogin = document.getElementById('newLogin').value.trim();
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+
+    const hasLoginChange = newLogin.length > 0;
+    const hasPasswordChange = newPassword.length > 0;
+
+    if (!hasLoginChange && !hasPasswordChange) {
+        showAlert('danger', '❌ Нет изменений для сохранения');
+        return;
+    }
+
+    if (hasLoginChange) {
+        if (newLogin.length < 3) {
+            showAlert('danger', '❌ Логин должен содержать минимум 3 символа');
+            return;
+        }
+
+        const { data: existing } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('login', newLogin)
+            .neq('id', currentUser.id)
+            .single();
+
+        if (existing) {
+            showAlert('danger', '❌ Этот логин уже занят');
+            return;
+        }
+    }
+
+    if (hasPasswordChange) {
+        if (!currentPassword) {
+            showAlert('danger', '❌ Введите текущий пароль');
+            return;
+        }
+
+        if (newPassword.length < 6) {
+            showAlert('danger', '❌ Новый пароль должен содержать минимум 6 символов');
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            showAlert('danger', '❌ Пароли не совпадают');
+            return;
+        }
+
+        const { data: user, error: findError } = await supabaseClient
+            .from('users')
+            .select('password_hash')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (findError || !user) {
+            showAlert('danger', '❌ Пользователь не найден');
+            return;
+        }
+
+        if (user.password_hash !== currentPassword) {
+            showAlert('danger', '❌ Неверный текущий пароль');
+            return;
+        }
+    }
+
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="loading-spinner"></span> Сохранение...';
+    btn.disabled = true;
+
+    try {
+        const updateData = { 
+            updated_at: new Date().toISOString(),
+            // 🔐 Завершаем все старые сессии при смене пароля
+            active_session_id: null,
+            session_invalidated_at: new Date().toISOString()
+        };
+
+        if (hasLoginChange) {
+            updateData.login = newLogin;
+        }
+
+        if (hasPasswordChange) {
+            updateData.password_hash = newPassword;
+            updateData.force_change = false;
+            updateData.password_changed_at = new Date().toISOString();
+        }
+
+        const { error: updateError } = await supabaseClient
+            .from('users')
+            .update(updateData)
+            .eq('id', currentUser.id);
+
+        if (updateError) throw updateError;
+
+        // Обновляем сессию
+        if (hasLoginChange) {
+            currentUser.login = newLogin;
+        }
+        if (hasPasswordChange) {
+            currentUser.password_hash = newPassword;
+            currentUser.force_change = false;
+        }
+
+        // Обновляем localStorage для текущего устройства
+        const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (hasLoginChange) savedUser.login = newLogin;
+        localStorage.setItem('currentUser', JSON.stringify(savedUser));
+
+        // Устанавливаем новую сессию для текущего устройства
+        await supabaseClient
+            .from('users')
+            .update({
+                active_session_id: currentDeviceSessionId
+            })
+            .eq('id', currentUser.id);
+
+        // Очищаем поля
+        document.getElementById('newLogin').value = '';
+        document.getElementById('currentPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+        document.getElementById('strengthBar').className = 'bar';
+        document.getElementById('strengthText').textContent = 'Введите пароль для оценки надёжности';
+        document.getElementById('confirmHint').textContent = 'Пароли должны совпадать';
+        document.getElementById('confirmHint').style.color = '#94A3B8';
+
+        renderProfile();
+        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.login;
+
+        showAlert('success', '✅ Данные успешно обновлены! Все старые сессии завершены. Другие устройства будут выведены из системы.');
+
+    } catch (error) {
+        console.error('❌ Ошибка:', error);
+        showAlert('danger', '❌ Ошибка при сохранении: ' + (error.message || 'Неизвестная ошибка'));
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+
+// ============================================================
+// МОБИЛЬНОЕ МЕНЮ
+// ============================================================
+
 document.getElementById('menuToggle').onclick = () => {
     document.getElementById('sidebar').classList.toggle('open');
 };
+
 if (window.innerWidth <= 768) {
     document.getElementById('menuToggle').style.display = 'inline-block';
 }
+
 window.onresize = () => {
     if (window.innerWidth <= 768) {
         document.getElementById('menuToggle').style.display = 'inline-block';
@@ -509,7 +1002,13 @@ window.onresize = () => {
         document.getElementById('sidebar').classList.remove('open');
     }
 };
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+
 loadUser();
 </script>
+
 </body>
 </html>
