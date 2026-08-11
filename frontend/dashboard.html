@@ -298,6 +298,66 @@
             overflow: hidden;
         }
 
+        /* ===== МОДАЛЬНОЕ ОКНО ЗАВЕРШЕНИЯ СЕССИИ ===== */
+        .session-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        .session-modal-overlay.active {
+            display: flex;
+        }
+        .session-modal {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 48px;
+            max-width: 440px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+            animation: slideUp 0.4s ease;
+        }
+        .session-modal .modal-icon {
+            font-size: 64px;
+            display: block;
+            margin-bottom: 12px;
+        }
+        .session-modal .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--danger);
+            margin-bottom: 8px;
+        }
+        .session-modal .modal-desc {
+            color: var(--text-secondary);
+            font-size: 15px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        .session-modal .btn-login {
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+            color: white;
+            padding: 12px 40px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .session-modal .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        }
+
         @media (max-width: 768px) {
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -330,6 +390,15 @@
                 font-size: 36px;
             }
             .page-title {
+                font-size: 20px;
+            }
+            .session-modal {
+                padding: 28px 20px;
+            }
+            .session-modal .modal-icon {
+                font-size: 48px;
+            }
+            .session-modal .modal-title {
                 font-size: 20px;
             }
         }
@@ -369,6 +438,18 @@
             }
             .page-title {
                 font-size: 18px;
+            }
+            .session-modal {
+                padding: 24px 16px;
+            }
+            .session-modal .modal-icon {
+                font-size: 40px;
+            }
+            .session-modal .modal-title {
+                font-size: 18px;
+            }
+            .session-modal .modal-desc {
+                font-size: 14px;
             }
         }
 
@@ -548,6 +629,19 @@
     </div>
 </main>
 
+<!-- ===== МОДАЛЬНОЕ ОКНО ЗАВЕРШЕНИЯ СЕССИИ ===== -->
+<div class="session-modal-overlay" id="sessionModal">
+    <div class="session-modal">
+        <span class="modal-icon">🔒</span>
+        <h2 class="modal-title">Сессия завершена</h2>
+        <p class="modal-desc">
+            Ваша сессия была завершена, так как вы вошли на другом устройстве<br>
+            или был изменён пароль.
+        </p>
+        <button class="btn-login" onclick="window.location.href='/index.html'">🔑 Войти заново</button>
+    </div>
+</div>
+
 <!-- ============================================================
    SCRIPT — ИСПОЛЬЗУЕМ ГОТОВЫЙ SUPABASE ИЗ components.js
    ============================================================ -->
@@ -568,7 +662,6 @@ if (typeof window.supabaseClient === 'undefined') {
     );
 }
 
-// БЕРЁМ ГОТОВЫЙ КЛИЕНТ, НЕ СОЗДАЁМ НОВЫЙ!
 console.log('✅ Supabase готов к использованию');
 
 // ============================================================
@@ -579,12 +672,57 @@ let currentUser = null;
 let refreshInterval = null;
 let sessionCheckInterval = null;
 let isCheckingSession = false;
+let isSessionEnded = false;
+const SESSION_CHECK_INTERVAL = 5000; // 5 секунд (быстрая проверка)
 
 // ============================================================
-// ФУНКЦИЯ ПРОВЕРКИ СЕССИИ (выход со всех устройств)
+// ID УСТРОЙСТВА
 // ============================================================
+function getDeviceSessionId() {
+    let sessionId = localStorage.getItem('deviceSessionId');
+    if (!sessionId) {
+        const ua = navigator.userAgent || '';
+        const screen = window.screen.width + 'x' + window.screen.height;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        const base = btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+        sessionId = 'device_' + base + '_' + timestamp + '_' + random;
+        localStorage.setItem('deviceSessionId', sessionId);
+    }
+    return sessionId;
+}
+const deviceSessionId = getDeviceSessionId();
 
+// ============================================================
+// ПОКАЗ МОДАЛЬНОГО ОКНА ЗАВЕРШЕНИЯ СЕССИИ
+// ============================================================
+function showSessionEndedModal() {
+    if (isSessionEnded) return;
+    isSessionEnded = true;
+    
+    // Очищаем localStorage
+    localStorage.removeItem('currentUser');
+    
+    // Показываем модальное окно
+    const modal = document.getElementById('sessionModal');
+    if (modal) {
+        modal.classList.add('active');
+    } else {
+        // Если модальное окно не найдено, просто редиректим
+        window.location.href = '/index.html';
+    }
+    
+    // Останавливаем все интервалы
+    stopAutoRefresh();
+}
+
+// ============================================================
+// ФУНКЦИЯ ПРОВЕРКИ СЕССИИ (МГНОВЕННЫЙ ВЫХОД)
+// ============================================================
 async function checkSession() {
+    // Если сессия уже завершена - не проверяем
+    if (isSessionEnded) return false;
+    
     // Предотвращаем одновременные проверки
     if (isCheckingSession) return true;
     isCheckingSession = true;
@@ -592,13 +730,14 @@ async function checkSession() {
     const savedUser = localStorage.getItem('currentUser');
     if (!savedUser) {
         isCheckingSession = false;
-        window.location.href = '/index.html';
+        showSessionEndedModal();
         return false;
     }
 
     try {
         const user = JSON.parse(savedUser);
         
+        // Проверяем версию сессии в БД
         const { data, error } = await window.supabaseClient
             .from('users')
             .select('id, session_version, active_session_id')
@@ -606,38 +745,25 @@ async function checkSession() {
             .single();
 
         if (error || !data) {
-            // Если ошибка, не выкидываем пользователя, просто логируем
             console.warn('⚠️ Ошибка проверки сессии:', error?.message || 'Нет данных');
             isCheckingSession = false;
-            return true; // Продолжаем работу
+            return true;
         }
 
-        // Проверяем активную сессию
-        if (data.active_session_id) {
-            // Если сессия не совпадает с текущей - выходим
-            const deviceId = localStorage.getItem('deviceSessionId') || 'unknown';
-            if (data.active_session_id !== deviceId) {
-                console.log('🔒 Сессия активна на другом устройстве! Выход...');
-                localStorage.removeItem('currentUser');
-                showToast('🔒 Сессия активна на другом устройстве. Войдите заново.', 'error');
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 2000);
-                isCheckingSession = false;
-                return false;
-            }
+        // 1. Проверяем активную сессию
+        if (data.active_session_id && data.active_session_id !== deviceSessionId) {
+            console.log('🔒 Сессия активна на другом устройстве! Завершение...');
+            isCheckingSession = false;
+            showSessionEndedModal();
+            return false;
         }
 
-        // Проверяем session_version (если есть)
-        if (data.session_version !== undefined && user.session_version !== undefined) {
+        // 2. Проверяем версию сессии (сброс пароля/логина)
+        if (user.session_version !== undefined && data.session_version !== undefined) {
             if (data.session_version !== user.session_version) {
-                console.log('🔒 Сессия устарела! Выход из аккаунта...');
-                localStorage.removeItem('currentUser');
-                showToast('🔒 Ваша сессия была завершена. Войдите заново.', 'error');
-                setTimeout(() => {
-                    window.location.href = '/index.html';
-                }, 2000);
+                console.log('🔒 Сессия устарела (смена пароля)! Завершение...');
                 isCheckingSession = false;
+                showSessionEndedModal();
                 return false;
             }
         }
@@ -646,7 +772,6 @@ async function checkSession() {
         return true;
     } catch (e) {
         console.warn('⚠️ Ошибка при проверке сессии:', e.message);
-        // Не выкидываем пользователя при ошибке
         isCheckingSession = false;
         return true;
     }
@@ -655,7 +780,6 @@ async function checkSession() {
 // ============================================================
 // ТОСТ УВЕДОМЛЕНИЯ
 // ============================================================
-
 function showToast(message, type = 'success', duration = 4000) {
     const container = document.querySelector('.toast-container') || (() => {
         const c = document.createElement('div');
@@ -686,7 +810,6 @@ function showToast(message, type = 'success', duration = 4000) {
 // ============================================================
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
-
 function loadUser() {
     const savedUser = localStorage.getItem('currentUser');
     if (!savedUser) {
@@ -720,7 +843,6 @@ document.getElementById('logoutBtn').onclick = () => {
 // ============================================================
 // ЗАГРУЗКА СТАТИСТИКИ
 // ============================================================
-
 async function loadStats() {
     try {
         const { count: employeesCount, error: empErr } = await window.supabaseClient
@@ -771,14 +893,13 @@ async function loadStats() {
 // ============================================================
 // АВТООБНОВЛЕНИЕ
 // ============================================================
-
 function startAutoRefresh() {
     if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(loadStats, 30000);
     
-    // Проверка сессии каждые 60 секунд
+    // Проверка сессии каждые 5 секунд (мгновенная реакция)
     if (sessionCheckInterval) clearInterval(sessionCheckInterval);
-    sessionCheckInterval = setInterval(checkSession, 60000);
+    sessionCheckInterval = setInterval(checkSession, SESSION_CHECK_INTERVAL);
 }
 
 function stopAutoRefresh() {
@@ -795,7 +916,6 @@ function stopAutoRefresh() {
 // ============================================================
 // МОБИЛЬНОЕ МЕНЮ
 // ============================================================
-
 const menuToggle = document.getElementById('menuToggle');
 const sidebar = document.getElementById('sidebar');
 
@@ -816,28 +936,8 @@ if (menuToggle && sidebar) {
 }
 
 // ============================================================
-// ID УСТРОЙСТВА ДЛЯ СЕССИИ
-// ============================================================
-
-function getDeviceSessionId() {
-    let sessionId = localStorage.getItem('deviceSessionId');
-    if (!sessionId) {
-        const ua = navigator.userAgent || '';
-        const screen = window.screen.width + 'x' + window.screen.height;
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 8);
-        const base = btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-        sessionId = 'device_' + base + '_' + timestamp + '_' + random;
-        localStorage.setItem('deviceSessionId', sessionId);
-    }
-    return sessionId;
-}
-const deviceSessionId = getDeviceSessionId();
-
-// ============================================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
-
 async function initDashboard() {
     console.log('🚀 Инициализация дашборда...');
     console.log('🆔 ID устройства:', deviceSessionId);
@@ -863,7 +963,23 @@ if (document.readyState === 'loading') {
 }
 
 window.addEventListener('beforeunload', stopAutoRefresh);
-</script>
 
+// ============================================================
+// ВОССТАНОВЛЕНИЕ ПОСЛЕ ПОТЕРИ ФОКУСА (мобильные устройства)
+// ============================================================
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && !isSessionEnded) {
+        // При возврате на страницу проверяем сессию
+        checkSession();
+    }
+});
+
+// Перехватываем ошибки сети
+window.addEventListener('online', function() {
+    if (!isSessionEnded) {
+        checkSession();
+    }
+});
+</script>
 </body>
 </html>
