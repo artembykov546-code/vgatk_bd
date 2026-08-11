@@ -11,8 +11,9 @@
     <!-- ===== ШРИФТЫ ===== -->
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== SUPABASE & BCRYPT ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
     
     <style>
         /* ===== БАЗОВЫЕ СТИЛИ ===== */
@@ -64,7 +65,7 @@
         .btn-secondary { background: linear-gradient(135deg, #94A3B8, #64748B); color: white; box-shadow: 0 4px 15px rgba(148, 163, 184, 0.3); }
         .btn-secondary:hover { background: linear-gradient(135deg, #64748B, #475569); box-shadow: 0 8px 25px rgba(148, 163, 184, 0.4); }
         .btn-primary { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
-        .btn-primary:hover { background: linear-gradient(135deg, var(--secondary), var(--primary-dark)); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--secondary), #1D4ED8); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
         .btn-warning { background: linear-gradient(135deg, var(--warning), var(--warning-dark)); color: white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
         .btn-warning:hover { background: linear-gradient(135deg, var(--warning-dark), #B45309); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4); }
         .btn-danger { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
@@ -306,6 +307,17 @@
 </main>
 
 <script>
+// ============================================================
+// ПРОВЕРКА ЗАГРУЗКИ BCRYPTJS
+// ============================================================
+if (typeof dcodeIO === 'undefined' || typeof dcodeIO.bcrypt === 'undefined') {
+    console.error('❌ ОШИБКА: Библиотека bcryptjs не загрузилась!');
+    alert('Ошибка загрузки системы безопасности. Пожалуйста, обновите страницу.');
+} else {
+    window.bcrypt = dcodeIO.bcrypt;
+    console.log('✅ bcryptjs успешно загружен');
+}
+
 // ============================================================
 // КОНФИГУРАЦИЯ SUPABASE
 // ============================================================
@@ -889,6 +901,7 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
             return;
         }
 
+        // 🔐 ПРОВЕРКА ТЕКУЩЕГО ПАРОЛЯ С ИСПОЛЬЗОВАНИЕМ BCRYPT
         const { data: user, error: findError } = await supabaseClient
             .from('users')
             .select('password_hash')
@@ -900,8 +913,16 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
             return;
         }
 
-        if (user.password_hash !== currentPassword) {
-            showAlert('danger', '❌ Неверный текущий пароль');
+        // Сравниваем введенный пароль с хешем из базы данных
+        try {
+            const isPasswordValid = await window.bcrypt.compare(currentPassword, user.password_hash);
+            if (!isPasswordValid) {
+                showAlert('danger', '❌ Неверный текущий пароль');
+                return;
+            }
+        } catch (bcryptError) {
+            console.error('❌ Ошибка проверки пароля:', bcryptError);
+            showAlert('danger', '❌ Ошибка проверки пароля');
             return;
         }
     }
@@ -924,7 +945,10 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
         }
 
         if (hasPasswordChange) {
-            updateData.password_hash = newPassword;
+            // Хешируем новый пароль перед сохранением
+            const saltRounds = 10;
+            const hashedNewPassword = await window.bcrypt.hash(newPassword, saltRounds);
+            updateData.password_hash = hashedNewPassword;
             updateData.force_change = false;
             updateData.password_changed_at = new Date().toISOString();
         }

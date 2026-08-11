@@ -1,0 +1,11 @@
+{
+  "runOnSave.statusMessageTimeout": 3000,
+  "runOnSave.commands": [
+    {
+      "match": "\\.(html|js|css|json)$",
+      "command": "deploy.bat",
+      "runIn": "terminal"
+    }
+  ],
+  "terminal.integrated.defaultProfile.windows": "Command Prompt"
+}

@@ -231,9 +231,10 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let tempUserId = null;
+let tempUserSessionVersion = null;
 
 // ============================================================
-// ФУНКЦИЯ ДЛЯ ПЕРЕХОДА НА СТРАНИЦУ (ИСПРАВЛЕНО ДЛЯ RENDER)
+// ФУНКЦИЯ ДЛЯ ПЕРЕХОДА НА СТРАНИЦУ
 // ============================================================
 function navigateTo(page) {
     const hostname = window.location.hostname;
@@ -241,17 +242,11 @@ function navigateTo(page) {
     
     let url;
     
-    // Для Render - все файлы в корне
     if (hostname.includes('onrender.com')) {
-        // Убираем ведущий слэш для красоты
         url = page;
-    }
-    // Для GitHub Pages
-    else if (hostname.includes('github.io')) {
+    } else if (hostname.includes('github.io')) {
         url = '/vgatk_bd' + page;
-    }
-    // Для localhost
-    else {
+    } else {
         url = page;
     }
     
@@ -260,32 +255,48 @@ function navigateTo(page) {
 }
 
 // ============================================================
-// ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ
+// ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ (С ПРОВЕРКОЙ СЕССИИ)
 // ============================================================
-document.addEventListener('DOMContentLoaded', function() {
+async function checkAuth() {
     const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        try {
-            const user = JSON.parse(savedUser);
-            supabaseClient
-                .from('users')
-                .select('id')
-                .eq('id', user.id)
-                .single()
-                .then(({ data }) => {
-                    if (data) {
-                        // Простой переход без лишних проверок
-                        window.location.href = '/dashboard.html';
-                    } else {
-                        localStorage.removeItem('currentUser');
-                    }
-                })
-                .catch(() => {
-                    localStorage.removeItem('currentUser');
-                });
-        } catch (e) {
+    if (!savedUser) return false;
+
+    try {
+        const user = JSON.parse(savedUser);
+        
+        // Проверяем текущую версию сессии пользователя в БД
+        const { data, error } = await supabaseClient
+            .from('users')
+            .select('id, session_version')
+            .eq('id', user.id)
+            .single();
+
+        if (error || !data) {
             localStorage.removeItem('currentUser');
+            return false;
         }
+
+        // Если версия сессии изменилась - выходим из аккаунта
+        if (data.session_version !== user.session_version) {
+            console.log('🔒 Сессия устарела! Выход из аккаунта...');
+            localStorage.removeItem('currentUser');
+            showError('🔒 Ваша сессия была завершена из-за смены пароля. Войдите заново.');
+            return false;
+        }
+
+        return true;
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        return false;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+    // Проверяем авторизацию с проверкой сессии
+    const isAuth = await checkAuth();
+    if (isAuth) {
+        navigateTo('/dashboard.html');
+        return;
     }
 
     // ============================================================
@@ -296,7 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
         registerLink.addEventListener('click', function(e) {
             e.preventDefault();
             console.log('🔗 Переход на страницу регистрации...');
-            window.location.href = '/register/index.html';
+            navigateTo('/register/index.html');
         });
     }
 });
@@ -311,7 +322,7 @@ async function handleLogin(login, password) {
         
         const { data: user, error } = await supabaseClient
             .from('users')
-            .select(`id, login, password_hash, employee_id, force_change, role`)
+            .select(`id, login, password_hash, employee_id, force_change, role, session_version`)
             .eq('login', login)
             .maybeSingle();
 
@@ -341,6 +352,7 @@ async function handleLogin(login, password) {
 
         if (user.force_change) {
             tempUserId = user.id;
+            tempUserSessionVersion = user.session_version;
             document.getElementById('changeUserLogin').textContent = user.login;
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('changePasswordContainer').classList.add('active');
@@ -380,13 +392,13 @@ function loginSuccess(user, fullName) {
         full_name: fullName,
         employee_id: user.employee_id,
         role: user.role || 'viewer',
-        groups_access: user.groups_access || []
+        groups_access: user.groups_access || [],
+        session_version: user.session_version || 1  // Сохраняем версию сессии
     };
     localStorage.setItem('currentUser', JSON.stringify(userData));
     
     console.log('✅ Вход выполнен, перенаправление на dashboard...');
-    // Прямой переход без лишних функций
-    window.location.href = '/dashboard.html';
+    navigateTo('/dashboard.html');
 }
 
 async function handleChangePassword() {
@@ -410,11 +422,14 @@ async function handleChangePassword() {
     try {
         const hashedPassword = await window.bcrypt.hash(newPassword, 10);
         
+        // При смене пароля увеличиваем session_version на 1
+        // Это приведет к выходу со всех устройств
         const { error } = await supabaseClient
             .from('users')
             .update({ 
                 password_hash: hashedPassword,
                 force_change: false,
+                session_version: supabaseClient.rpc('increment_session_version', { user_id: tempUserId }),
                 updated_at: new Date().toISOString()
             })
             .eq('id', tempUserId);
@@ -422,6 +437,7 @@ async function handleChangePassword() {
         if (error) throw error;
 
         alert('✅ Пароль успешно изменён!');
+        alert('🔒 Для безопасности вы будете выведены со всех устройств.');
         window.location.reload();
 
     } catch (err) {
@@ -460,6 +476,10 @@ function showChangeError(message) {
     document.getElementById('changeError').classList.add('show');
     setTimeout(() => document.getElementById('changeError').classList.remove('show'), 5000);
 }
+
+// ============================================================
+// ОБРАБОТЧИКИ СОБЫТИЙ
+// ============================================================
 
 document.getElementById('newPasswordInput').addEventListener('input', function() {
     const password = this.value;

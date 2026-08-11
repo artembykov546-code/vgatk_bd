@@ -577,9 +577,55 @@ console.log('✅ Supabase готов к использованию');
 
 let currentUser = null;
 let refreshInterval = null;
+let sessionCheckInterval = null;
 
 // ============================================================
-// TOAST УВЕДОМЛЕНИЯ
+// ФУНКЦИЯ ПРОВЕРКИ СЕССИИ (выход со всех устройств)
+// ============================================================
+
+async function checkSession() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) {
+        window.location.href = '/index.html';
+        return false;
+    }
+
+    try {
+        const user = JSON.parse(savedUser);
+        
+        const { data, error } = await window.supabaseClient
+            .from('users')
+            .select('id, session_version')
+            .eq('id', user.id)
+            .single();
+
+        if (error || !data) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return false;
+        }
+
+        // Если версия сессии изменилась - выходим
+        if (data.session_version !== user.session_version) {
+            console.log('🔒 Сессия устарела! Выход из аккаунта...');
+            localStorage.removeItem('currentUser');
+            showToast('🔒 Ваша сессия была завершена из-за смены пароля. Войдите заново.', 'error');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 2000);
+            return false;
+        }
+
+        return true;
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+        return false;
+    }
+}
+
+// ============================================================
+// ТОСТ УВЕДОМЛЕНИЯ
 // ============================================================
 
 function showToast(message, type = 'success', duration = 4000) {
@@ -648,7 +694,6 @@ document.getElementById('logoutBtn').onclick = () => {
 
 async function loadStats() {
     try {
-        // Сотрудники
         const { count: employeesCount, error: empErr } = await window.supabaseClient
             .from('employees')
             .select('*', { count: 'exact', head: true })
@@ -657,7 +702,6 @@ async function loadStats() {
         
         if (empErr && empErr.code !== 'PGRST116') throw empErr;
 
-        // Группы
         const { data: groups, error: grpErr } = await window.supabaseClient
             .from('groups')
             .select('id')
@@ -666,7 +710,6 @@ async function loadStats() {
         if (grpErr) throw grpErr;
         const groupsCount = groups ? groups.length : 0;
 
-        // Учащиеся
         let totalStudents = 0;
         if (groupsCount > 0) {
             const groupIds = groups.map(g => g.id);
@@ -680,14 +723,12 @@ async function loadStats() {
             totalStudents = studCount || 0;
         }
 
-        // Выпускники
         const { count: gradCount, error: gradErr } = await window.supabaseClient
             .from('graduates')
             .select('*', { count: 'exact', head: true });
             
         if (gradErr && gradErr.code !== 'PGRST116') throw gradErr;
 
-        // Обновляем DOM
         document.getElementById('employeesCount').textContent = employeesCount || 0;
         document.getElementById('studentsCount').textContent = totalStudents;
         document.getElementById('groupsCount').textContent = groupsCount;
@@ -705,12 +746,20 @@ async function loadStats() {
 function startAutoRefresh() {
     if (refreshInterval) clearInterval(refreshInterval);
     refreshInterval = setInterval(loadStats, 30000);
+    
+    // Проверка сессии каждые 60 секунд
+    if (sessionCheckInterval) clearInterval(sessionCheckInterval);
+    sessionCheckInterval = setInterval(checkSession, 60000);
 }
 
 function stopAutoRefresh() {
     if (refreshInterval) {
         clearInterval(refreshInterval);
         refreshInterval = null;
+    }
+    if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+        sessionCheckInterval = null;
     }
 }
 
@@ -743,6 +792,10 @@ if (menuToggle && sidebar) {
 
 async function initDashboard() {
     console.log('🚀 Инициализация дашборда...');
+    
+    // Проверяем сессию при загрузке
+    const isSessionValid = await checkSession();
+    if (!isSessionValid) return;
     
     const isUserLoaded = loadUser();
     if (!isUserLoaded) return;
