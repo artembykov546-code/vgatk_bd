@@ -11,25 +11,24 @@
     <!-- ===== ШРИФТЫ ===== -->
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== SUPABASE & BCRYPT ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
     
     <style>
-        /* ===== БАЗОВЫЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary: #1E3A8A; --primary-light: #3B82F6; --secondary: #2563EB;
             --success: #10B981; --success-dark: #059669; --warning: #F59E0B; --warning-dark: #D97706;
             --danger: #EF4444; --danger-dark: #DC2626;
             --bg-main: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
-            --bg-card: rgba(255, 255, 255, 0.96); --bg-hover: rgba(59, 130, 246, 0.08); --bg-active: rgba(59, 130, 246, 0.12);
-            --text-primary: #1E293B; --text-secondary: #475569; --text-muted: #64748B; --text-light: #94A3B8;
+            --bg-card: rgba(255, 255, 255, 0.96);
+            --text-primary: #1E293B; --text-secondary: #475569; --text-muted: #64748B;
             --border: #dbeafe; --border-radius: 8px; --border-radius-lg: 12px; --border-radius-xl: 16px;
-            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08); --shadow-hover: 0 8px 30px rgba(59, 130, 246, 0.15);
-            --shadow-modal: 0 20px 60px rgba(37, 99, 235, 0.15);
+            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
             --header-height: 74px; --sidebar-width: 220px; --transition: all 0.3s ease;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.6; }
         a { text-decoration: none; color: inherit; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -49,10 +48,10 @@
         .sidebar { position: fixed; left: 0; top: var(--header-height); width: var(--sidebar-width); height: calc(100vh - var(--header-height)); background: var(--bg-card); backdrop-filter: blur(12px); padding: 20px 0; overflow-y: auto; z-index: 90; border-right: 1px solid var(--border); box-shadow: 4px 0 20px rgba(59, 130, 246, 0.08); }
         .sidebar-nav { list-style: none; padding: 0 16px; }
         .sidebar-nav li { margin-bottom: 4px; }
-        .sidebar-nav .nav-label { padding: 12px 16px 6px; color: var(--text-light); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .sidebar-nav .nav-label { padding: 12px 16px 6px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
         .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: var(--border-radius); color: var(--text-secondary); font-weight: 500; font-size: 14px; transition: var(--transition); text-decoration: none; }
-        .sidebar-nav a:hover { background: var(--bg-hover); color: var(--primary-light); }
-        .sidebar-nav a.active { background: var(--bg-active); color: var(--primary-light); }
+        .sidebar-nav a:hover { background: rgba(59, 130, 246, 0.08); color: var(--primary-light); }
+        .sidebar-nav a.active { background: rgba(59, 130, 246, 0.12); color: var(--primary-light); }
         .sidebar-nav a .icon { font-size: 20px; width: 24px; text-align: center; }
 
         .main-content { margin-left: var(--sidebar-width); padding: 24px 32px; min-height: calc(100vh - var(--header-height)); animation: fadeIn 0.6s ease; }
@@ -64,7 +63,7 @@
         .btn-secondary { background: linear-gradient(135deg, #94A3B8, #64748B); color: white; box-shadow: 0 4px 15px rgba(148, 163, 184, 0.3); }
         .btn-secondary:hover { background: linear-gradient(135deg, #64748B, #475569); box-shadow: 0 8px 25px rgba(148, 163, 184, 0.4); }
         .btn-primary { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
-        .btn-primary:hover { background: linear-gradient(135deg, var(--secondary), var(--primary-dark)); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
+        .btn-primary:hover { background: linear-gradient(135deg, var(--secondary), #1D4ED8); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
         .btn-warning { background: linear-gradient(135deg, var(--warning), var(--warning-dark)); color: white; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); }
         .btn-warning:hover { background: linear-gradient(135deg, var(--warning-dark), #B45309); box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4); }
         .btn-danger { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
@@ -76,10 +75,8 @@
         .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
         .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
 
-        /* ===== PROFILE CARD ===== */
         .profile-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px; }
         .profile-card .avatar { font-size: 72px; text-align: center; display: block; margin-bottom: 4px; }
-        .profile-card .name { font-size: 24px; font-weight: 700; color: var(--primary); text-align: center; }
         .profile-card .sub-info { text-align: center; color: var(--text-secondary); margin-top: 2px; font-size: 14px; }
         .profile-card .position-text { text-align: center; color: var(--text-muted); margin-top: 2px; font-size: 13px; font-style: italic; }
         .profile-divider { margin: 16px 0 20px; border: none; border-top: 2px solid var(--border); }
@@ -89,21 +86,17 @@
         .profile-info .item .value { color: var(--text-primary); flex: 1; }
         .profile-info .item .value .tag-item { background: var(--bg-main); padding: 2px 10px; border-radius: 12px; font-size: 13px; border: 1px solid var(--border); display: inline-block; margin: 2px 4px 2px 0; }
 
-        /* ===== EDITABLE POSITION ===== */
         .position-edit-wrapper { display: flex; align-items: center; gap: 8px; flex: 1; }
         .position-edit-wrapper .form-control { height: 36px; padding: 4px 10px; font-size: 14px; border: 2px solid var(--border); border-radius: var(--border-radius); transition: var(--transition); background: var(--bg-card); flex: 1; min-width: 150px; }
         .position-edit-wrapper .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
-        .position-edit-wrapper .form-control:disabled { opacity: 0.7; cursor: not-allowed; background: #f1f5f9; }
         .position-edit-wrapper .btn { padding: 4px 12px; font-size: 12px; height: 36px; }
 
-        /* ===== EDITABLE NAME ===== */
         .name-edit-wrapper { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; }
         .name-edit-wrapper .form-control { height: 42px; padding: 6px 14px; font-size: 18px; font-weight: 700; border: 2px solid var(--border); border-radius: var(--border-radius); transition: var(--transition); background: var(--bg-card); flex: 1; max-width: 500px; text-align: center; color: var(--primary); }
         .name-edit-wrapper .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
         .name-edit-wrapper .form-control:disabled { opacity: 0.7; cursor: not-allowed; background: #f1f5f9; }
         .name-edit-wrapper .btn { padding: 4px 12px; font-size: 12px; height: 42px; }
 
-        /* ===== FORM CARD ===== */
         .form-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px; }
         .form-card .form-title { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
         .form-group { margin-bottom: 16px; }
@@ -116,7 +109,6 @@
         .form-actions { display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--border); }
         .form-actions .btn { padding: 10px 28px; font-size: 14px; }
 
-        /* ===== ALERT ===== */
         .alert { padding: 12px 16px; border-radius: var(--border-radius); margin-bottom: 16px; font-size: 14px; display: none; }
         .alert.show { display: block; }
         .alert-success { background: #D1FAE5; color: var(--success-dark); border-left: 4px solid var(--success); }
@@ -148,7 +140,7 @@
             position: fixed; top: 80px; right: 20px; padding: 16px 24px;
             border-radius: var(--border-radius); color: white; font-weight: 600;
             z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px;
-            box-shadow: var(--shadow-modal);
+            box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15);
         }
         .toast-success { background: var(--success); }
         .toast-error { background: var(--danger); }
@@ -175,7 +167,6 @@
             .name-edit-wrapper { flex-wrap: wrap; }
             .name-edit-wrapper .form-control { width: 100%; max-width: 100%; }
         }
-
         @media (max-width: 480px) {
             .college-name { font-size: 11px; } .college-name .sub { font-size: 11px; }
             .profile-card .name { font-size: 20px; }
@@ -183,7 +174,6 @@
             .profile-info .item .label { width: 100px; }
             .name-edit-wrapper .form-control { font-size: 16px; height: 38px; }
         }
-
         @media (min-width: 769px) { #menuToggle { display: none !important; } }
     </style>
 </head>
@@ -307,6 +297,16 @@
 
 <script>
 // ============================================================
+// ПРОВЕРКА ЗАГРУЗКИ BCRYPTJS
+// ============================================================
+if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
+    window.bcrypt = dcodeIO.bcrypt;
+    console.log('✅ bcryptjs успешно загружен');
+} else {
+    console.error('❌ Ошибка: Библиотека bcryptjs не загрузилась!');
+}
+
+// ============================================================
 // КОНФИГУРАЦИЯ SUPABASE
 // ============================================================
 
@@ -314,7 +314,6 @@ const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 console.log('✅ Supabase инициализирован');
 
 // ============================================================
@@ -338,28 +337,6 @@ function generateDeviceSessionId() {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
     return `device_${btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20)}_${timestamp}_${random}`;
-}
-
-// ============================================================
-// ЗАВЕРШЕНИЕ СЕССИИ НА ВСЕХ УСТРОЙСТВАХ
-// ============================================================
-async function invalidateAllSessions(userId) {
-    try {
-        const { error } = await supabaseClient
-            .from('users')
-            .update({ 
-                active_session_id: null,
-                session_invalidated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-
-        if (error) throw error;
-        console.log('✅ Все сессии пользователя завершены');
-        return true;
-    } catch (error) {
-        console.error('❌ Ошибка завершения сессий:', error);
-        return false;
-    }
 }
 
 // ============================================================
@@ -399,27 +376,23 @@ document.getElementById('logoutBtn').onclick = () => {
 async function loadUserData() {
     try {
         // Загружаем данные сотрудника (employee)
-        const { data: employee, error: empError } = await supabaseClient
-            .from('employees')
-            .select('*')
-            .eq('id', currentUser.employee_id)
-            .single();
-
-        if (empError) {
-            console.error('❌ Ошибка загрузки сотрудника:', empError);
-            // Если нет связи с employee, пробуем загрузить только пользователя
-            const { data: user, error: userError } = await supabaseClient
-                .from('users')
+        if (currentUser.employee_id) {
+            const { data: employee, error: empError } = await supabaseClient
+                .from('employees')
                 .select('*')
-                .eq('id', currentUser.id)
+                .eq('id', currentUser.employee_id)
                 .single();
-            if (userError) throw userError;
-            currentUser = { ...currentUser, ...user };
-            currentEmployee = null;
-        } else {
-            currentEmployee = employee;
-            // Объединяем данные
-            currentUser = { ...currentUser, ...employee };
+
+            if (empError) {
+                console.warn('⚠️ Сотрудник не найден:', empError);
+                currentEmployee = null;
+            } else {
+                currentEmployee = employee;
+                currentUser.full_name = employee.full_name;
+                currentUser.position = employee.position;
+                currentUser.category = employee.category;
+                currentUser.groups = employee.groups || [];
+            }
         }
 
         // Загружаем группы
@@ -447,13 +420,6 @@ async function loadUserData() {
 
 function renderProfile() {
     if (!currentUser) return;
-
-    const roleMap = {
-        'super_admin': 'Супер-Администратор',
-        'admin': 'Администратор',
-        'teacher': 'Преподаватель',
-        'viewer': 'Наблюдатель'
-    };
 
     const roleBadge = {
         'super_admin': 'badge-super_admin',
@@ -498,7 +464,7 @@ function renderProfile() {
     const infoDiv = document.getElementById('profileInfo');
     let html = '';
 
-    // Должность (с возможностью редактирования) - обновляем в таблице employees
+    // Должность (с возможностью редактирования)
     html += `
         <div class="item" style="grid-column:1/-1;">
             <span class="label">💼 Должность</span>
@@ -520,7 +486,7 @@ function renderProfile() {
         <div class="item"><span class="label">📋 Категория</span><span class="value">${categoryLabels[category] || category || '—'}</span></div>
     `;
 
-    // Группы (куратор или мастер ПО)
+    // Группы
     if (currentEmployee?.groups && Array.isArray(currentEmployee.groups) && currentEmployee.groups.length > 0) {
         const groupNames = currentEmployee.groups.map(gid => {
             const g = groups.find(gr => gr.id === gid);
@@ -542,7 +508,7 @@ function renderProfile() {
         `;
     }
 
-    // Права доступа (детально)
+    // Права доступа
     const accessDetails = {
         'super_admin': '🔓 Полный доступ ко всем данным',
         'admin': '🔓 Полный доступ (кроме супер-админов)',
@@ -615,34 +581,26 @@ async function saveFullName() {
         btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;"></span>';
         btn.disabled = true;
 
-        // Определяем, где обновлять ФИО
-        if (currentEmployee) {
-            // Обновляем в таблице employees
+        // Обновляем в таблице employees
+        if (currentUser.employee_id) {
             const { error } = await supabaseClient
                 .from('employees')
-                .update({ 
-                    full_name: newFullName,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('id', currentEmployee.id);
+                .update({ full_name: newFullName })
+                .eq('id', currentUser.employee_id);
 
             if (error) throw error;
             
-            currentEmployee.full_name = newFullName;
+            if (currentEmployee) currentEmployee.full_name = newFullName;
             currentUser.full_name = newFullName;
             
         } else {
-            // Если нет employee, обновляем в users
+            // Если нет employee_id, обновляем в users
             const { error } = await supabaseClient
                 .from('users')
-                .update({ 
-                    full_name: newFullName,
-                    updated_at: new Date().toISOString()
-                })
+                .update({ full_name: newFullName })
                 .eq('id', currentUser.id);
 
             if (error) throw error;
-            
             currentUser.full_name = newFullName;
         }
 
@@ -657,13 +615,9 @@ async function saveFullName() {
         document.getElementById('saveNameBtn').style.display = 'none';
         document.getElementById('cancelNameBtn').style.display = 'none';
         
-        // Обновляем заголовок
         document.getElementById('userNameDisplay').textContent = newFullName;
 
         showToast('✅ ФИО успешно обновлено!', 'success');
-        
-        // Перерисовываем профиль для обновления всех данных
-        renderProfile();
 
     } catch (error) {
         console.error('❌ Ошибка сохранения ФИО:', error);
@@ -675,7 +629,7 @@ async function saveFullName() {
 }
 
 // ============================================================
-// СОХРАНЕНИЕ ДОЛЖНОСТИ (в таблице employees)
+// СОХРАНЕНИЕ ДОЛЖНОСТИ
 // ============================================================
 
 async function savePosition() {
@@ -684,43 +638,28 @@ async function savePosition() {
     const btn = document.getElementById('savePositionBtn');
     const originalText = btn.innerHTML;
 
-    // Если нет employee_id, обновляем в users (как запасной вариант)
-    const targetId = currentUser.employee_id || currentUser.id;
     const tableName = currentUser.employee_id ? 'employees' : 'users';
+    const targetId = currentUser.employee_id || currentUser.id;
 
     try {
         btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;"></span>';
         btn.disabled = true;
 
-        // Обновляем в базе данных
         const { error } = await supabaseClient
             .from(tableName)
-            .update({ 
-                position: newPosition || null,
-                updated_at: new Date().toISOString()
-            })
+            .update({ position: newPosition || null })
             .eq('id', targetId);
 
-        if (error) {
-            console.error('❌ Ошибка Supabase:', error);
-            showToast('❌ Ошибка сохранения: ' + error.message, 'error');
-            return;
-        }
+        if (error) throw error;
 
-        // Обновляем локальные данные
-        if (currentEmployee) {
-            currentEmployee.position = newPosition || null;
-        }
+        if (currentEmployee) currentEmployee.position = newPosition || null;
         currentUser.position = newPosition || null;
         
-        // Обновляем localStorage
         const savedUser = JSON.parse(localStorage.getItem('currentUser'));
         savedUser.position = newPosition || null;
         localStorage.setItem('currentUser', JSON.stringify(savedUser));
 
-        // Перерисовываем профиль
         renderProfile();
-
         showToast('✅ Должность обновлена!', 'success');
 
     } catch (error) {
@@ -835,7 +774,7 @@ document.getElementById('changeCredentialsForm').addEventListener('keydown', fun
 });
 
 // ============================================================
-// СОХРАНЕНИЕ ИЗМЕНЕНИЙ (Логин + Пароль) С ЗАВЕРШЕНИЕМ ВСЕХ СЕССИЙ
+// СОХРАНЕНИЕ ИЗМЕНЕНИЙ (Логин + Пароль) С ИСПОЛЬЗОВАНИЕМ BCRYPT
 // ============================================================
 
 document.getElementById('saveCredentialsBtn').onclick = async function() {
@@ -854,25 +793,31 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
         return;
     }
 
+    // Проверка логина
     if (hasLoginChange) {
         if (newLogin.length < 3) {
             showAlert('danger', '❌ Логин должен содержать минимум 3 символа');
             return;
         }
 
-        const { data: existing } = await supabaseClient
+        const { data: existing, error: checkError } = await supabaseClient
             .from('users')
             .select('id')
             .eq('login', newLogin)
-            .neq('id', currentUser.id)
-            .single();
+            .neq('id', currentUser.id);
 
-        if (existing) {
+        if (checkError) {
+            showAlert('danger', '❌ Ошибка проверки логина: ' + checkError.message);
+            return;
+        }
+
+        if (existing && existing.length > 0) {
             showAlert('danger', '❌ Этот логин уже занят');
             return;
         }
     }
 
+    // Проверка пароля
     if (hasPasswordChange) {
         if (!currentPassword) {
             showAlert('danger', '❌ Введите текущий пароль');
@@ -889,6 +834,7 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
             return;
         }
 
+        // Проверка текущего пароля с использованием bcrypt
         const { data: user, error: findError } = await supabaseClient
             .from('users')
             .select('password_hash')
@@ -900,8 +846,16 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
             return;
         }
 
-        if (user.password_hash !== currentPassword) {
-            showAlert('danger', '❌ Неверный текущий пароль');
+        // Сравниваем введенный пароль с хешем из базы данных
+        try {
+            const isPasswordValid = await window.bcrypt.compare(currentPassword, user.password_hash);
+            if (!isPasswordValid) {
+                showAlert('danger', '❌ Неверный текущий пароль');
+                return;
+            }
+        } catch (bcryptError) {
+            console.error('❌ Ошибка проверки пароля:', bcryptError);
+            showAlert('danger', '❌ Ошибка проверки пароля');
             return;
         }
     }
@@ -912,21 +866,17 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
     btn.disabled = true;
 
     try {
-        const updateData = { 
-            updated_at: new Date().toISOString(),
-            // 🔐 Завершаем все старые сессии при смене пароля
-            active_session_id: null,
-            session_invalidated_at: new Date().toISOString()
-        };
+        const updateData = {};
 
         if (hasLoginChange) {
             updateData.login = newLogin;
         }
 
         if (hasPasswordChange) {
-            updateData.password_hash = newPassword;
-            updateData.force_change = false;
-            updateData.password_changed_at = new Date().toISOString();
+            // Хешируем новый пароль перед сохранением
+            const saltRounds = 10;
+            const hashedNewPassword = await window.bcrypt.hash(newPassword, saltRounds);
+            updateData.password_hash = hashedNewPassword;
         }
 
         const { error: updateError } = await supabaseClient
@@ -936,27 +886,18 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
 
         if (updateError) throw updateError;
 
-        // Обновляем сессию
+        // Обновляем локальные данные
         if (hasLoginChange) {
             currentUser.login = newLogin;
         }
         if (hasPasswordChange) {
             currentUser.password_hash = newPassword;
-            currentUser.force_change = false;
         }
 
-        // Обновляем localStorage для текущего устройства
+        // Обновляем localStorage
         const savedUser = JSON.parse(localStorage.getItem('currentUser'));
         if (hasLoginChange) savedUser.login = newLogin;
         localStorage.setItem('currentUser', JSON.stringify(savedUser));
-
-        // Устанавливаем новую сессию для текущего устройства
-        await supabaseClient
-            .from('users')
-            .update({
-                active_session_id: currentDeviceSessionId
-            })
-            .eq('id', currentUser.id);
 
         // Очищаем поля
         document.getElementById('newLogin').value = '';
@@ -971,7 +912,7 @@ document.getElementById('saveCredentialsBtn').onclick = async function() {
         renderProfile();
         document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.login;
 
-        showAlert('success', '✅ Данные успешно обновлены! Все старые сессии завершены. Другие устройства будут выведены из системы.');
+        showAlert('success', '✅ Данные успешно обновлены!');
 
     } catch (error) {
         console.error('❌ Ошибка:', error);
