@@ -578,14 +578,20 @@ console.log('✅ Supabase готов к использованию');
 let currentUser = null;
 let refreshInterval = null;
 let sessionCheckInterval = null;
+let isCheckingSession = false;
 
 // ============================================================
 // ФУНКЦИЯ ПРОВЕРКИ СЕССИИ (выход со всех устройств)
 // ============================================================
 
 async function checkSession() {
+    // Предотвращаем одновременные проверки
+    if (isCheckingSession) return true;
+    isCheckingSession = true;
+
     const savedUser = localStorage.getItem('currentUser');
     if (!savedUser) {
+        isCheckingSession = false;
         window.location.href = '/index.html';
         return false;
     }
@@ -595,32 +601,54 @@ async function checkSession() {
         
         const { data, error } = await window.supabaseClient
             .from('users')
-            .select('id, session_version')
+            .select('id, session_version, active_session_id')
             .eq('id', user.id)
             .single();
 
         if (error || !data) {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
-            return false;
+            // Если ошибка, не выкидываем пользователя, просто логируем
+            console.warn('⚠️ Ошибка проверки сессии:', error?.message || 'Нет данных');
+            isCheckingSession = false;
+            return true; // Продолжаем работу
         }
 
-        // Если версия сессии изменилась - выходим
-        if (data.session_version !== user.session_version) {
-            console.log('🔒 Сессия устарела! Выход из аккаунта...');
-            localStorage.removeItem('currentUser');
-            showToast('🔒 Ваша сессия была завершена из-за смены пароля. Войдите заново.', 'error');
-            setTimeout(() => {
-                window.location.href = '/index.html';
-            }, 2000);
-            return false;
+        // Проверяем активную сессию
+        if (data.active_session_id) {
+            // Если сессия не совпадает с текущей - выходим
+            const deviceId = localStorage.getItem('deviceSessionId') || 'unknown';
+            if (data.active_session_id !== deviceId) {
+                console.log('🔒 Сессия активна на другом устройстве! Выход...');
+                localStorage.removeItem('currentUser');
+                showToast('🔒 Сессия активна на другом устройстве. Войдите заново.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 2000);
+                isCheckingSession = false;
+                return false;
+            }
         }
 
+        // Проверяем session_version (если есть)
+        if (data.session_version !== undefined && user.session_version !== undefined) {
+            if (data.session_version !== user.session_version) {
+                console.log('🔒 Сессия устарела! Выход из аккаунта...');
+                localStorage.removeItem('currentUser');
+                showToast('🔒 Ваша сессия была завершена. Войдите заново.', 'error');
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 2000);
+                isCheckingSession = false;
+                return false;
+            }
+        }
+
+        isCheckingSession = false;
         return true;
     } catch (e) {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
-        return false;
+        console.warn('⚠️ Ошибка при проверке сессии:', e.message);
+        // Не выкидываем пользователя при ошибке
+        isCheckingSession = false;
+        return true;
     }
 }
 
@@ -667,7 +695,7 @@ function loadUser() {
     }
     try {
         currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.full_name || currentUser.login;
         const roleMap = {
             'super_admin': 'Супер-Админ',
             'admin': 'Администратор',
@@ -677,6 +705,7 @@ function loadUser() {
         document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
         return true;
     } catch (e) {
+        console.error('Ошибка загрузки пользователя:', e);
         localStorage.removeItem('currentUser');
         window.location.href = '/index.html';
         return false;
@@ -787,11 +816,31 @@ if (menuToggle && sidebar) {
 }
 
 // ============================================================
+// ID УСТРОЙСТВА ДЛЯ СЕССИИ
+// ============================================================
+
+function getDeviceSessionId() {
+    let sessionId = localStorage.getItem('deviceSessionId');
+    if (!sessionId) {
+        const ua = navigator.userAgent || '';
+        const screen = window.screen.width + 'x' + window.screen.height;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        const base = btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+        sessionId = 'device_' + base + '_' + timestamp + '_' + random;
+        localStorage.setItem('deviceSessionId', sessionId);
+    }
+    return sessionId;
+}
+const deviceSessionId = getDeviceSessionId();
+
+// ============================================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 
 async function initDashboard() {
     console.log('🚀 Инициализация дашборда...');
+    console.log('🆔 ID устройства:', deviceSessionId);
     
     // Проверяем сессию при загрузке
     const isSessionValid = await checkSession();

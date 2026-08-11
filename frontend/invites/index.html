@@ -7,6 +7,7 @@
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -17,108 +18,166 @@
             --bg-main: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
             --bg-card: rgba(255, 255, 255, 0.96);
             --text-primary: #1E293B; --text-secondary: #475569; --text-muted: #64748B;
-            --border: #dbeafe; --border-radius: 8px; --border-radius-lg: 12px; --border-radius-xl: 16px;
-            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
-            --header-height: 74px; --sidebar-width: 220px; --transition: all 0.3s ease;
+            --border: #dbeafe; --border-radius: 6px; --border-radius-lg: 10px; --border-radius-xl: 14px;
+            --shadow: 0 2px 12px rgba(59, 130, 246, 0.08);
+            --header-height: 66px; --sidebar-width: 200px; --transition: all 0.3s ease;
         }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.6; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.5; font-size: 14px; }
         a { text-decoration: none; color: inherit; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .header { background: var(--bg-card); backdrop-filter: blur(12px); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); border-bottom: 1px solid var(--border); min-height: var(--header-height); }
-        .header-logo { display: flex; align-items: center; gap: 12px; }
-        .college-name { font-family: 'Lobster', cursive; font-size: 16px; color: var(--primary); line-height: 1.2; }
-        .college-name .sub { font-family: 'Lobster', cursive; font-size: 16px; color: var(--primary); }
-        .header-user { display: flex; align-items: center; gap: 16px; }
+        .header { background: var(--bg-card); backdrop-filter: blur(12px); padding: 8px 24px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(59, 130, 246, 0.1); border-bottom: 1px solid var(--border); min-height: var(--header-height); }
+        .header-logo { display: flex; align-items: center; gap: 10px; }
+        .college-name { font-family: 'Lobster', cursive; font-size: 14px; color: var(--primary); line-height: 1.2; }
+        .college-name .sub { font-family: 'Lobster', cursive; font-size: 14px; color: var(--primary); }
+        .header-user { display: flex; align-items: center; gap: 12px; }
         .header-user-info { text-align: right; }
-        .header-user-name { font-weight: 600; font-size: 14px; }
-        .header-user-role { font-size: 12px; color: var(--text-muted); }
-        .btn-logout { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; border: none; padding: 8px 16px; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; font-size: 13px; transition: var(--transition); }
-        .btn-logout:hover { transform: translateY(-2px); }
+        .header-user-name { font-weight: 600; font-size: 13px; }
+        .header-user-role { font-size: 11px; color: var(--text-muted); }
+        .btn-logout { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; border: none; padding: 6px 14px; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; font-size: 12px; transition: var(--transition); }
+        .btn-logout:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3); }
 
-        .sidebar { position: fixed; left: 0; top: var(--header-height); width: var(--sidebar-width); height: calc(100vh - var(--header-height)); background: var(--bg-card); backdrop-filter: blur(12px); padding: 20px 0; overflow-y: auto; z-index: 90; border-right: 1px solid var(--border); }
-        .sidebar-nav { list-style: none; padding: 0 16px; }
-        .sidebar-nav li { margin-bottom: 4px; }
-        .sidebar-nav .nav-label { padding: 12px 16px 6px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
-        .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: var(--border-radius); color: var(--text-secondary); font-weight: 500; font-size: 14px; transition: var(--transition); text-decoration: none; }
+        .sidebar { position: fixed; left: 0; top: var(--header-height); width: var(--sidebar-width); height: calc(100vh - var(--header-height)); background: var(--bg-card); backdrop-filter: blur(12px); padding: 16px 0; overflow-y: auto; z-index: 90; border-right: 1px solid var(--border); }
+        .sidebar-nav { list-style: none; padding: 0 12px; }
+        .sidebar-nav li { margin-bottom: 2px; }
+        .sidebar-nav .nav-label { padding: 10px 14px 4px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: var(--border-radius); color: var(--text-secondary); font-weight: 500; font-size: 13px; transition: var(--transition); text-decoration: none; }
         .sidebar-nav a:hover { background: rgba(59, 130, 246, 0.08); color: var(--primary-light); }
         .sidebar-nav a.active { background: rgba(59, 130, 246, 0.12); color: var(--primary-light); }
-        .sidebar-nav a .icon { font-size: 20px; width: 24px; text-align: center; }
+        .sidebar-nav a .icon { font-size: 18px; width: 22px; text-align: center; }
 
-        .main-content { margin-left: var(--sidebar-width); padding: 24px 32px; min-height: calc(100vh - var(--header-height)); animation: fadeIn 0.6s ease; }
+        .main-content { margin-left: var(--sidebar-width); padding: 20px 28px; min-height: calc(100vh - var(--header-height)); animation: fadeIn 0.5s ease; }
 
-        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; font-size: 13px; transition: var(--transition); }
-        .btn:hover { transform: translateY(-2px); }
+        .btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; font-size: 12px; transition: var(--transition); }
+        .btn:hover { transform: translateY(-1px); }
         .btn-success { background: linear-gradient(135deg, var(--success), var(--success-dark)); color: white; }
         .btn-secondary { background: linear-gradient(135deg, #94A3B8, #64748B); color: white; }
         .btn-warning { background: linear-gradient(135deg, var(--warning), var(--warning-dark)); color: white; }
         .btn-danger { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; }
         .btn-info { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; }
         .btn-primary { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; }
-        .btn-sm { padding: 6px 14px; font-size: 12px; }
-        .btn-xs { padding: 3px 10px; font-size: 11px; border-radius: 6px; }
+        .btn-sm { padding: 4px 10px; font-size: 11px; }
+        .btn-xs { padding: 2px 8px; font-size: 10px; border-radius: 4px; }
 
-        .page-container { max-width: 1200px; margin: 0 auto; }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
-        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+        .page-container { max-width: 1100px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .page-title { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 13px; color: var(--text-muted); }
 
-        .filters { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
-        .filters .btn { background: var(--bg-card); border: 2px solid var(--border); color: var(--text-secondary); }
-        .filters .btn.active { border-color: var(--primary); background: var(--bg-active); color: var(--primary); }
+        .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .filters .btn { background: var(--bg-card); border: 2px solid var(--border); color: var(--text-secondary); font-size: 12px; padding: 4px 14px; cursor: pointer; }
+        .filters .btn.active { border-color: var(--primary); background: rgba(59, 130, 246, 0.08); color: var(--primary); }
 
-        .invite-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 16px; }
-        .invite-card { background: var(--bg-card); border-radius: var(--border-radius-lg); padding: 20px; border: 1px solid var(--border); box-shadow: var(--shadow); transition: var(--transition); }
-        .invite-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
-        .invite-card .name { font-size: 18px; font-weight: 700; color: var(--primary); }
-        .invite-card .position { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
-        .invite-card .code { background: #FEF3C7; padding: 8px 16px; border-radius: var(--border-radius); font-family: monospace; font-size: 18px; font-weight: 700; color: var(--warning-dark); margin: 12px 0; border: 2px dashed var(--warning); text-align: center; letter-spacing: 2px; }
-        .invite-card .status { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .invite-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+        .invite-card { background: var(--bg-card); border-radius: var(--border-radius-lg); padding: 14px 16px; border: 1px solid var(--border); box-shadow: var(--shadow); transition: var(--transition); }
+        .invite-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); }
+        .invite-card .name { font-size: 15px; font-weight: 700; color: var(--primary); }
+        .invite-card .position { color: var(--text-muted); font-size: 12px; margin-top: 1px; }
+        .invite-card .code { background: #FEF3C7; padding: 6px 12px; border-radius: var(--border-radius); font-family: monospace; font-size: 15px; font-weight: 700; color: var(--warning-dark); margin: 8px 0; border: 2px dashed var(--warning); text-align: center; letter-spacing: 1px; }
+        .invite-card .status { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
         .invite-card .status.pending { background: #FEF3C7; color: #92400E; }
         .invite-card .status.used { background: #D1FAE5; color: #065F46; }
         .invite-card .status.expired { background: #FEE2E2; color: #991B1B; }
-        .invite-card .registration-link { color: var(--primary-light); text-decoration: underline; word-break: break-all; font-size: 13px; }
-        .invite-card .actions { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .invite-card .status.registered { background: #DBEAFE; color: #1A5276; }
+        .invite-card .registration-link { color: var(--primary-light); text-decoration: underline; word-break: break-all; font-size: 12px; }
+        .invite-card .actions { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+        .invite-card .user-login { font-size: 12px; color: var(--success-dark); font-weight: 600; background: #D1FAE5; padding: 1px 8px; border-radius: 4px; display: inline-block; }
+        .invite-card .registered-text { font-size: 13px; color: var(--success-dark); font-weight: 600; padding: 4px 0; }
 
-        .badge-role { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-role { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
         .badge-super_admin { background: #FEE2E2; color: #991B1B; border: 1px solid #EF4444; }
         .badge-admin { background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B; }
         .badge-teacher { background: #D1FAE5; color: #065F46; border: 1px solid #10B981; }
         .badge-master { background: #DBEAFE; color: #1A5276; border: 1px solid #3B82F6; }
         .badge-viewer { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
 
-        .toast-notification {
-            position: fixed; top: 80px; right: 20px; padding: 16px 24px;
-            border-radius: var(--border-radius); color: white; font-weight: 600;
-            z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px;
-            box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15);
-        }
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 12px 20px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 380px; box-shadow: 0 16px 48px rgba(37, 99, 235, 0.15); font-size: 13px; }
         .toast-success { background: var(--success); }
         .toast-error { background: var(--danger); }
-        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
-        .toast-notification .toast-close:hover { opacity: 1; }
+        .toast-notification .toast-close { float: right; margin-left: 12px; cursor: pointer; font-size: 16px; opacity: 0.8; }
 
-        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
-        .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 40px; display: block; margin-bottom: 8px; }
 
         .print-btn { background: linear-gradient(135deg, #4B5563, #1F2937); color: white; }
-        .print-btn:hover { background: linear-gradient(135deg, #1F2937, #111827); }
+
+        /* ===== СТРАНИЦА ДОСТУП ЗАПРЕЩЁН ===== */
+        .access-denied {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .access-denied .lock-image {
+            width: 200px;
+            height: 200px;
+            object-fit: contain;
+            display: block;
+            margin-bottom: 16px;
+            animation: fadeIn 0.6s ease;
+        }
+        .access-denied .denied-title {
+            font-size: 36px;
+            font-weight: 800;
+            color: var(--danger);
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .access-denied .denied-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .access-denied .denied-desc {
+            font-size: 14px;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin-bottom: 24px;
+        }
+        .access-denied .btn-back {
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+            color: white;
+            padding: 10px 32px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .access-denied .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        }
+
+        .hidden { display: none !important; }
 
         @media (max-width: 768px) {
-            .header { padding: 10px 16px; }
+            .header { padding: 8px 12px; }
             .header-user-info { display: none; }
-            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar { transform: translateX(-100%); width: 260px; }
             .sidebar.open { transform: translateX(0); }
-            .main-content { margin-left: 0; padding: 16px; }
+            .main-content { margin-left: 0; padding: 12px 14px; }
             .invite-grid { grid-template-columns: 1fr; }
             .filters { flex-wrap: wrap; }
-            .toast-notification { left: 20px; right: 20px; top: 80px; }
+            .toast-notification { left: 16px; right: 16px; top: 76px; }
+            .page-title { font-size: 18px; }
+            .access-denied .lock-image { width: 150px; height: 150px; }
+            .access-denied .denied-title { font-size: 28px; }
+        }
+        @media (max-width: 480px) {
+            .access-denied .lock-image { width: 120px; height: 120px; }
+            .access-denied .denied-title { font-size: 24px; }
+            .access-denied .denied-subtitle { font-size: 16px; }
         }
         @media print {
             .header, .sidebar, .btn, .filters, .actions { display: none !important; }
-            .main-content { margin-left: 0 !important; padding: 20px !important; }
+            .main-content { margin-left: 0 !important; padding: 16px !important; }
             .invite-card { break-inside: avoid; border: 1px solid #ddd; box-shadow: none; }
         }
     </style>
@@ -156,32 +215,22 @@
 </aside>
 
 <main class="main-content">
-    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:12px;display:none;">☰ Меню</button>
 
-    <div class="page-container">
-        <div class="page-header">
-            <div>
-                <h1 class="page-title">📨 Пригласительные коды <small>управление доступом</small></h1>
-            </div>
-            <div>
-                <button class="btn btn-secondary print-btn" onclick="window.print()">🖨️ Распечатать</button>
-                <button class="btn btn-success" id="generateInviteBtn" style="display:none;">➕ Создать код</button>
-            </div>
-        </div>
-
-        <div class="filters" id="filterContainer">
-            <button class="btn active" data-filter="all">Все</button>
-            <button class="btn" data-filter="pending">⏳ Ожидают</button>
-            <button class="btn" data-filter="used">✅ Использованы</button>
-        </div>
-
-        <div id="inviteContainer">
-            <div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div>
-        </div>
+    <div class="page-container" id="pageContainer">
+        <!-- Содержимое будет вставлено через JS -->
     </div>
 </main>
 
 <script>
+// ============================================================
+// ПРОВЕРКА BCRYPT
+// ============================================================
+if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
+    window.bcrypt = dcodeIO.bcrypt;
+    console.log('✅ bcryptjs успешно загружен');
+}
+
 const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -190,10 +239,52 @@ let currentUser = null;
 let invites = [];
 let currentFilter = 'all';
 let canManage = false;
+let isAccessDenied = false;
 
+// ============================================================
+// ID УСТРОЙСТВА
+// ============================================================
+function getDeviceSessionId() {
+    let sessionId = localStorage.getItem('deviceSessionId');
+    if (!sessionId) {
+        const ua = navigator.userAgent || '';
+        const screen = window.screen.width + 'x' + window.screen.height;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        const base = btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+        sessionId = 'device_' + base + '_' + timestamp + '_' + random;
+        localStorage.setItem('deviceSessionId', sessionId);
+    }
+    return sessionId;
+}
+var deviceSessionId = getDeviceSessionId();
+
+// ============================================================
+// ЗАВЕРШЕНИЕ СЕССИИ
+// ============================================================
+async function invalidateUserSession(userId) {
+    try {
+        var result = await supabaseClient
+            .from('users')
+            .update({ active_session_id: null })
+            .eq('id', userId);
+        if (result.error) throw result.error;
+        return true;
+    } catch (error) {
+        console.error('❌ Ошибка завершения сессии:', error);
+        return false;
+    }
+}
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ
+// ============================================================
 function loadUser() {
     const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
+    if (!savedUser) { 
+        window.location.href = '/index.html'; 
+        return; 
+    }
     try {
         currentUser = JSON.parse(savedUser);
         document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
@@ -201,29 +292,104 @@ function loadUser() {
         document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
         
         canManage = ['super_admin', 'admin'].includes(currentUser.role);
-        document.getElementById('generateInviteBtn').style.display = canManage ? 'inline-flex' : 'none';
         
         if (!canManage) {
-            document.getElementById('filterContainer').style.display = 'none';
+            isAccessDenied = true;
+            showAccessDenied();
+            return;
         }
         
+        // Если права есть — загружаем содержимое
+        isAccessDenied = false;
+        renderMainContent();
         loadInvites();
+        
     } catch(e) {
+        console.error('Ошибка загрузки пользователя:', e);
         localStorage.removeItem('currentUser');
         window.location.href = '/index.html';
     }
 }
 
+// ============================================================
+// РЕНДЕР ОСНОВНОГО СОДЕРЖИМОГО
+// ============================================================
+function renderMainContent() {
+    const container = document.getElementById('pageContainer');
+    container.innerHTML = `
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📨 Пригласительные коды <small>управление доступом</small></h1>
+            </div>
+            <div>
+                <button class="btn btn-secondary print-btn" onclick="window.print()">🖨️ Распечатать</button>
+                <button class="btn btn-success" id="generateInviteBtn">➕ Создать код</button>
+            </div>
+        </div>
+
+        <div class="filters" id="filterContainer">
+            <button class="btn active" data-filter="all">Все</button>
+            <button class="btn" data-filter="pending">⏳ Ожидают</button>
+            <button class="btn" data-filter="used">✅ Использованы</button>
+            <button class="btn" data-filter="registered">🔐 Зарегистрированы</button>
+        </div>
+
+        <div id="inviteContainer">
+            <div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div>
+        </div>
+    `;
+
+    // Назначаем обработчики для фильтров
+    document.querySelectorAll('.filters .btn').forEach(function(btn) {
+        btn.onclick = function() {
+            document.querySelectorAll('.filters .btn').forEach(function(b) { b.classList.remove('active'); });
+            this.classList.add('active');
+            currentFilter = this.dataset.filter;
+            renderInvites();
+        };
+    });
+
+    // Назначаем обработчик для кнопки создания кода
+    document.getElementById('generateInviteBtn').onclick = generateInvite;
+}
+
+// ============================================================
+// СТРАНИЦА "ДОСТУП ЗАПРЕЩЁН"
+// ============================================================
+function showAccessDenied() {
+    const container = document.getElementById('pageContainer');
+    container.innerHTML = `
+        <div class="access-denied">
+            <img src="/images/other/forbidden.gif" alt="Доступ запрещён" class="lock-image" onerror="this.style.display='none';this.parentElement.querySelector('.lock-fallback').style.display='block'">
+            <div class="lock-fallback" style="display:none;font-size:120px;margin-bottom:16px;">🔒</div>
+            <h1 class="denied-title">Доступ запрещён</h1>
+            <p class="denied-subtitle">У вас недостаточно прав для просмотра этой страницы</p>
+            <p class="denied-desc">Только пользователи с правами <strong>Администратора</strong> или <strong>Супер-Администратора</strong> имеют доступ к управлению пригласительными кодами.</p>
+            <button class="btn-back" onclick="window.location.href='/dashboard.html'">🏠 Вернуться на главную</button>
+        </div>
+    `;
+}
+
+// ============================================================
+// ВЫХОД
+// ============================================================
 document.getElementById('logoutBtn').onclick = () => {
     localStorage.removeItem('currentUser');
     window.location.href = '/index.html';
 };
+
+// ============================================================
+// МОБИЛЬНОЕ МЕНЮ
+// ============================================================
 document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
 if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
 
+// ============================================================
+// ЗАГРУЗКА ПРИГЛАШЕНИЙ
+// ============================================================
 async function loadInvites() {
     try {
-        const { data, error } = await supabaseClient
+        var result = await supabaseClient
             .from('users')
             .select(`
                 id,
@@ -238,106 +404,166 @@ async function loadInvites() {
             .not('invite_code', 'is', null)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (result.error) throw result.error;
 
-        invites = (data || []).map(item => ({
-            ...item,
-            full_name: item.employees?.full_name || 'Без имени',
-            position: item.employees?.position || '—',
-            category: item.employees?.category || 'other'
-        }));
+        invites = (result.data || []).map(function(item) {
+            return {
+                id: item.id,
+                login: item.login,
+                role: item.role,
+                invite_code: item.invite_code,
+                invite_used: item.invite_used,
+                invite_status: item.invite_status,
+                employee_id: item.employee_id,
+                full_name: item.employees?.full_name || 'Без имени',
+                position: item.employees?.position || '—',
+                category: item.employees?.category || 'other',
+                is_registered: !!item.login && item.invite_used === true
+            };
+        });
 
         renderInvites();
     } catch(error) {
         console.error('Ошибка загрузки:', error);
-        document.getElementById('inviteContainer').innerHTML = `<div class="empty-state"><span class="icon">❌</span><p>Ошибка загрузки: ${error.message}</p></div>`;
+        const container = document.getElementById('inviteContainer');
+        if (container) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">❌</span><p>Ошибка загрузки: ' + error.message + '</p></div>';
+        }
     }
 }
 
+// ============================================================
+// РЕНДЕРИНГ
+// ============================================================
 function renderInvites() {
-    const container = document.getElementById('inviteContainer');
-    let filtered = invites;
+    var container = document.getElementById('inviteContainer');
+    if (!container) return;
+    
+    var filtered = invites;
 
     if (currentFilter === 'pending') {
-        filtered = invites.filter(i => !i.invite_used && i.invite_status !== 'expired');
+        filtered = invites.filter(function(i) { return !i.invite_used && i.invite_status !== 'expired' && !i.is_registered; });
     } else if (currentFilter === 'used') {
-        filtered = invites.filter(i => i.invite_used || i.invite_status === 'expired');
+        filtered = invites.filter(function(i) { return i.invite_used || i.invite_status === 'expired'; });
+    } else if (currentFilter === 'registered') {
+        filtered = invites.filter(function(i) { return i.is_registered; });
     }
 
     if (!filtered.length) {
-        container.innerHTML = `<div class="empty-state"><span class="icon">📭</span><p>Нет пригласительных кодов</p></div>`;
+        container.innerHTML = '<div class="empty-state"><span class="icon">📭</span><p>Нет пригласительных кодов</p></div>';
         return;
     }
 
-    const roleLabels = {
+    var roleLabels = {
         'super_admin': 'Супер-Админ',
         'admin': 'Администратор',
         'teacher': 'Преподаватель',
         'master': 'Мастер ПО',
         'viewer': 'Наблюдатель'
     };
-    const roleBadgeClasses = {
+    var roleBadgeClasses = {
         'super_admin': 'badge-super_admin',
         'admin': 'badge-admin',
         'teacher': 'badge-teacher',
         'master': 'badge-master',
         'viewer': 'badge-viewer'
     };
-    const categoryLabels = {
+    var categoryLabels = {
         'teachers': 'Преподаватель',
         'masters': 'Мастер ПО',
         'administration': 'Администрация',
         'other': 'Другие'
     };
 
-    let html = '<div class="invite-grid">';
-    filtered.forEach(invite => {
-        const isUsed = invite.invite_used || invite.invite_status === 'expired';
-        const statusClass = isUsed ? 'used' : 'pending';
-        const statusLabel = isUsed ? '✅ Использован' : '⏳ Ожидает';
-        const registrationUrl = `${window.location.origin}/register/index.html?code=${invite.invite_code}`;
+    var html = '<div class="invite-grid">';
+    filtered.forEach(function(invite) {
+        var isRegistered = invite.is_registered;
+        var isUsed = invite.invite_used || invite.invite_status === 'expired';
+        
+        var statusClass = 'pending';
+        var statusLabel = '⏳ Ожидает';
+        
+        if (isRegistered) {
+            statusClass = 'registered';
+            statusLabel = '🔐 Зарегистрирован';
+        } else if (isUsed) {
+            statusClass = 'used';
+            statusLabel = '✅ Использован';
+        }
+        
+        var registrationUrl = window.location.origin + '/register/index.html?code=' + invite.invite_code;
 
-        html += `
-            <div class="invite-card">
-                <div class="name">${invite.full_name}</div>
-                <div class="position">${invite.position} · ${categoryLabels[invite.category] || invite.category}</div>
+        var codeHtml = '';
+        var actionsHtml = '';
+        
+        if (isRegistered) {
+            codeHtml = '<div style="background:#D1FAE5;padding:6px 12px;border-radius:var(--border-radius);text-align:center;margin:8px 0;border:2px solid var(--success);"><span style="color:var(--success-dark);font-weight:600;">✅ Пользователь уже зарегистрирован</span></div>';
+            actionsHtml = `
                 <div style="margin:4px 0;">
-                    <span class="badge-role ${roleBadgeClasses[invite.role] || 'badge-viewer'}">${roleLabels[invite.role] || invite.role}</span>
-                    <span class="status ${statusClass}">${statusLabel}</span>
+                    <span class="user-login">👤 ${invite.login}</span>
                 </div>
-                <div class="code">${invite.invite_code}</div>
-                <div style="font-size:12px;color:var(--text-muted);">
-                    🔗 <a href="${registrationUrl}" target="_blank" class="registration-link">${registrationUrl}</a>
-                </div>
-                ${canManage ? `
-                    <div class="actions">
-                        <button class="btn btn-info btn-xs" onclick="copyCode('${invite.invite_code}')">📋 Копировать</button>
-                        ${!isUsed ? `<button class="btn btn-danger btn-xs" onclick="revokeInvite('${invite.id}')">🚫 Отозвать</button>` : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `;
+                <button class="btn btn-danger btn-xs" onclick="resetUserCredentials('${invite.id}', '${invite.full_name}')">🔄 Сбросить доступ</button>
+            `;
+        } else {
+            codeHtml = '<div class="code">' + invite.invite_code + '</div>';
+            if (!isUsed) {
+                actionsHtml = `
+                    <button class="btn btn-info btn-xs" onclick="copyCode('${invite.invite_code}')">📋 Копировать</button>
+                    <button class="btn btn-danger btn-xs" onclick="revokeInvite('${invite.id}')">🚫 Отозвать</button>
+                `;
+            } else {
+                actionsHtml = `
+                    <button class="btn btn-info btn-xs" onclick="copyCode('${invite.invite_code}')">📋 Копировать</button>
+                    <span style="font-size:11px;color:var(--text-muted);">Код использован</span>
+                `;
+            }
+        }
+
+        html += '' +
+            '<div class="invite-card">' +
+            '<div class="name">' + invite.full_name + '</div>' +
+            '<div class="position">' + invite.position + ' · ' + (categoryLabels[invite.category] || invite.category) + '</div>' +
+            '<div style="margin:3px 0;">' +
+            '<span class="badge-role ' + (roleBadgeClasses[invite.role] || 'badge-viewer') + '">' + (roleLabels[invite.role] || invite.role) + '</span>' +
+            '<span class="status ' + statusClass + '">' + statusLabel + '</span>' +
+            '</div>' +
+            codeHtml +
+            '<div style="font-size:11px;color:var(--text-muted);">' +
+            '🔗 <a href="' + registrationUrl + '" target="_blank" class="registration-link">' + registrationUrl + '</a>' +
+            '</div>' +
+            '<div class="actions">' + actionsHtml + '</div>' +
+            '</div>';
     });
     html += '</div>';
     container.innerHTML = html;
 }
 
+// ============================================================
+// КОПИРОВАНИЕ
+// ============================================================
 function copyCode(code) {
-    navigator.clipboard.writeText(code).then(() => {
-        showToast('✅ Код скопирован!', 'success');
-    }).catch(() => {
-        showToast('❌ Не удалось скопировать', 'error');
-    });
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(function() {
+            showToast('✅ Код скопирован!', 'success');
+        }).catch(function() {
+            showToast('❌ Не удалось скопировать', 'error');
+        });
+    } else {
+        showToast('❌ Копирование не поддерживается', 'error');
+    }
 }
 
+// ============================================================
+// ОТЗЫВ КОДА
+// ============================================================
 async function revokeInvite(userId) {
     if (!confirm('Отозвать пригласительный код? Пользователь не сможет зарегистрироваться.')) return;
     try {
-        const { error } = await supabaseClient
+        var result = await supabaseClient
             .from('users')
             .update({ invite_status: 'expired' })
             .eq('id', userId);
-        if (error) throw error;
+        if (result.error) throw result.error;
         showToast('✅ Код отозван', 'success');
         loadInvites();
     } catch(error) {
@@ -345,29 +571,72 @@ async function revokeInvite(userId) {
     }
 }
 
-document.getElementById('generateInviteBtn').onclick = async function() {
-    const btn = this;
+// ============================================================
+// СБРОС ДОСТУПА ДЛЯ ЗАРЕГИСТРИРОВАННОГО ПОЛЬЗОВАТЕЛЯ
+// ============================================================
+async function resetUserCredentials(userId, fullName) {
+    if (!confirm('Сбросить доступ для ' + fullName + '?\n\nЭто действие:\n• Сгенерирует НОВЫЙ пригласительный код\n• Удалит текущий логин и пароль\n• Завершит все активные сессии\n• Потребует повторной регистрации')) return;
+    
+    try {
+        var part1 = Math.floor(1000 + Math.random() * 9000).toString();
+        var part2 = Math.floor(1000 + Math.random() * 9000).toString();
+        var newInviteCode = part1 + '-' + part2;
+        
+        var result = await supabaseClient
+            .from('users')
+            .update({
+                login: null,
+                password_hash: null,
+                invite_code: newInviteCode,
+                invite_used: false,
+                invite_status: 'pending',
+                active_session_id: null
+            })
+            .eq('id', userId);
+        
+        if (result.error) throw result.error;
+        
+        showToast('✅ Доступ сброшен! Новый код: ' + newInviteCode, 'success');
+        loadInvites();
+        
+    } catch(error) {
+        console.error('Ошибка сброса:', error);
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// СОЗДАНИЕ НОВОГО КОДА
+// ============================================================
+async function generateInvite() {
+    var btn = document.getElementById('generateInviteBtn');
+    if (!btn) return;
+    
     btn.innerHTML = '⏳ ...';
     btn.disabled = true;
 
     try {
-        // Получаем список сотрудников без приглашений
-        const { data: employees, error: empError } = await supabaseClient
+        var empResult = await supabaseClient
             .from('employees')
             .select('id, full_name, position, category')
             .eq('is_hidden', false)
             .order('full_name');
 
-        if (empError) throw empError;
+        if (empResult.error) throw empResult.error;
 
-        // Фильтруем тех, у кого нет пользователя или нет инвайта
-        const { data: existingUsers } = await supabaseClient
+        var usersResult = await supabaseClient
             .from('users')
             .select('employee_id, invite_code')
             .not('invite_code', 'is', null);
 
-        const existingIds = new Set((existingUsers || []).map(u => u.employee_id));
-        const available = employees.filter(e => !existingIds.has(e.id));
+        var existingIds = new Set();
+        (usersResult.data || []).forEach(function(u) {
+            existingIds.add(u.employee_id);
+        });
+
+        var available = empResult.data.filter(function(e) {
+            return !existingIds.has(e.id);
+        });
 
         if (!available.length) {
             showToast('ℹ️ Нет сотрудников без приглашений', 'warning');
@@ -376,13 +645,12 @@ document.getElementById('generateInviteBtn').onclick = async function() {
             return;
         }
 
-        // Выбираем первого
-        const emp = available[0];
-        const part1 = Math.floor(1000 + Math.random() * 9000).toString();
-        const part2 = Math.floor(1000 + Math.random() * 9000).toString();
-        const code = `${part1}-${part2}`;
+        var emp = available[0];
+        var part1 = Math.floor(1000 + Math.random() * 9000).toString();
+        var part2 = Math.floor(1000 + Math.random() * 9000).toString();
+        var code = part1 + '-' + part2;
 
-        const { error } = await supabaseClient
+        var insertResult = await supabaseClient
             .from('users')
             .insert([{
                 employee_id: emp.id,
@@ -392,9 +660,9 @@ document.getElementById('generateInviteBtn').onclick = async function() {
                 role: 'viewer'
             }]);
 
-        if (error) throw error;
+        if (insertResult.error) throw insertResult.error;
 
-        showToast(`✅ Код создан для ${emp.full_name}: ${code}`, 'success');
+        showToast('✅ Код создан для ' + emp.full_name + ': ' + code, 'success');
         loadInvites();
 
     } catch(error) {
@@ -403,28 +671,57 @@ document.getElementById('generateInviteBtn').onclick = async function() {
         btn.innerHTML = '➕ Создать код';
         btn.disabled = false;
     }
-};
-
-document.querySelectorAll('.filters .btn').forEach(btn => {
-    btn.onclick = function() {
-        document.querySelectorAll('.filters .btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        currentFilter = this.dataset.filter;
-        renderInvites();
-    };
-});
-
-function showToast(message, type = 'success') {
-    const existing = document.querySelector('.toast-notification');
-    if (existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${message}`;
-    document.body.appendChild(toast);
-    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
 }
 
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(message, type) {
+    type = type || 'success';
+    var existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'toast-notification toast-' + type;
+    toast.innerHTML = '<span class="toast-close" onclick="this.parentElement.remove()">×</span>' + message;
+    document.body.appendChild(toast);
+    setTimeout(function() { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+// ============================================================
+// ПРОВЕРКА СЕССИИ
+// ============================================================
+async function checkSessionOnLoad() {
+    // Если доступ запрещён — не проверяем сессию, чтобы не выкидывать пользователя
+    if (isAccessDenied) {
+        console.log('🔒 Доступ запрещён, проверка сессии пропущена');
+        return;
+    }
+    
+    var savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) return;
+    try {
+        var user = JSON.parse(savedUser);
+        var result = await supabaseClient
+            .from('users')
+            .select('active_session_id')
+            .eq('id', user.id)
+            .single();
+        if (result.error) return;
+        if (result.data.active_session_id && result.data.active_session_id !== deviceSessionId) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+        }
+    } catch(error) {
+        console.error('Ошибка проверки сессии:', error);
+    }
+}
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+console.log('🆔 ID устройства:', deviceSessionId);
 loadUser();
+setTimeout(checkSessionOnLoad, 500);
 </script>
 </body>
 </html>

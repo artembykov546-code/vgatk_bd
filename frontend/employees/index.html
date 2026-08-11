@@ -16,12 +16,22 @@
             --success: #10B981; --success-dark: #059669; --warning: #F59E0B; --warning-dark: #D97706;
             --danger: #EF4444; --danger-dark: #DC2626;
             --bg-main: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
-            --bg-card: rgba(255, 255, 255, 0.96); --bg-hover: rgba(59, 130, 246, 0.08); --bg-active: rgba(59, 130, 246, 0.12);
-            --text-primary: #1E293B; --text-secondary: #475569; --text-muted: #64748B; --text-light: #94A3B8;
-            --border: #dbeafe; --border-radius: 8px; --border-radius-lg: 12px; --border-radius-xl: 16px;
-            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08); --shadow-hover: 0 8px 30px rgba(59, 130, 246, 0.15);
-            --shadow-modal: 0 20px 60px rgba(37, 99, 235, 0.15);
-            --header-height: 74px; --sidebar-width: 220px; --transition: all 0.3s ease;
+            --bg-card: rgba(255, 255, 255, 0.96);
+            --bg-hover: rgba(59, 130, 246, 0.08);
+            --bg-active: rgba(59, 130, 246, 0.12);
+            --text-primary: #1E293B;
+            --text-secondary: #475569;
+            --text-muted: #64748B;
+            --text-light: #94A3B8;
+            --border: #dbeafe;
+            --border-radius: 8px;
+            --border-radius-lg: 12px;
+            --border-radius-xl: 16px;
+            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+            --header-height: 74px;
+            --sidebar-width: 220px;
+            --transition: all 0.3s ease;
+            --my-profile-bg: rgba(59, 130, 246, 0.08);
         }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.6; }
         a { text-decoration: none; color: inherit; }
@@ -84,6 +94,7 @@
         .table th { padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); font-size: 13px; }
         .table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         .table tbody tr:hover { background: var(--bg-hover); }
+        .table tbody tr.my-profile { background: var(--my-profile-bg); border-left: 3px solid var(--primary); }
         .table-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
         .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
@@ -91,7 +102,7 @@
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
-        .modal { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; max-width: 750px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-modal); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
+        .modal { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; max-width: 750px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
         .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
         .modal-title { font-size: 20px; font-weight: 700; color: var(--primary); }
         .modal-close { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-muted); }
@@ -116,55 +127,27 @@
         .badge-teacher { background: #D1FAE5; color: #065F46; border: 1px solid #10B981; }
         .badge-master { background: #DBEAFE; color: #1A5276; border: 1px solid #3B82F6; }
         .badge-viewer { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+        
+        .badge-self { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; background: var(--primary); color: white; margin-left: 6px; }
 
-        .toast-notification {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            padding: 16px 24px;
-            border-radius: var(--border-radius);
-            color: white;
-            font-weight: 600;
-            z-index: 9999;
-            animation: slideUp 0.3s ease;
-            max-width: 400px;
-            box-shadow: var(--shadow-modal);
-        }
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 16px 24px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
 
-        .toast-success {
-            background: var(--success);
-        }
-
-        .toast-error {
-            background: var(--danger);
-        }
-
-        .toast-notification .toast-close {
-            float: right;
-            margin-left: 16px;
-            cursor: pointer;
-            font-size: 18px;
-            opacity: 0.8;
-        }
-
-        .toast-notification .toast-close:hover {
-            opacity: 1;
-        }
-
-        /* ===== МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ ===== */
-        .profile-edit-modal .modal { max-width: 500px; }
-        .profile-edit-modal .form-control { height: 42px; }
-        .password-wrapper { position: relative; }
-        .password-wrapper .form-control { padding-right: 48px; }
-        .password-wrapper .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; color: var(--text-muted); background: none; border: none; padding: 4px; transition: var(--transition); line-height: 1; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; }
-        .password-wrapper .toggle-password:hover { color: var(--primary-light); background: var(--bg-hover); }
-
-        .password-strength { height: 4px; border-radius: 4px; margin-top: 8px; background: #e2e8f0; transition: var(--transition); overflow: hidden; }
-        .password-strength .bar { height: 100%; width: 0%; border-radius: 4px; transition: var(--transition); }
-        .password-strength .bar.weak { width: 25%; background: linear-gradient(90deg, var(--danger), var(--danger-dark)); }
-        .password-strength .bar.medium { width: 50%; background: linear-gradient(90deg, var(--warning), var(--warning-dark)); }
-        .password-strength .bar.strong { width: 75%; background: linear-gradient(90deg, var(--primary-light), var(--secondary)); }
-        .password-strength .bar.very-strong { width: 100%; background: linear-gradient(90deg, var(--success), var(--success-dark)); }
+        .lock-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a1a; z-index: 9999; justify-content: center; align-items: center; flex-direction: column; color: white; text-align: center; padding: 20px; }
+        .lock-overlay.active { display: flex; }
+        .lock-overlay .lock-icon { font-size: 80px; margin-bottom: 20px; opacity: 0.5; }
+        .lock-overlay h2 { font-size: 28px; color: #FEF3C7; margin-bottom: 12px; }
+        .lock-overlay p { font-size: 16px; color: #9CA3AF; max-width: 500px; line-height: 1.8; margin-bottom: 16px; }
+        .lock-overlay .invite-code { font-size: 32px; font-family: monospace; background: #FEF3C7; color: #92400E; padding: 16px 32px; border-radius: 12px; letter-spacing: 3px; border: 2px solid #F59E0B; margin: 12px 0; font-weight: 700; }
+        .lock-overlay .btn-copy { background: #374151; color: white; border: none; padding: 10px 30px; border-radius: 8px; font-size: 16px; cursor: pointer; transition: 0.3s; margin: 8px; }
+        .lock-overlay .btn-copy:hover { background: #4B5563; }
+        .lock-overlay .btn-logout-red { background: #EF4444; color: white; border: none; padding: 12px 40px; border-radius: 8px; font-size: 18px; font-weight: 700; cursor: pointer; transition: 0.3s; box-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
+        .lock-overlay .btn-logout-red:hover { transform: scale(1.05); }
+        .lock-overlay .register-link { color: #93C5FD; text-decoration: underline; font-weight: 600; }
+        .lock-overlay .steps { color: #D1D5DB; font-size: 14px; margin-top: 12px; }
+        .lock-overlay .steps span { display: inline-block; background: #374151; padding: 2px 10px; border-radius: 4px; margin: 2px 4px; font-weight: 600; color: #FEF3C7; }
 
         @media (max-width: 768px) {
             .header { padding: 10px 16px; }
@@ -175,17 +158,26 @@
             .categories-grid { grid-template-columns: repeat(2, 1fr); }
             .modal { padding: 20px; }
             .toast-notification { left: 20px; right: 20px; top: 80px; }
+            .lock-overlay .invite-code { font-size: 24px; padding: 12px 20px; }
+            .lock-overlay h2 { font-size: 22px; }
         }
     </style>
 </head>
 <body>
 
+<div class="lock-overlay" id="lockOverlay">
+    <div class="lock-icon">🔒</div>
+    <h2>⚠️ Доступ заблокирован</h2>
+    <p>Вы инициировали сброс логина и пароля.<br>Для восстановления доступа используйте пригласительный код:</p>
+    <div class="invite-code" id="lockInviteCode">---- ---- ---- ----</div>
+    <div><button class="btn-copy" onclick="copyLockCode()">📋 Копировать код</button></div>
+    <div class="steps"><span>1</span> Скопируйте код <span>2</span> Нажмите "Выйти" <span>3</span> Перейдите по ссылке регистрации <span>4</span> Введите код и создайте новый логин/пароль</div>
+    <button class="btn-logout-red" id="lockLogoutBtn" style="margin-top:20px;">🚪 Выйти из системы</button>
+</div>
+
 <header class="header">
     <div class="header-logo">
-        <span class="college-name">
-            Учреждение образования<br>
-            <span class="sub">"Витебский государственный аграрно-технический колледж"</span>
-        </span>
+        <span class="college-name">Учреждение образования<br><span class="sub">"Витебский государственный аграрно-технический колледж"</span></span>
     </div>
     <div class="header-user">
         <div class="header-user-info">
@@ -206,23 +198,18 @@
         <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
         <li class="nav-label" style="margin-top:12px;">Система</li>
         <li><a href="/invites/index.html"><span class="icon">📨</span> Приглашения</a></li>
-</ul>
+        <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
+    </ul>
 </aside>
 
 <main class="main-content">
     <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
-
     <div class="page-container">
         <div class="page-header">
-            <div>
-                <h1 class="page-title">👨‍🏫 Сотрудники <small>управление персоналом</small></h1>
-            </div>
-            <div>
-                <button class="btn btn-success" id="addEmployeeBtn" style="display:none;">➕ Добавить сотрудника</button>
-            </div>
+            <div><h1 class="page-title">👨‍🏫 Сотрудники <small>управление персоналом</small></h1></div>
+            <div><button class="btn btn-success" id="addEmployeeBtn" style="display:none;">➕ Добавить сотрудника</button></div>
         </div>
 
-        <!-- КАТЕГОРИИ -->
         <div class="categories-grid">
             <div class="category-card active" data-category="all"><span class="icon">📋</span><div class="label">Все</div><div class="count" id="allCount">0</div></div>
             <div class="category-card" data-category="teachers"><span class="icon">👨‍🏫</span><div class="label">Преподаватели</div><div class="count" id="teachersCount">0</div></div>
@@ -247,7 +234,7 @@
                         <th>Телефон</th>
                         <th>Группы</th>
                         <th id="inviteHeader" style="display:none;">Приглашение</th>
-                        <th id="actionsHeader">Действия</th>
+                        <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody id="employeesTableBody">
@@ -257,6 +244,39 @@
         </div>
     </div>
 </main>
+
+<!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ТОЛЬКО ФИО + ДОЛЖНОСТЬ + ТЕЛЕФОН) -->
+<div class="modal-overlay profile-edit-modal" id="profileEditModal">
+    <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+            <h2 class="modal-title">✏️ Редактировать профиль</h2>
+            <button class="modal-close" id="profileEditCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="profileEditAlert" style="display:none;padding:12px 16px;border-radius:var(--border-radius);margin-bottom:16px;background:#FEE2E2;color:#991B1B;border-left:4px solid #EF4444;">
+                <span id="profileEditMessage"></span>
+            </div>
+            <form id="profileEditForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label class="form-label">ФИО <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="profileFullName" placeholder="Введите ФИО">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Должность</label>
+                    <input type="text" class="form-control" id="profilePosition" placeholder="Введите должность">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Телефон</label>
+                    <input type="text" class="form-control" id="profilePhone" placeholder="+375 XX XXX-XX-XX">
+                </div>
+                <div class="form-actions" style="display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:2px solid var(--border);">
+                    <button type="button" class="btn btn-secondary" id="profileEditCancelBtn">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="profileEditSaveBtn">💾 Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <!-- МОДАЛЬНОЕ ОКНО ДЛЯ АДМИНОВ -->
 <div class="modal-overlay" id="employeeModal">
@@ -273,111 +293,115 @@
     </div>
 </div>
 
-<!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ДЛЯ ПОЛЬЗОВАТЕЛЕЙ) -->
-<div class="modal-overlay profile-edit-modal" id="profileEditModal">
-    <div class="modal">
+<!-- МОДАЛЬНОЕ ОКНО СБРОСА -->
+<div class="modal-overlay" id="resetModal">
+    <div class="modal" style="max-width:500px;">
         <div class="modal-header">
-            <h2 class="modal-title">✏️ Редактировать профиль</h2>
-            <button class="modal-close" id="profileEditCloseBtn">&times;</button>
+            <h2 class="modal-title">🔄 Сбросить логин и пароль</h2>
+            <button class="modal-close" id="resetCloseBtn">&times;</button>
         </div>
-        <div class="modal-body" id="profileEditBody">
-            <div id="profileEditAlert" class="alert alert-danger" style="display:none;padding:12px 16px;border-radius:var(--border-radius);margin-bottom:16px;background:#FEE2E2;color:#991B1B;border-left:4px solid #EF4444;">
-                <span id="profileEditMessage"></span>
+        <div class="modal-body">
+            <div style="text-align:center;padding:10px 0;">
+                <span style="font-size:48px;">⚠️</span>
+                <p style="margin:16px 0;color:var(--text-secondary);font-size:16px;">Вы уверены, что хотите сбросить свой логин и пароль?</p>
+                <div style="background:#FEF3C7;padding:16px;border-radius:8px;border-left:4px solid #F59E0B;text-align:left;">
+                    <p style="font-size:14px;color:#92400E;"><strong>Что произойдёт:</strong></p>
+                    <ul style="font-size:14px;color:#92400E;padding-left:20px;margin-top:8px;">
+                        <li>🔑 Будет сгенерирован <strong>новый пригласительный код</strong></li>
+                        <li>🗑️ Текущий логин и пароль будут <strong>удалены</strong></li>
+                        <li>🔒 Ваша сессия будет <strong>завершена</strong></li>
+                        <li>📝 Потребуется <strong>повторная регистрация</strong></li>
+                    </ul>
+                </div>
+                <p style="margin-top:16px;color:var(--danger);font-weight:600;">После сброса вы будете заблокированы на всех устройствах!</p>
             </div>
-            <form id="profileEditForm" onsubmit="return false;">
-                <div class="form-group">
-                    <label class="form-label">Новый логин</label>
-                    <input type="text" class="form-control" id="profileNewLogin" placeholder="Введите новый логин (мин. 3 символа)" minlength="3">
-                    <div class="form-hint">Оставьте пустым, чтобы не менять</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Текущий пароль <span class="required">*</span></label>
-                    <div class="password-wrapper">
-                        <input type="password" class="form-control" id="profileCurrentPassword" placeholder="Введите текущий пароль" required>
-                        <button type="button" class="toggle-password" onclick="togglePassword('profileCurrentPassword')">👁️</button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Новый пароль</label>
-                    <div class="password-wrapper">
-                        <input type="password" class="form-control" id="profileNewPassword" placeholder="Введите новый пароль (мин. 6 символов)" minlength="6">
-                        <button type="button" class="toggle-password" onclick="togglePassword('profileNewPassword')">👁️</button>
-                    </div>
-                    <div class="password-strength"><div class="bar" id="profileStrengthBar"></div></div>
-                    <div class="form-hint" id="profileStrengthText">Введите пароль для оценки надёжности</div>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Подтверждение пароля</label>
-                    <div class="password-wrapper">
-                        <input type="password" class="form-control" id="profileConfirmPassword" placeholder="Повторите новый пароль">
-                        <button type="button" class="toggle-password" onclick="togglePassword('profileConfirmPassword')">👁️</button>
-                    </div>
-                    <div class="form-hint" id="profileConfirmHint">Пароли должны совпадать</div>
-                </div>
-                <div class="form-actions" style="display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:2px solid var(--border);">
-                    <button type="button" class="btn btn-secondary" id="profileEditCancelBtn">Отмена</button>
-                    <button type="submit" class="btn btn-primary" id="profileEditSaveBtn">💾 Сохранить</button>
-                </div>
-            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="resetCancelBtn">Отмена</button>
+            <button class="btn btn-danger" id="resetConfirmBtn">✅ Подтвердить сброс</button>
         </div>
     </div>
 </div>
 
 <script>
 // ============================================================
-// ПРОВЕРКА ЗАГРУЗКИ BCRYPTJS
+// ПРОВЕРКА BCRYPT
 // ============================================================
 if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
     window.bcrypt = dcodeIO.bcrypt;
     console.log('✅ bcryptjs успешно загружен');
-} else {
-    console.error('❌ Ошибка: Библиотека bcryptjs не загрузилась!');
 }
 
 const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let employees = [];
-let groups = [];
-let archivedGroupIds = [];
-let currentUser = null;
-let editingId = null;
-let currentCategory = 'all';
-let canManageEmployees = false;
-let canResetPassword = false;
+var employees = [];
+var groups = [];
+var archivedGroupIds = [];
+var currentUser = null;
+var editingId = null;
+var currentCategory = 'all';
+var canManageEmployees = false;
+var canResetPassword = false;
 
 // ============================================================
-// ГЕНЕРАЦИЯ ID УСТРОЙСТВА
+// ID УСТРОЙСТВА
 // ============================================================
 function getDeviceSessionId() {
-    let sessionId = localStorage.getItem('deviceSessionId');
+    var sessionId = localStorage.getItem('deviceSessionId');
     if (!sessionId) {
-        const ua = navigator.userAgent || '';
-        const screen = `${window.screen?.width || 0}x${window.screen?.height || 0}`;
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 8);
-        sessionId = `device_${btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20)}_${timestamp}_${random}`;
+        var ua = navigator.userAgent || '';
+        var screen = window.screen.width + 'x' + window.screen.height;
+        var timestamp = Date.now();
+        var random = Math.random().toString(36).substring(2, 8);
+        sessionId = 'device_' + btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20) + '_' + timestamp + '_' + random;
         localStorage.setItem('deviceSessionId', sessionId);
     }
     return sessionId;
 }
-
-const deviceSessionId = getDeviceSessionId();
+var deviceSessionId = getDeviceSessionId();
 
 // ============================================================
-// ЗАВЕРШЕНИЕ СЕССИИ ПОЛЬЗОВАТЕЛЯ
+// ПОКАЗАТЬ ЭКРАН БЛОКИРОВКИ
+// ============================================================
+function showLockScreen(inviteCode) {
+    document.getElementById('lockInviteCode').textContent = inviteCode || '---- ---- ---- ----';
+    document.getElementById('lockOverlay').classList.add('active');
+}
+
+function hideLockScreen() {
+    document.getElementById('lockOverlay').classList.remove('active');
+}
+
+function copyLockCode() {
+    var code = document.getElementById('lockInviteCode').textContent;
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(function() {
+            showToast('✅ Код скопирован!', 'success');
+        }).catch(function() {
+            alert('Код: ' + code);
+        });
+    } else {
+        alert('Код: ' + code);
+    }
+}
+
+document.getElementById('lockLogoutBtn').onclick = function() {
+    localStorage.removeItem('currentUser');
+    window.location.href = '/index.html';
+};
+
+// ============================================================
+// ЗАВЕРШЕНИЕ СЕССИИ
 // ============================================================
 async function invalidateUserSession(userId) {
     try {
-        const { error } = await supabaseClient
+        var result = await supabaseClient
             .from('users')
-            .update({ 
-                active_session_id: null
-            })
+            .update({ active_session_id: null })
             .eq('id', userId);
-        if (error) throw error;
-        console.log(`✅ Сессия пользователя ${userId} завершена`);
+        if (result.error) throw result.error;
         return true;
     } catch (error) {
         console.error('❌ Ошибка завершения сессии:', error);
@@ -386,61 +410,64 @@ async function invalidateUserSession(userId) {
 }
 
 // ============================================================
-// УВЕДОМЛЕНИЯ (TOAST)
+// TOAST
 // ============================================================
-function showToast(message, type = 'success') {
-    const existing = document.querySelector('.toast-notification');
+function showToast(message, type) {
+    type = type || 'success';
+    var existing = document.querySelector('.toast-notification');
     if (existing) existing.remove();
-    
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `
-        <span class="toast-close" onclick="this.parentElement.remove()">×</span>
-        ${message}
-    `;
+    var toast = document.createElement('div');
+    toast.className = 'toast-notification toast-' + type;
+    toast.innerHTML = '<span class="toast-close" onclick="this.parentElement.remove()">×</span>' + message;
     document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast.parentElement) toast.remove();
-    }, 5000);
+    setTimeout(function() { if (toast.parentElement) toast.remove(); }, 5000);
 }
 
 // ============================================================
-// ИНИЦИАЛИЗАЦИЯ И ПРАВА
+// ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 async function init() {
-    const savedUser = localStorage.getItem('currentUser');
+    var savedUser = localStorage.getItem('currentUser');
     if (!savedUser) { window.location.href = '/index.html'; return; }
     
     try {
-        const localUser = JSON.parse(savedUser);
-        const { data: userData, error } = await supabaseClient
+        var localUser = JSON.parse(savedUser);
+        var userResult = await supabaseClient
             .from('users')
-            .select('id, login, role, employee_id, active_session_id')
+            .select('id, login, role, employee_id, active_session_id, invite_code')
             .eq('id', localUser.id)
             .single();
         
-        if (error || !userData) {
-            console.error('Ошибка получения данных пользователя:', error);
+        if (userResult.error || !userResult.data) {
             localStorage.removeItem('currentUser');
             window.location.href = '/index.html';
             return;
         }
 
-        // Проверяем сессию
-        if (userData.active_session_id && userData.active_session_id !== deviceSessionId) {
-            console.log('⚠️ Сессия недействительна (активна на другом устройстве)');
+        if (userResult.data.active_session_id && userResult.data.active_session_id !== deviceSessionId) {
             localStorage.removeItem('currentUser');
-            showToast('❌ Сессия завершена. Войдите заново.', 'error');
+            showToast('❌ Сессия завершена на другом устройстве', 'error');
             window.location.href = '/index.html';
             return;
         }
 
-        currentUser = { ...localUser, role: userData.role, login: userData.login, employee_id: userData.employee_id };
+        if (!userResult.data.login && userResult.data.invite_code) {
+            showLockScreen(userResult.data.invite_code);
+            return;
+        }
+
+        currentUser = {
+            id: localUser.id,
+            full_name: localUser.full_name || localUser.name || localUser.login,
+            name: localUser.name || localUser.login,
+            login: userResult.data.login,
+            role: userResult.data.role,
+            employee_id: userResult.data.employee_id
+        };
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
-        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.login;
+        var roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
         document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
 
         canManageEmployees = ['super_admin', 'admin'].includes(currentUser.role);
@@ -451,6 +478,8 @@ async function init() {
 
         await loadGroups();
         await loadEmployees();
+        hideLockScreen();
+        
     } catch (e) {
         console.error('Ошибка инициализации:', e);
         localStorage.removeItem('currentUser');
@@ -458,336 +487,198 @@ async function init() {
     }
 }
 
-document.getElementById('logoutBtn').onclick = () => { 
-    const userId = currentUser?.id;
-    if (userId) {
-        invalidateUserSession(userId);
-    }
-    localStorage.removeItem('currentUser'); 
-    window.location.href = '/index.html'; 
+document.getElementById('logoutBtn').onclick = function() {
+    var userId = currentUser?.id;
+    if (userId) invalidateUserSession(userId);
+    localStorage.removeItem('currentUser');
+    window.location.href = '/index.html';
 };
-document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+
+document.getElementById('menuToggle').onclick = function() {
+    document.getElementById('sidebar').classList.toggle('open');
+};
 if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
 
 // ============================================================
 // ЗАГРУЗКА ДАННЫХ
 // ============================================================
 async function loadGroups() {
-    const { data, error } = await supabaseClient.from('groups').select('id, name, type, is_archived').order('name');
-    if (error) { console.error('Ошибка загрузки групп:', error); return; }
-    groups = data || [];
-    archivedGroupIds = groups.filter(g => g.is_archived === true).map(g => g.id);
+    var result = await supabaseClient.from('groups').select('id, name, type, is_archived').order('name');
+    if (result.error) { console.error('Ошибка загрузки групп:', result.error); return; }
+    groups = result.data || [];
+    archivedGroupIds = groups.filter(function(g) { return g.is_archived === true; }).map(function(g) { return g.id; });
 }
 
 async function loadEmployees() {
-    const { data, error } = await supabaseClient
+    var result = await supabaseClient
         .from('employees')
-        .select(`*, users!inner(invite_code, invite_used, role, login, id)`)
+        .select('*, users!inner(invite_code, invite_used, role, login, id)')
         .eq('is_hidden', false)
         .order('full_name');
 
-    if (error) { 
-        console.error('Ошибка загрузки сотрудников:', error); 
-        document.getElementById('employeesTableBody').innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="icon">❌</span><p>Ошибка: ${error.message}</p></div></td></tr>`;
-        return; 
+    if (result.error) {
+        document.getElementById('employeesTableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><span class="icon">❌</span><p>Ошибка: ' + result.error.message + '</p></div></td></tr>';
+        return;
     }
 
-    employees = (data || []).map(e => ({
-        ...e,
-        invite_code: e.users?.[0]?.invite_code,
-        invite_used: e.users?.[0]?.invite_used,
-        user_role: e.users?.[0]?.role,
-        user_login: e.users?.[0]?.login,
-        user_id: e.users?.[0]?.id,
-        groups: e.groups || []
-    }));
+    employees = (result.data || []).map(function(e) {
+        return {
+            id: e.id,
+            full_name: e.full_name,
+            position: e.position || '—',
+            category: e.category || 'other',
+            phone: e.phone || '—',
+            groups: e.groups || [],
+            invite_code: e.users?.[0]?.invite_code,
+            invite_used: e.users?.[0]?.invite_used,
+            user_role: e.users?.[0]?.role,
+            user_login: e.users?.[0]?.login,
+            user_id: e.users?.[0]?.id
+        };
+    });
 
     renderEmployees();
     updateCounts();
 }
 
 // ============================================================
-// РЕНДЕРИНГ ТАБЛИЦЫ
+// РЕНДЕРИНГ
 // ============================================================
 function renderEmployees() {
-    const tbody = document.getElementById('employeesTableBody');
-    const search = document.getElementById('searchInput').value.toLowerCase().trim();
-    let filtered = employees;
+    var tbody = document.getElementById('employeesTableBody');
+    var search = document.getElementById('searchInput').value.toLowerCase().trim();
+    var filtered = employees;
     
-    if (currentCategory !== 'all') filtered = filtered.filter(e => e.category === currentCategory);
-    if (search) filtered = filtered.filter(e => e.full_name.toLowerCase().includes(search) || (e.position && e.position.toLowerCase().includes(search)));
+    if (currentCategory !== 'all') {
+        filtered = filtered.filter(function(e) { return e.category === currentCategory; });
+    }
+    if (search) {
+        filtered = filtered.filter(function(e) {
+            return e.full_name.toLowerCase().includes(search) || (e.position && e.position.toLowerCase().includes(search));
+        });
+    }
 
     if (!filtered.length) {
-        tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="icon">🔍</span><p>Ничего не найдено</p></div></td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><span class="icon">🔍</span><p>Ничего не найдено</p></div></td></tr>';
         return;
     }
 
-    const catLabels = { 'teachers': 'Преподаватель', 'masters': 'Мастер ПО', 'administration': 'Администрация', 'other': 'Другие' };
-    const isSelf = (empId) => currentUser && currentUser.employee_id === empId;
+    var catLabels = { 'teachers': 'Преподаватель', 'masters': 'Мастер ПО', 'administration': 'Администрация', 'other': 'Другие' };
+    var isSelf = function(empId) {
+        return currentUser && currentUser.employee_id === empId;
+    };
 
-    let html = '';
-    filtered.forEach((e, i) => {
-        let roleBadgeClass = 'badge-viewer';
-        let roleLabel = 'Наблюдатель';
+    var sorted = [];
+    var myProfile = null;
+    var others = [];
+    
+    filtered.forEach(function(e) {
+        if (isSelf(e.id)) {
+            myProfile = e;
+        } else {
+            others.push(e);
+        }
+    });
+    
+    if (myProfile) sorted.push(myProfile);
+    sorted = sorted.concat(others);
+
+    var html = '';
+    sorted.forEach(function(e, index) {
+        var roleBadgeClass = 'badge-viewer';
+        var roleLabel = 'Наблюдатель';
         if (e.user_role === 'super_admin') { roleBadgeClass = 'badge-super_admin'; roleLabel = 'Супер-Админ'; }
         else if (e.user_role === 'admin') { roleBadgeClass = 'badge-admin'; roleLabel = 'Админ'; }
         else if (e.user_role === 'teacher') { roleBadgeClass = 'badge-teacher'; roleLabel = 'Преподаватель'; }
         else if (e.user_role === 'master') { roleBadgeClass = 'badge-master'; roleLabel = 'Мастер ПО'; }
         
-        // ===== ЛОГИКА ОТОБРАЖЕНИЯ ГРУПП =====
-        let groupsHtml = '';
-        let hasGroups = e.groups && e.groups.length > 0;
-        let allGroupsArchived = false;
-        let activeGroups = [];
-
+        var myself = isSelf(e.id);
+        var rowClass = myself ? 'my-profile' : '';
+        
+        var groupsHtml = '';
+        var hasGroups = e.groups && e.groups.length > 0;
         if (hasGroups) {
-            activeGroups = e.groups.filter(gid => !archivedGroupIds.includes(gid));
-            const archivedGroups = e.groups.filter(gid => archivedGroupIds.includes(gid));
-            
-            if (activeGroups.length === 0 && archivedGroups.length > 0) {
-                allGroupsArchived = true;
-                const names = archivedGroups.map(gid => groups.find(gr => gr.id === gid)?.name || gid);
-                groupsHtml = names.map(n => `<span class="group-tag archived">${n}</span>`).join('');
-            } else if (activeGroups.length > 0) {
-                const names = activeGroups.map(gid => groups.find(gr => gr.id === gid)?.name || gid);
-                groupsHtml = names.map(n => `<span class="group-tag">${n}</span>`).join('');
-                const archivedNames = archivedGroups.map(gid => groups.find(gr => gr.id === gid)?.name || gid);
-                if (archivedNames.length > 0) {
-                    groupsHtml += ' ' + archivedNames.map(n => `<span class="group-tag archived">${n}</span>`).join('');
-                }
+            var activeGroups = e.groups.filter(function(gid) { return !archivedGroupIds.includes(gid); });
+            var archivedGroups = e.groups.filter(function(gid) { return archivedGroupIds.includes(gid); });
+            if (activeGroups.length > 0) {
+                var names = activeGroups.map(function(gid) {
+                    var g = groups.find(function(gr) { return gr.id === gid; });
+                    return g ? g.name : gid;
+                });
+                groupsHtml = names.map(function(n) { return '<span class="group-tag">' + n + '</span>'; }).join('');
+            }
+            if (archivedGroups.length > 0) {
+                var archNames = archivedGroups.map(function(gid) {
+                    var g = groups.find(function(gr) { return gr.id === gid; });
+                    return g ? g.name : gid;
+                });
+                groupsHtml += ' ' + archNames.map(function(n) { return '<span class="group-tag archived">' + n + '</span>'; }).join('');
             }
         }
+        if (!groupsHtml) groupsHtml = '<span style="color:#94A3B8;">—</span>';
 
-        const showAssignButton = (allGroupsArchived || !hasGroups) && canManageEmployees && (e.category === 'teachers' || e.category === 'masters');
-        
-        if (!hasGroups || allGroupsArchived) {
-            if (showAssignButton) {
-                groupsHtml = `
-                    <span style="color:#94A3B8;margin-right:8px;">—</span>
-                    <button class="btn btn-info btn-xs" onclick="openModal('${e.id}')" title="Назначить группу">✏️ Назначить</button>
-                `;
-            } else if (!hasGroups) {
-                groupsHtml = '<span style="color:#94A3B8;">—</span>';
-            }
-        } else if (hasGroups && !allGroupsArchived) {
-            if (canManageEmployees && (e.category === 'teachers' || e.category === 'masters')) {
-                groupsHtml += ` <button class="btn btn-info btn-xs" onclick="openModal('${e.id}')" title="Назначить группу">✏️ Назначить</button>`;
-            }
-        }
-
-        let inviteBadge = '—';
+        var inviteBadge = '—';
         if (canManageEmployees) {
-            if (e.invite_code && !e.invite_used) inviteBadge = `<span style="background:#DBEAFE;color:#1A5276;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${e.invite_code}</span>`;
-            else if (e.invite_used) inviteBadge = `<span style="background:#D1FAE5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">✅ Использован</span>`;
+            if (e.invite_code && !e.invite_used) {
+                inviteBadge = '<span style="background:#DBEAFE;color:#1A5276;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + e.invite_code + '</span>';
+            } else if (e.invite_used) {
+                inviteBadge = '<span style="background:#D1FAE5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">✅ Использован</span>';
+            }
         }
 
-        // ===== КНОПКИ ДЕЙСТВИЙ =====
-        let actionsHtml = '';
-        const myself = isSelf(e.id);
-        
-        // Кнопка "Редактировать себя" — доступна ВСЕМ пользователям
+        var actionsHtml = '';
         if (myself) {
-            actionsHtml = `
-                <button class="btn btn-warning btn-xs" onclick="openProfileEditModal()" title="Редактировать свой профиль">✏️ Редактировать</button>
-            `;
+            actionsHtml = 
+                '<button class="btn btn-warning btn-xs" onclick="openProfileEditModal()" title="Редактировать">✏️ Редактировать</button> ' +
+                '<button class="btn btn-danger btn-xs" onclick="openResetModal()" title="Сбросить логин и пароль">🔄 Сбросить доступ</button>';
         } else if (canManageEmployees) {
-            // Админ видит все кнопки для других пользователей
-            actionsHtml = `
-                <button class="btn btn-info btn-xs" onclick="viewEmployee('${e.id}')" title="Просмотр">👁️</button>
-                <button class="btn btn-warning btn-xs" onclick="openModal('${e.id}')" title="Редактировать">✏️</button>
-                <button class="btn btn-danger btn-xs" onclick="deleteEmployee('${e.id}')" title="Удалить">🗑️</button>
-                ${canResetPassword ? `<button class="btn btn-secondary btn-xs" onclick="resetCredentials('${e.id}')" title="Сбросить доступ">🔄 Сброс</button>` : ''}
-            `;
+            actionsHtml = 
+                '<button class="btn btn-info btn-xs" onclick="viewEmployee(\'' + e.id + '\')" title="Просмотр">👁️</button> ' +
+                '<button class="btn btn-warning btn-xs" onclick="openModal(\'' + e.id + '\')" title="Редактировать">✏️</button> ' +
+                '<button class="btn btn-danger btn-xs" onclick="deleteEmployee(\'' + e.id + '\')" title="Удалить">🗑️</button>' +
+                (canResetPassword ? ' <button class="btn btn-secondary btn-xs" onclick="resetCredentials(\'' + e.id + '\')" title="Сбросить доступ">🔄 Сброс</button>' : '');
         } else {
-            // Обычный пользователь видит только себя
-            actionsHtml = `<span style="font-size:11px;color:var(--text-muted);">👤 Вы</span>`;
+            actionsHtml = '<span style="font-size:11px;color:var(--text-muted);">👤 Сотрудник</span>';
         }
 
-        html += `
-            <tr>
-                <td>${i + 1}</td>
-                <td><strong>${e.full_name}</strong> <span class="badge-role ${roleBadgeClass}">${roleLabel}</span></td>
-                <td>${e.position || '—'}</td>
-                <td>${catLabels[e.category] || e.category}</td>
-                <td>${e.phone || '—'}</td>
-                <td style="max-width:300px;">${groupsHtml}</td>
-                ${canManageEmployees ? `<td>${inviteBadge}</td>` : ''}
-                <td><div class="table-actions">${actionsHtml}</div></td>
-            </tr>`;
+        var selfBadge = myself ? '<span class="badge-self">👤 Вы</span>' : '';
+        var displayNumber = myself ? '★' : (index + 1);
+
+        html += 
+            '<tr class="' + rowClass + '">' +
+            '<td><strong>' + displayNumber + '</strong></td>' +
+            '<td><strong>' + e.full_name + '</strong> ' + selfBadge + ' <span class="badge-role ' + roleBadgeClass + '">' + roleLabel + '</span></td>' +
+            '<td>' + e.position + '</td>' +
+            '<td>' + (catLabels[e.category] || e.category) + '</td>' +
+            '<td>' + e.phone + '</td>' +
+            '<td style="max-width:300px;">' + groupsHtml + '</td>' +
+            (canManageEmployees ? '<td>' + inviteBadge + '</td>' : '') +
+            '<td><div class="table-actions">' + actionsHtml + '</div></td>' +
+            '</tr>';
     });
     tbody.innerHTML = html;
 }
 
 function updateCounts() {
     document.getElementById('allCount').textContent = employees.length;
-    ['teachers', 'masters', 'administration', 'other'].forEach(cat => {
-        const el = document.getElementById(`${cat}Count`);
-        if (el) el.textContent = employees.filter(e => e.category === cat).length;
+    ['teachers', 'masters', 'administration', 'other'].forEach(function(cat) {
+        var el = document.getElementById(cat + 'Count');
+        if (el) el.textContent = employees.filter(function(e) { return e.category === cat; }).length;
     });
 }
 
 // ============================================================
-// ПРОСМОТР КАРТОЧКИ СОТРУДНИКА
-// ============================================================
-function viewEmployee(id) {
-    const e = employees.find(x => x.id === id);
-    if (!e) return;
-    const catLabels = { 'teachers': 'Преподаватель', 'masters': 'Мастер ПО', 'administration': 'Администрация', 'other': 'Другие' };
-    let roleLabel = 'Наблюдатель';
-    if (e.user_role === 'super_admin') roleLabel = 'Супер-Админ';
-    else if (e.user_role === 'admin') roleLabel = 'Админ';
-    else if (e.user_role === 'teacher') roleLabel = 'Преподаватель';
-    else if (e.user_role === 'master') roleLabel = 'Мастер ПО';
-    
-    let groupsHtml = '—';
-    if (e.groups?.length) {
-        const names = e.groups.map(gid => groups.find(gr => gr.id === gid)?.name || gid);
-        groupsHtml = names.map(n => `<span class="group-tag">${n}</span>`).join(' ');
-    }
-
-    document.getElementById('modalTitle').textContent = '👤 Карточка сотрудника';
-    document.getElementById('modalBody').innerHTML = `
-        <div style="padding:8px 0;">
-            <div style="font-size:22px;font-weight:700;color:var(--primary);">${e.full_name}</div>
-            <div style="color:var(--text-secondary);margin:4px 0 12px;">
-                ${e.position || '—'} · ${catLabels[e.category] || e.category}
-                <span class="badge-role ${e.user_role === 'super_admin' ? 'badge-super_admin' : e.user_role === 'admin' ? 'badge-admin' : e.user_role === 'teacher' ? 'badge-teacher' : e.user_role === 'master' ? 'badge-master' : 'badge-viewer'}">${roleLabel}</span>
-            </div>
-            <hr style="margin:12px 0;border-color:var(--border);">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">
-                <div><strong>📱 Телефон:</strong> ${e.phone || '—'}</div>
-                <div><strong>🔑 Логин:</strong> ${e.user_login || '—'}</div>
-                <div style="grid-column:1/-1;"><strong>📚 Группы:</strong> ${groupsHtml}</div>
-            </div>
-        </div>`;
-    document.getElementById('modalSaveBtn').style.display = 'none';
-    document.getElementById('employeeModal').classList.add('active');
-}
-
-// ============================================================
-// МОДАЛЬНОЕ ОКНО СОЗДАНИЯ/РЕДАКТИРОВАНИЯ (ДЛЯ АДМИНОВ)
-// ============================================================
-function openModal(id = null) {
-    if (!canManageEmployees) return;
-    editingId = id;
-    const e = id ? employees.find(x => x.id === id) : null;
-    
-    if (id && (!e || currentUser.employee_id === id)) { 
-        showToast('❌ Вы не можете редактировать свою учётную запись', 'error');
-        return; 
-    }
-    
-    showModalForm(e);
-}
-
-function showModalForm(data) {
-    const isEdit = !!data;
-    document.getElementById('modalTitle').textContent = isEdit ? '✏️ Редактировать сотрудника' : '➕ Добавить сотрудника';
-    document.getElementById('modalSaveBtn').textContent = isEdit ? '💾 Обновить' : '✅ Сохранить';
-    document.getElementById('modalSaveBtn').style.display = 'inline-block';
-
-    const catOpts = [
-        { value: 'teachers', label: '👨‍🏫 Преподаватели' },
-        { value: 'masters', label: '🔧 Мастера ПО' },
-        { value: 'administration', label: '🏢 Администрация' },
-        { value: 'other', label: '📂 Другие' }
-    ].map(c => `<option value="${c.value}" ${isEdit && data.category === c.value ? 'selected' : ''}>${c.label}</option>`).join('');
-
-    let roleOpts = '';
-    if (canManageEmployees) {
-        roleOpts = [
-            { value: 'viewer', label: '👀 Наблюдатель' },
-            { value: 'teacher', label: '👨‍🏫 Преподаватель' },
-            { value: 'master', label: '🔧 Мастер ПО' },
-            { value: 'admin', label: '🛡️ Администратор' },
-            { value: 'super_admin', label: '👑 Супер-Админ' }
-        ].map(r => `<option value="${r.value}" ${isEdit && data.user_role === r.value ? 'selected' : ''}>${r.label}</option>`).join('');
-    }
-
-    const fullNameValue = isEdit ? data.full_name : '';
-    const positionValue = isEdit ? (data.position || '') : '';
-    const phoneValue = isEdit ? (data.phone || '') : '';
-
-    document.getElementById('modalBody').innerHTML = `
-        <div class="form-group">
-            <label class="form-label">ФИО <span class="required">*</span></label>
-            <input type="text" class="form-control" id="empFullName" value="${fullNameValue}" placeholder="Введите ФИО">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Должность</label>
-            <input type="text" class="form-control" id="empPosition" value="${positionValue}" placeholder="Введите должность">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Категория <span class="required">*</span></label>
-            <select class="form-control" id="empCategory">${catOpts}</select>
-        </div>
-        ${canManageEmployees ? `
-        <div class="form-group">
-            <label class="form-label">Права доступа</label>
-            <select class="form-control" id="empRole">${roleOpts}</select>
-            <div class="form-hint">⚠️ Вы не можете изменить свою роль</div>
-        </div>` : ''}
-        <div class="form-group" id="groupSelectContainer" style="display:none;">
-            <label class="form-label">Закреплённые группы</label>
-            <select class="form-control" id="empGroups" multiple></select>
-            <div class="form-hint" id="groupHint">Выберите группы для курирования</div>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Телефон</label>
-            <input type="text" class="form-control" id="empPhone" value="${phoneValue}" placeholder="+375 XX XXX-XX-XX">
-        </div>
-        ${!isEdit ? `<div style="background:#DBEAFE;padding:12px;border-radius:8px;margin-top:12px;font-size:13px;color:#1A5276;font-weight:600;">ℹ️ После сохранения будет создан пригласительный код</div>` : ''}
-    `;
-
-    document.getElementById('employeeModal').classList.add('active');
-
-    const updateGroupSelect = () => {
-        const cat = document.getElementById('empCategory').value;
-        const container = document.getElementById('groupSelectContainer');
-        const select = document.getElementById('empGroups');
-        const hint = document.getElementById('groupHint');
-
-        if (cat === 'teachers' || cat === 'masters') {
-            container.style.display = 'block';
-            const filteredGroups = groups.filter(g => !g.is_archived);
-            const categoryGroups = cat === 'masters' 
-                ? filteredGroups.filter(g => g.type === 'pto') 
-                : filteredGroups;
-            
-            let optionsHtml = `<option value="">--- Нет группы ---</option>`;
-            
-            optionsHtml += categoryGroups.map(g => 
-                `<option value="${g.id}" ${isEdit && data.groups?.includes(g.id) ? 'selected' : ''}>${g.name} (${g.type === 'pto' ? 'ПТО' : 'ССО'})</option>`
-            ).join('');
-
-            select.innerHTML = optionsHtml;
-            
-            hint.textContent = cat === 'masters' 
-                ? 'Выберите группы ПТО для мастерства (или "---" для сброса)' 
-                : 'Выберите группы для кураторства (или "---" для сброса)';
-            hint.textContent += ' (Архивные группы не отображаются)';
-        } else {
-            container.style.display = 'none';
-        }
-    };
-
-    document.getElementById('empCategory').addEventListener('change', updateGroupSelect);
-    updateGroupSelect();
-}
-
-// ============================================================
-// МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ДЛЯ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ)
+// МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ТОЛЬКО ФИО + ДОЛЖНОСТЬ + ТЕЛЕФОН)
 // ============================================================
 function openProfileEditModal() {
-    document.getElementById('profileEditAlert').style.display = 'none';
-    document.getElementById('profileNewLogin').value = '';
-    document.getElementById('profileCurrentPassword').value = '';
-    document.getElementById('profileNewPassword').value = '';
-    document.getElementById('profileConfirmPassword').value = '';
-    document.getElementById('profileStrengthBar').className = 'bar';
-    document.getElementById('profileStrengthText').textContent = 'Введите пароль для оценки надёжности';
-    document.getElementById('profileConfirmHint').textContent = 'Пароли должны совпадать';
-    document.getElementById('profileConfirmHint').style.color = '#94A3B8';
+    var alert = document.getElementById('profileEditAlert');
+    alert.style.display = 'none';
+    
+    var myEmp = employees.find(function(e) { return e.id === currentUser.employee_id; });
+    document.getElementById('profileFullName').value = currentUser.full_name || '';
+    document.getElementById('profilePosition').value = myEmp?.position || '';
+    document.getElementById('profilePhone').value = myEmp?.phone || '';
+    
     document.getElementById('profileEditModal').classList.add('active');
 }
 
@@ -801,249 +692,287 @@ document.getElementById('profileEditModal').addEventListener('click', function(e
     if (e.target === this) closeProfileEditModal();
 });
 
-// Индикатор силы пароля
-document.getElementById('profileNewPassword').addEventListener('input', function() {
-    const result = checkPasswordStrength(this.value);
-    const bar = document.getElementById('profileStrengthBar');
-    const text = document.getElementById('profileStrengthText');
-    bar.className = 'bar';
-    if (this.value.length > 0 && result.level) {
-        bar.classList.add(result.level);
-        text.textContent = `Надёжность: ${result.label}`;
-    } else {
-        text.textContent = 'Введите пароль для оценки надёжности';
-    }
-});
-
-document.getElementById('profileConfirmPassword').addEventListener('input', function() {
-    const newPass = document.getElementById('profileNewPassword').value;
-    const hint = document.getElementById('profileConfirmHint');
-    if (this.value.length > 0) {
-        hint.textContent = this.value === newPass ? '✅ Пароли совпадают' : '❌ Пароли не совпадают';
-        hint.style.color = this.value === newPass ? '#10B981' : '#EF4444';
-    } else {
-        hint.textContent = 'Пароли должны совпадать';
-        hint.style.color = '#94A3B8';
-    }
-});
-
-function checkPasswordStrength(password) {
-    let score = 0;
-    if (password.length >= 6) score++;
-    if (password.length >= 10) score++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[^a-zA-Z0-9]/.test(password)) score++;
-    const levels = ['', 'weak', 'medium', 'strong', 'very-strong'];
-    const labels = ['', 'Слабый', 'Средний', 'Хороший', 'Отличный'];
-    return { level: levels[Math.min(score, 4)], label: labels[Math.min(score, 4)] };
-}
-
-function showProfileEditAlert(message, type = 'danger') {
-    const alert = document.getElementById('profileEditAlert');
-    const msg = document.getElementById('profileEditMessage');
-    msg.textContent = message;
-    alert.style.display = 'block';
-    alert.style.background = type === 'danger' ? '#FEE2E2' : '#D1FAE5';
-    alert.style.color = type === 'danger' ? '#991B1B' : '#065F46';
-    alert.style.borderLeft = type === 'danger' ? '4px solid #EF4444' : '4px solid #10B981';
-}
-
-function togglePassword(inputId) {
-    const input = document.getElementById(inputId);
-    const button = input.parentElement.querySelector('.toggle-password');
-    if (input.type === 'password') {
-        input.type = 'text';
-        button.textContent = '🙈';
-    } else {
-        input.type = 'password';
-        button.textContent = '👁️';
-    }
-}
-
-// ===== СОХРАНЕНИЕ ПРОФИЛЯ (ДЛЯ СЕБЯ) =====
+// ============================================================
+// СОХРАНЕНИЕ ПРОФИЛЯ (ТОЛЬКО ФИО + ДОЛЖНОСТЬ + ТЕЛЕФОН)
+// ============================================================
 document.getElementById('profileEditSaveBtn').onclick = async function() {
-    const alert = document.getElementById('profileEditAlert');
+    var alert = document.getElementById('profileEditAlert');
     alert.style.display = 'none';
 
-    const newLogin = document.getElementById('profileNewLogin').value.trim();
-    const currentPassword = document.getElementById('profileCurrentPassword').value;
-    const newPassword = document.getElementById('profileNewPassword').value;
-    const confirmPassword = document.getElementById('profileConfirmPassword').value;
+    var fullName = document.getElementById('profileFullName').value.trim();
+    var position = document.getElementById('profilePosition').value.trim();
+    var phone = document.getElementById('profilePhone').value.trim();
 
-    const hasLoginChange = newLogin.length > 0;
-    const hasPasswordChange = newPassword.length > 0;
-
-    if (!hasLoginChange && !hasPasswordChange) {
-        showProfileEditAlert('❌ Нет изменений для сохранения');
+    if (!fullName) {
+        alert.style.display = 'block';
+        document.getElementById('profileEditMessage').textContent = '❌ Введите ФИО';
         return;
     }
 
-    if (hasLoginChange) {
-        if (newLogin.length < 3) {
-            showProfileEditAlert('❌ Логин должен содержать минимум 3 символа');
-            return;
-        }
-        const { data: existing, error: checkError } = await supabaseClient
-            .from('users')
-            .select('id')
-            .eq('login', newLogin)
-            .neq('id', currentUser.id);
-        if (checkError) {
-            showProfileEditAlert('❌ Ошибка проверки логина: ' + checkError.message);
-            return;
-        }
-        if (existing && existing.length > 0) {
-            showProfileEditAlert('❌ Этот логин уже занят');
-            return;
-        }
-    }
-
-    if (hasPasswordChange) {
-        if (!currentPassword) {
-            showProfileEditAlert('❌ Введите текущий пароль');
-            return;
-        }
-        if (newPassword.length < 6) {
-            showProfileEditAlert('❌ Новый пароль должен содержать минимум 6 символов');
-            return;
-        }
-        if (newPassword !== confirmPassword) {
-            showProfileEditAlert('❌ Пароли не совпадают');
-            return;
-        }
-
-        // Проверка текущего пароля
-        const { data: user, error: findError } = await supabaseClient
-            .from('users')
-            .select('password_hash')
-            .eq('id', currentUser.id)
-            .single();
-
-        if (findError || !user) {
-            showProfileEditAlert('❌ Пользователь не найден');
-            return;
-        }
-
-        try {
-            const isPasswordValid = await window.bcrypt.compare(currentPassword, user.password_hash);
-            if (!isPasswordValid) {
-                showProfileEditAlert('❌ Неверный текущий пароль');
-                return;
-            }
-        } catch (bcryptError) {
-            console.error('❌ Ошибка проверки пароля:', bcryptError);
-            showProfileEditAlert('❌ Ошибка проверки пароля');
-            return;
-        }
-    }
-
-    const btn = this;
-    const originalText = btn.innerHTML;
+    var btn = this;
+    var orig = btn.innerHTML;
     btn.innerHTML = '<span class="login-loader"></span> Сохранение...';
     btn.disabled = true;
 
     try {
-        const updateData = {};
-        if (hasLoginChange) updateData.login = newLogin;
-        if (hasPasswordChange) {
-            const saltRounds = 10;
-            const hashedNewPassword = await window.bcrypt.hash(newPassword, saltRounds);
-            updateData.password_hash = hashedNewPassword;
+        if (currentUser.employee_id) {
+            var empResult = await supabaseClient
+                .from('employees')
+                .update({ full_name: fullName, position: position || null, phone: phone || null })
+                .eq('id', currentUser.employee_id);
+            if (empResult.error) throw empResult.error;
         }
 
-        const { error: updateError } = await supabaseClient
-            .from('users')
-            .update(updateData)
-            .eq('id', currentUser.id);
+        currentUser.full_name = fullName;
+        var savedUser = JSON.parse(localStorage.getItem('currentUser'));
+        savedUser.full_name = fullName;
+        localStorage.setItem('currentUser', JSON.stringify(savedUser));
 
-        if (updateError) throw updateError;
+        document.getElementById('userNameDisplay').textContent = fullName;
 
-        if (hasLoginChange) {
-            currentUser.login = newLogin;
-            const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-            savedUser.login = newLogin;
-            localStorage.setItem('currentUser', JSON.stringify(savedUser));
-        }
+        alert.style.display = 'block';
+        alert.style.background = '#D1FAE5';
+        alert.style.color = '#065F46';
+        alert.style.borderLeft = '4px solid #10B981';
+        document.getElementById('profileEditMessage').textContent = '✅ Данные успешно обновлены!';
 
-        showProfileEditAlert('✅ Данные успешно обновлены!', 'success');
         setTimeout(closeProfileEditModal, 1500);
         await loadEmployees();
 
     } catch (error) {
         console.error('❌ Ошибка:', error);
-        showProfileEditAlert('❌ Ошибка: ' + (error.message || 'Неизвестная ошибка'));
+        alert.style.display = 'block';
+        alert.style.background = '#FEE2E2';
+        alert.style.color = '#991B1B';
+        alert.style.borderLeft = '4px solid #EF4444';
+        document.getElementById('profileEditMessage').textContent = '❌ Ошибка: ' + (error.message || 'Неизвестная ошибка');
     } finally {
-        btn.innerHTML = originalText;
+        btn.innerHTML = orig;
         btn.disabled = false;
     }
 };
 
 // ============================================================
-// ОБРАБОТЧИК ENTER В МОДАЛЬНЫХ ОКНАХ
+// МОДАЛЬНОЕ ОКНО СБРОСА
 // ============================================================
-document.getElementById('employeeModal').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && this.classList.contains('active')) {
-        e.preventDefault();
-        const saveBtn = document.getElementById('modalSaveBtn');
-        if (saveBtn && saveBtn.style.display !== 'none' && !saveBtn.disabled) {
-            saveBtn.click();
-        }
-    }
+function openResetModal() {
+    document.getElementById('resetModal').classList.add('active');
+}
+
+function closeResetModal() {
+    document.getElementById('resetModal').classList.remove('active');
+}
+
+document.getElementById('resetCloseBtn').onclick = closeResetModal;
+document.getElementById('resetCancelBtn').onclick = closeResetModal;
+document.getElementById('resetModal').addEventListener('click', function(e) {
+    if (e.target === this) closeResetModal();
 });
 
-document.getElementById('profileEditModal').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' && this.classList.contains('active')) {
-        e.preventDefault();
-        const saveBtn = document.getElementById('profileEditSaveBtn');
-        if (saveBtn && !saveBtn.disabled) {
-            saveBtn.click();
-        }
+document.getElementById('resetConfirmBtn').onclick = async function() {
+    var btn = this;
+    var orig = btn.innerHTML;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+    
+    try {
+        var part1 = Math.floor(1000 + Math.random() * 9000).toString();
+        var part2 = Math.floor(1000 + Math.random() * 9000).toString();
+        var newInviteCode = part1 + '-' + part2;
+        
+        var result = await supabaseClient
+            .from('users')
+            .update({
+                login: null,
+                password_hash: null,
+                invite_code: newInviteCode,
+                invite_used: false,
+                invite_status: 'pending',
+                active_session_id: null
+            })
+            .eq('id', currentUser.id);
+        
+        if (result.error) throw result.error;
+        
+        closeResetModal();
+        showLockScreen(newInviteCode);
+        showToast('✅ Доступ сброшен! Используйте новый код для регистрации', 'success');
+        
+    } catch(e) {
+        console.error('Ошибка сброса:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
     }
-});
+};
 
 // ============================================================
-// СОХРАНЕНИЕ ДАННЫХ (ДЛЯ АДМИНОВ)
+// ПРОСМОТР КАРТОЧКИ
+// ============================================================
+function viewEmployee(id) {
+    var e = employees.find(function(x) { return x.id === id; });
+    if (!e) return;
+    var catLabels = { 'teachers': 'Преподаватель', 'masters': 'Мастер ПО', 'administration': 'Администрация', 'other': 'Другие' };
+    var roleLabel = 'Наблюдатель';
+    if (e.user_role === 'super_admin') roleLabel = 'Супер-Админ';
+    else if (e.user_role === 'admin') roleLabel = 'Админ';
+    else if (e.user_role === 'teacher') roleLabel = 'Преподаватель';
+    else if (e.user_role === 'master') roleLabel = 'Мастер ПО';
+    
+    var groupsHtml = '—';
+    if (e.groups && e.groups.length) {
+        var names = e.groups.map(function(gid) {
+            var g = groups.find(function(gr) { return gr.id === gid; });
+            return g ? g.name : gid;
+        });
+        groupsHtml = names.map(function(n) { return '<span class="group-tag">' + n + '</span>'; }).join(' ');
+    }
+
+    document.getElementById('modalTitle').textContent = '👤 Карточка сотрудника';
+    document.getElementById('modalBody').innerHTML =
+        '<div style="padding:8px 0;">' +
+        '<div style="font-size:22px;font-weight:700;color:var(--primary);">' + e.full_name + '</div>' +
+        '<div style="color:var(--text-secondary);margin:4px 0 12px;">' +
+        (e.position || '—') + ' · ' + (catLabels[e.category] || e.category) +
+        ' <span class="badge-role ' + (e.user_role === 'super_admin' ? 'badge-super_admin' : e.user_role === 'admin' ? 'badge-admin' : e.user_role === 'teacher' ? 'badge-teacher' : e.user_role === 'master' ? 'badge-master' : 'badge-viewer') + '">' + roleLabel + '</span>' +
+        '</div><hr style="margin:12px 0;border-color:var(--border);">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">' +
+        '<div><strong>📱 Телефон:</strong> ' + (e.phone || '—') + '</div>' +
+        '<div><strong>🔑 Логин:</strong> ' + (e.user_login || '—') + '</div>' +
+        '<div style="grid-column:1/-1;"><strong>📚 Группы:</strong> ' + groupsHtml + '</div>' +
+        '</div></div>';
+    document.getElementById('modalSaveBtn').style.display = 'none';
+    document.getElementById('employeeModal').classList.add('active');
+}
+
+// ============================================================
+// МОДАЛЬНОЕ ОКНО ДЛЯ АДМИНОВ
+// ============================================================
+function openModal(id) {
+    if (!canManageEmployees) return;
+    editingId = id;
+    var e = id ? employees.find(function(x) { return x.id === id; }) : null;
+    
+    if (id && (!e || currentUser.employee_id === id)) {
+        showToast('❌ Вы не можете редактировать свою учётную запись', 'error');
+        return;
+    }
+    showModalForm(e);
+}
+
+function showModalForm(data) {
+    var isEdit = !!data;
+    document.getElementById('modalTitle').textContent = isEdit ? '✏️ Редактировать сотрудника' : '➕ Добавить сотрудника';
+    document.getElementById('modalSaveBtn').textContent = isEdit ? '💾 Обновить' : '✅ Сохранить';
+    document.getElementById('modalSaveBtn').style.display = 'inline-block';
+
+    var catOpts = [
+        { value: 'teachers', label: '👨‍🏫 Преподаватели' },
+        { value: 'masters', label: '🔧 Мастера ПО' },
+        { value: 'administration', label: '🏢 Администрация' },
+        { value: 'other', label: '📂 Другие' }
+    ].map(function(c) {
+        return '<option value="' + c.value + '"' + (isEdit && data.category === c.value ? ' selected' : '') + '>' + c.label + '</option>';
+    }).join('');
+
+    var roleOpts = '';
+    if (canManageEmployees) {
+        roleOpts = [
+            { value: 'viewer', label: '👀 Наблюдатель' },
+            { value: 'teacher', label: '👨‍🏫 Преподаватель' },
+            { value: 'master', label: '🔧 Мастер ПО' },
+            { value: 'admin', label: '🛡️ Администратор' },
+            { value: 'super_admin', label: '👑 Супер-Админ' }
+        ].map(function(r) {
+            return '<option value="' + r.value + '"' + (isEdit && data.user_role === r.value ? ' selected' : '') + '>' + r.label + '</option>';
+        }).join('');
+    }
+
+    var fullNameValue = isEdit ? data.full_name : '';
+    var positionValue = isEdit ? (data.position || '') : '';
+    var phoneValue = isEdit ? (data.phone || '') : '';
+
+    document.getElementById('modalBody').innerHTML =
+        '<div class="form-group"><label class="form-label">ФИО <span class="required">*</span></label><input type="text" class="form-control" id="empFullName" value="' + fullNameValue + '" placeholder="Введите ФИО"></div>' +
+        '<div class="form-group"><label class="form-label">Должность</label><input type="text" class="form-control" id="empPosition" value="' + positionValue + '" placeholder="Введите должность"></div>' +
+        '<div class="form-group"><label class="form-label">Категория <span class="required">*</span></label><select class="form-control" id="empCategory">' + catOpts + '</select></div>' +
+        (canManageEmployees ? '<div class="form-group"><label class="form-label">Права доступа</label><select class="form-control" id="empRole">' + roleOpts + '</select><div class="form-hint">⚠️ Вы не можете изменить свою роль</div></div>' : '') +
+        '<div class="form-group" id="groupSelectContainer" style="display:none;"><label class="form-label">Закреплённые группы</label><select class="form-control" id="empGroups" multiple></select><div class="form-hint" id="groupHint">Выберите группы для курирования</div></div>' +
+        '<div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-control" id="empPhone" value="' + phoneValue + '" placeholder="+375 XX XXX-XX-XX"></div>' +
+        (!isEdit ? '<div style="background:#DBEAFE;padding:12px;border-radius:8px;margin-top:12px;font-size:13px;color:#1A5276;font-weight:600;">ℹ️ После сохранения будет создан пригласительный код</div>' : '');
+
+    document.getElementById('employeeModal').classList.add('active');
+
+    var updateGroupSelect = function() {
+        var cat = document.getElementById('empCategory').value;
+        var container = document.getElementById('groupSelectContainer');
+        var select = document.getElementById('empGroups');
+        var hint = document.getElementById('groupHint');
+
+        if (cat === 'teachers' || cat === 'masters') {
+            container.style.display = 'block';
+            var filteredGroups = groups.filter(function(g) { return !g.is_archived; });
+            var categoryGroups = cat === 'masters' ? filteredGroups.filter(function(g) { return g.type === 'pto'; }) : filteredGroups;
+            
+            var optionsHtml = '<option value="">--- Нет группы ---</option>';
+            categoryGroups.forEach(function(g) {
+                optionsHtml += '<option value="' + g.id + '"' + (isEdit && data.groups && data.groups.includes(g.id) ? ' selected' : '') + '>' + g.name + ' (' + (g.type === 'pto' ? 'ПТО' : 'ССО') + ')</option>';
+            });
+            select.innerHTML = optionsHtml;
+            hint.textContent = cat === 'masters' ? 'Выберите группы ПТО для мастерства (или "---" для сброса)' : 'Выберите группы для кураторства (или "---" для сброса)';
+            hint.textContent += ' (Архивные группы не отображаются)';
+        } else {
+            container.style.display = 'none';
+        }
+    };
+
+    document.getElementById('empCategory').addEventListener('change', updateGroupSelect);
+    updateGroupSelect();
+}
+
+// ============================================================
+// СОХРАНЕНИЕ (ДЛЯ АДМИНОВ)
 // ============================================================
 document.getElementById('modalSaveBtn').onclick = async function() {
     if (!canManageEmployees) return;
     
-    const full_name = document.getElementById('empFullName').value.trim();
-    const position = document.getElementById('empPosition').value.trim();
-    const category = document.getElementById('empCategory').value;
-    const phone = document.getElementById('empPhone').value.trim();
-    const roleSelect = document.getElementById('empRole');
-    const role = roleSelect ? roleSelect.value : 'viewer';
+    var full_name = document.getElementById('empFullName').value.trim();
+    var position = document.getElementById('empPosition').value.trim();
+    var category = document.getElementById('empCategory').value;
+    var phone = document.getElementById('empPhone').value.trim();
+    var roleSelect = document.getElementById('empRole');
+    var role = roleSelect ? roleSelect.value : 'viewer';
     
-    const selectedOptions = Array.from(document.getElementById('empGroups')?.selectedOptions || []);
-    const selectedGroups = selectedOptions
-        .map(o => o.value)
-        .filter(val => val !== "" && !archivedGroupIds.includes(val));
+    var selectedOptions = Array.from(document.getElementById('empGroups')?.selectedOptions || []);
+    var selectedGroups = selectedOptions
+        .map(function(o) { return o.value; })
+        .filter(function(val) { return val !== "" && !archivedGroupIds.includes(val); });
 
     if (!full_name) {
         showToast('❌ Введите ФИО', 'error');
         return;
     }
 
-    const btn = this;
+    var btn = this;
     btn.innerHTML = '<span class="login-loader"></span> Сохранение...';
     btn.disabled = true;
 
     try {
-        const empData = { full_name, position, category, phone, groups: selectedGroups };
+        var empData = { full_name: full_name, position: position || null, category: category, phone: phone || null, groups: selectedGroups };
         
         if (editingId) {
-            const { error } = await supabaseClient.from('employees').update(empData).eq('id', editingId);
-            if (error) throw error;
+            var updateResult = await supabaseClient.from('employees').update(empData).eq('id', editingId);
+            if (updateResult.error) throw updateResult.error;
             if (currentUser.employee_id !== editingId) {
-                await supabaseClient.from('users').update({ role }).eq('employee_id', editingId);
+                await supabaseClient.from('users').update({ role: role }).eq('employee_id', editingId);
             }
             showToast('✅ Сотрудник обновлён!', 'success');
         } else {
-            const { data: newEmp, error } = await supabaseClient.from('employees').insert([{ ...empData, status: 'active' }]).select().single();
-            if (error) throw error;
-            if (newEmp) {
-                await supabaseClient.from('users').update({ role }).eq('employee_id', newEmp.id);
+            var insertResult = await supabaseClient.from('employees').insert([{ ...empData, status: 'active' }]).select().single();
+            if (insertResult.error) throw insertResult.error;
+            if (insertResult.data) {
+                await supabaseClient.from('users').update({ role: role }).eq('employee_id', insertResult.data.id);
             }
             showToast('✅ Сотрудник добавлен!', 'success');
         }
@@ -1060,8 +989,26 @@ document.getElementById('modalSaveBtn').onclick = async function() {
 };
 
 // ============================================================
-// УДАЛЕНИЕ И СБРОС ПАРОЛЯ (ДЛЯ АДМИНОВ)
+// УДАЛЕНИЕ И СБРОС (ДЛЯ АДМИНОВ)
 // ============================================================
+function closeModal() { document.getElementById('employeeModal').classList.remove('active'); editingId = null; }
+document.getElementById('modalCloseBtn').onclick = closeModal;
+document.getElementById('modalCancelBtn').onclick = closeModal;
+document.getElementById('employeeModal').addEventListener('click', function(e) { if(e.target === e.currentTarget) closeModal(); });
+
+document.getElementById('addEmployeeBtn').onclick = function() { openModal(null); };
+document.getElementById('searchInput').addEventListener('input', renderEmployees);
+document.getElementById('clearSearchBtn').onclick = function() { document.getElementById('searchInput').value = ''; renderEmployees(); };
+
+document.querySelectorAll('.category-card').forEach(function(c) {
+    c.addEventListener('click', function() {
+        document.querySelectorAll('.category-card').forEach(function(x) { x.classList.remove('active'); });
+        this.classList.add('active');
+        currentCategory = this.dataset.category;
+        renderEmployees();
+    });
+});
+
 async function deleteEmployee(id) {
     if (!canManageEmployees || currentUser.employee_id === id) {
         showToast('❌ Недостаточно прав', 'error');
@@ -1070,23 +1017,16 @@ async function deleteEmployee(id) {
     if (!confirm('Удалить сотрудника и его учётную запись?')) return;
     
     try {
-        const { data: userData } = await supabaseClient
-            .from('users')
-            .select('id')
-            .eq('employee_id', id)
-            .single();
-        
-        if (userData) {
-            await invalidateUserSession(userData.id);
+        var userResult = await supabaseClient.from('users').select('id').eq('employee_id', id).single();
+        if (userResult.data) {
+            await invalidateUserSession(userResult.data.id);
         }
-        
         await supabaseClient.from('users').delete().eq('employee_id', id);
-        const { error } = await supabaseClient.from('employees').delete().eq('id', id);
-        if (error) throw error;
-        
+        var deleteResult = await supabaseClient.from('employees').delete().eq('id', id);
+        if (deleteResult.error) throw deleteResult.error;
         await loadEmployees();
-        showToast('✅ Сотрудник удалён, сессия завершена', 'success');
-    } catch (e) { 
+        showToast('✅ Сотрудник удалён', 'success');
+    } catch (e) {
         console.error('Ошибка удаления:', e);
         showToast('❌ Ошибка: ' + e.message, 'error');
     }
@@ -1097,91 +1037,61 @@ async function resetCredentials(id) {
         showToast('❌ Недостаточно прав', 'error');
         return;
     }
-    
-    const e = employees.find(x => x.id === id);
+    var e = employees.find(function(x) { return x.id === id; });
     if (!e) return;
-    
-    if (!confirm(`Сбросить доступ для ${e.full_name}?\n\nЭто действие:\n• Сгенерирует НОВЫЙ пригласительный код\n• Удалит текущий логин и пароль\n• Завершит все активные сессии\n• Потребует повторной регистрации`)) return;
+    if (!confirm('Сбросить доступ для ' + e.full_name + '?')) return;
     
     try {
-        const part1 = Math.floor(1000 + Math.random() * 9000).toString();
-        const part2 = Math.floor(1000 + Math.random() * 9000).toString();
-        const newInviteCode = `${part1}-${part2}`;
+        var part1 = Math.floor(1000 + Math.random() * 9000).toString();
+        var part2 = Math.floor(1000 + Math.random() * 9000).toString();
+        var newInviteCode = part1 + '-' + part2;
         
-        const { data: userData } = await supabaseClient
-            .from('users')
-            .select('id')
-            .eq('employee_id', id)
-            .single();
-        
-        if (userData) {
-            await invalidateUserSession(userData.id);
+        var userResult = await supabaseClient.from('users').select('id').eq('employee_id', id).single();
+        if (userResult.data) {
+            await supabaseClient
+                .from('users')
+                .update({
+                    login: null,
+                    password_hash: null,
+                    invite_code: newInviteCode,
+                    invite_used: false,
+                    invite_status: 'pending',
+                    active_session_id: null
+                })
+                .eq('id', userResult.data.id);
         }
-        
-        const { error } = await supabaseClient
-            .from('users')
-            .update({ 
-                login: null,
-                password_hash: null,
-                invite_code: newInviteCode,
-                invite_used: false,
-                invite_status: 'pending',
-                active_session_id: null
-            })
-            .eq('employee_id', id);
-            
-        if (error) throw error;
-        
-        showToast(`✅ Доступ сброшен! Все сессии завершены.\n\nНовый код: ${newInviteCode}`, 'success');
+        showToast('✅ Доступ сброшен! Новый код: ' + newInviteCode, 'success');
         await loadEmployees();
-        
-    } catch (e) { 
+    } catch (e) {
         console.error('Ошибка сброса:', e);
         showToast('❌ Ошибка: ' + e.message, 'error');
     }
 }
 
 // ============================================================
-// ОБРАБОТЧИКИ СОБЫТИЙ
-// ============================================================
-function closeModal() { document.getElementById('employeeModal').classList.remove('active'); editingId = null; }
-document.getElementById('modalCloseBtn').onclick = closeModal;
-document.getElementById('modalCancelBtn').onclick = closeModal;
-document.getElementById('employeeModal').addEventListener('click', e => { if(e.target === e.currentTarget) closeModal(); });
-
-document.getElementById('addEmployeeBtn').onclick = () => openModal(null);
-document.getElementById('searchInput').addEventListener('input', renderEmployees);
-document.getElementById('clearSearchBtn').onclick = () => { document.getElementById('searchInput').value = ''; renderEmployees(); };
-
-document.querySelectorAll('.category-card').forEach(c => c.addEventListener('click', function() {
-    document.querySelectorAll('.category-card').forEach(x => x.classList.remove('active'));
-    this.classList.add('active');
-    currentCategory = this.dataset.category;
-    renderEmployees();
-}));
-
-// ============================================================
-// ПРОВЕРКА СЕССИИ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
+// ПРОВЕРКА СЕССИИ
 // ============================================================
 async function checkSessionOnLoad() {
-    const savedUser = localStorage.getItem('currentUser');
+    var savedUser = localStorage.getItem('currentUser');
     if (!savedUser) return;
     
     try {
-        const user = JSON.parse(savedUser);
-        const { data: dbUser, error } = await supabaseClient
+        var user = JSON.parse(savedUser);
+        var result = await supabaseClient
             .from('users')
-            .select('active_session_id')
+            .select('active_session_id, invite_code, login')
             .eq('id', user.id)
             .single();
-            
-        if (error) return;
+        if (result.error) return;
         
-        if (dbUser.active_session_id && dbUser.active_session_id !== deviceSessionId) {
-            console.log('⚠️ Сессия недействительна, выполняется выход');
+        if (!result.data.login && result.data.invite_code) {
+            showLockScreen(result.data.invite_code);
+            return;
+        }
+        if (result.data.active_session_id && result.data.active_session_id !== deviceSessionId) {
             localStorage.removeItem('currentUser');
             showToast('❌ Сессия завершена на другом устройстве', 'error');
-            setTimeout(() => { window.location.href = '/index.html'; }, 1500);
+            setTimeout(function() { window.location.href = '/index.html'; }, 1500);
         }
     } catch (error) {
         console.error('Ошибка проверки сессии:', error);
@@ -1189,12 +1099,11 @@ async function checkSessionOnLoad() {
 }
 
 // ============================================================
-// ИНИЦИАЛИЗАЦИЯ
+// ЗАПУСК
 // ============================================================
-init();
-checkSessionOnLoad();
-
 console.log('🆔 ID устройства:', deviceSessionId);
+init();
+setTimeout(checkSessionOnLoad, 500);
 </script>
 </body>
 </html>

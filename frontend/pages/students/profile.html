@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Карточка студента | vgatk_bd</title>
+    <title>Карточка учащегося | vgatk_bd</title>
 
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet" />
@@ -355,7 +355,7 @@
 
             <div class="page-header">
                 <div>
-                    <h1 class="page-title">👨‍🎓 Карточка студента <small id="studentSubtitle">загрузка...</small></h1>
+                    <h1 class="page-title">👨‍🎓 Карточка учащегося <small id="studentSubtitle">загрузка...</small></h1>
                 </div>
                 <div class="header-actions" id="headerActions">
                     <button class="btn btn-secondary" id="backBtn">← Назад</button>
@@ -685,17 +685,19 @@
                 .single();
 
             if (error || !student) {
-                showToast('❌ Студент не найден', 'error');
+                showToast('❌ Учащийся не найден', 'error');
                 return;
             }
 
             if (student.status !== 'active') {
-                showToast('❌ Студент не активен', 'error');
+                showToast('❌ Учащийся не активен', 'error');
                 return;
             }
 
+            const genderWord = student.gender === 'Женский' ? 'учащуюся' : 'учащегося';
+
             const html = `
-                <p style="margin-bottom:16px;">Отчисление студента: <strong>${student.full_name}</strong></p>
+                <p style="margin-bottom:16px;">Отчисление ${genderWord}: <strong>${student.full_name}</strong></p>
                 <div class="form-group">
                     <label class="form-label">Дата отчисления <span class="required">*</span></label>
                     <input type="date" class="form-control" id="expelDate">
@@ -710,7 +712,7 @@
                 </div>
             `;
 
-            openModal('📄 Отчисление студента', html, 'expel', async function() {
+            openModal('📄 Отчисление учащегося', html, 'expel', async function() {
                 const date = document.getElementById('expelDate').value;
                 const order = document.getElementById('expelOrder').value.trim();
                 const article = document.getElementById('expelArticle').value.trim();
@@ -720,7 +722,7 @@
                 if (!article) { showToast('❌ Введите статью отчисления', 'error'); return; }
 
                 try {
-                    // Получаем полные данные студента для переноса
+                    // Получаем полные данные учащегося для переноса
                     const { data: fullStudent } = await sb
                         .from('students')
                         .select('*')
@@ -728,7 +730,7 @@
                         .single();
 
                     if (!fullStudent) {
-                        showToast('❌ Студент не найден', 'error');
+                        showToast('❌ Учащийся не найден', 'error');
                         return;
                     }
 
@@ -796,11 +798,11 @@
                         return;
                     }
 
-                    // 2. Удаляем студента из students
+                    // 2. Удаляем учащегося из students
                     await sb.from('students').delete().eq('id', studentId);
 
                     closeModal();
-                    showToast(`✅ Студент ${fullStudent.full_name} отчислен и перемещён в архив`, 'success');
+                    showToast(`✅ Учащийся ${fullStudent.full_name} отчислен и перемещён в архив`, 'success');
                     window.location.href = `/students/group.html?id=${fullStudent.group_id}`;
 
                 } catch (error) {
@@ -827,17 +829,19 @@
                 .single();
 
             if (error || !student) {
-                showToast('❌ Студент не найден', 'error');
+                showToast('❌ Учащийся не найден', 'error');
                 return;
             }
 
             if (student.status !== 'active') {
-                showToast('❌ Студент не активен', 'error');
+                showToast('❌ Учащийся не активен', 'error');
                 return;
             }
 
+            const genderWord = student.gender === 'Женский' ? 'учащуюся' : 'учащегося';
+
             const html = `
-                <p style="margin-bottom:16px;">Академический отпуск для: <strong>${student.full_name}</strong></p>
+                <p style="margin-bottom:16px;">Академический отпуск для ${genderWord}: <strong>${student.full_name}</strong></p>
                 <div class="form-group">
                     <label class="form-label">Дата начала отпуска <span class="required">*</span></label>
                     <input type="date" class="form-control" id="academicDate">
@@ -862,7 +866,7 @@
                 if (!reason) { showToast('❌ Введите причину', 'error'); return; }
 
                 try {
-                    // Получаем полные данные студента для переноса
+                    // Получаем полные данные учащегося для переноса
                     const { data: fullStudent } = await sb
                         .from('students')
                         .select('*')
@@ -870,7 +874,7 @@
                         .single();
 
                     if (!fullStudent) {
-                        showToast('❌ Студент не найден', 'error');
+                        showToast('❌ Учащийся не найден', 'error');
                         return;
                     }
 
@@ -938,11 +942,11 @@
                         return;
                     }
 
-                    // 2. Удаляем студента из students
+                    // 2. Удаляем учащегося из students
                     await sb.from('students').delete().eq('id', studentId);
 
                     closeModal();
-                    showToast(`✅ Студент ${fullStudent.full_name} отправлен в академический отпуск`, 'success');
+                    showToast(`✅ Учащийся ${fullStudent.full_name} отправлен в академический отпуск`, 'success');
                     window.location.href = `/students/group.html?id=${fullStudent.group_id}`;
 
                 } catch (error) {
@@ -962,14 +966,14 @@
                 return;
             }
 
-            // Проверяем, есть ли студент в expelled_students
+            // Проверяем, есть ли учащийся в expelled_students
             const { data: expelledStudent } = await sb
                 .from('expelled_students')
                 .select('*')
                 .eq('student_id', studentId)
                 .single();
 
-            // Проверяем, есть ли студент в academic_leave_students
+            // Проверяем, есть ли учащийся в academic_leave_students
             const { data: academicStudent } = await sb
                 .from('academic_leave_students')
                 .select('*')
@@ -977,7 +981,7 @@
                 .single();
 
             if (!expelledStudent && !academicStudent) {
-                showToast('❌ Студент не найден в архиве отчисленных или академ. отпуска', 'error');
+                showToast('❌ Учащийся не найден в архиве отчисленных или академ. отпуска', 'error');
                 return;
             }
 
@@ -1000,8 +1004,10 @@
                 ).join('');
             }
 
+            const genderWord = student.gender === 'Женский' ? 'учащуюся' : 'учащегося';
+
             const html = `
-                <p style="margin-bottom:16px;">Восстановление из <strong>${restoreType}</strong> для: <strong>${student.full_name}</strong></p>
+                <p style="margin-bottom:16px;">Восстановление из <strong>${restoreType}</strong> для ${genderWord}: <strong>${student.full_name}</strong></p>
                 <div class="form-group">
                     <label class="form-label">Дата восстановления <span class="required">*</span></label>
                     <input type="date" class="form-control" id="restoreDate">
@@ -1029,7 +1035,7 @@
                 if (!newGroupId) { showToast('❌ Выберите группу', 'error'); return; }
 
                 try {
-                    // 1. Восстанавливаем студента в таблицу students
+                    // 1. Восстанавливаем учащегося в таблицу students
                     const studentData = {
                         full_name: student.full_name,
                         group_id: newGroupId,
@@ -1081,7 +1087,7 @@
                     }
 
                     closeModal();
-                    showToast(`✅ Студент ${student.full_name} восстановлен в группу!`, 'success');
+                    showToast(`✅ Учащийся ${student.full_name} восстановлен в группу!`, 'success');
                     window.location.href = `/students/profile.html?id=${newStudent.id}`;
 
                 } catch (error) {
@@ -1092,7 +1098,7 @@
         };
 
         // ============================================================
-        // УДАЛЕНИЕ СТУДЕНТА
+        // УДАЛЕНИЕ УЧАЩЕГОСЯ
         // ============================================================
 
         document.getElementById('deleteStudentBtn').onclick = async function() {
@@ -1107,14 +1113,14 @@
                 .eq('id', studentId)
                 .single();
 
-            if (!student) { showToast('❌ Студент не найден', 'error'); return; }
+            if (!student) { showToast('❌ Учащийся не найден', 'error'); return; }
 
             if (student.status === 'graduated') {
                 showToast('❌ Нельзя удалить выпускника', 'error');
                 return;
             }
 
-            if (!confirm(`🗑️ Удалить студента "${student.full_name}" полностью?`)) return;
+            if (!confirm(`🗑️ Удалить учащегося "${student.full_name}" полностью?`)) return;
 
             try {
                 await sb.from('student_parents').delete().eq('student_id', studentId);
@@ -1123,7 +1129,7 @@
                 const { error } = await sb.from('students').delete().eq('id', studentId);
                 if (error) throw error;
 
-                showToast(`✅ Студент удалён`, 'success');
+                showToast(`✅ Учащийся удалён`, 'success');
                 setTimeout(() => {
                     if (student.group_id) {
                         window.location.href = `/students/group.html?id=${student.group_id}`;
@@ -1139,7 +1145,7 @@
         };
 
         // ============================================================
-        // ЗАГРУЗКА СТУДЕНТА
+        // ЗАГРУЗКА УЧАЩЕГОСЯ
         // ============================================================
 
         async function loadStudent() {
@@ -1151,8 +1157,8 @@
                 profileCard.innerHTML = `
                     <div class="empty-state">
                         <span class="icon">❌</span>
-                        <h3>ID студента не указан</h3>
-                        <p style="color:var(--text-muted);">Перейдите из списка студентов</p>
+                        <h3>ID учащегося не указан</h3>
+                        <p style="color:var(--text-muted);">Перейдите из списка учащихся</p>
                         <a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>
                     </div>
                 `;
@@ -1173,8 +1179,8 @@
                     profileCard.innerHTML = `
                         <div class="empty-state">
                             <span class="icon">❌</span>
-                            <h3>Студент не найден</h3>
-                            <p style="color:var(--text-muted);">Студент с ID ${studentId} не существует</p>
+                            <h3>Учащийся не найден</h3>
+                            <p style="color:var(--text-muted);">Учащийся с ID ${studentId} не существует</p>
                             <a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>
                         </div>
                     `;
@@ -1503,7 +1509,7 @@
                 await loadSiblings(student.id);
 
             } catch (error) {
-                console.error('❌ Ошибка загрузки студента:', error);
+                console.error('❌ Ошибка загрузки учащегося:', error);
                 profileCard.innerHTML = `
                     <div class="empty-state">
                         <span class="icon">❌</span>
@@ -1671,7 +1677,7 @@
             let pdfHtml = `
                 <div class="pdf-content">
                     <div class="pdf-header">
-                        <div class="pdf-title">Карточка студента</div>
+                        <div class="pdf-title">Карточка учащегося</div>
                         <div class="pdf-subtitle">${s.full_name}</div>
                         <div class="pdf-info">${s.group_id ? `Группа: ${s.group_name || '—'}` : 'Без группы'} ${s.type ? `| ${typeLabels[s.type] || s.type}` : ''}</div>
                     </div>
@@ -1843,7 +1849,7 @@
 
             const opt = {
                 margin: [6, 6, 6, 6],
-                filename: `Карточка_студента_${s.full_name.replace(/\s/g, '_')}_${dateStr.replace(/\./g, '-')}.pdf`,
+                filename: `Карточка_учащегося_${s.full_name.replace(/\s/g, '_')}_${dateStr.replace(/\./g, '-')}.pdf`,
                 html2canvas: { scale: 2, useCORS: true },
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
                 pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
@@ -1857,7 +1863,7 @@
         };
 
         // ============================================================
-        // РЕДАКТИРОВАНИЕ СТУДЕНТА
+        // РЕДАКТИРОВАНИЕ УЧАЩЕГОСЯ
         // ============================================================
 
         document.getElementById('editStudentBtn').onclick = () => {
