@@ -104,18 +104,13 @@
         .name-edit-wrapper .form-control:disabled { opacity: 0.7; cursor: not-allowed; background: #f1f5f9; }
         .name-edit-wrapper .btn { padding: 4px 12px; font-size: 12px; height: 42px; }
 
-        /* ===== FORM CARD ===== */
-        .form-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px; }
-        .form-card .form-title { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 20px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
-        .form-group { margin-bottom: 16px; }
-        .form-label { display: block; font-weight: 600; font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
-        .form-label .required { color: var(--danger); margin-left: 2px; }
-        .form-control { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; transition: var(--transition); background: var(--bg-card); height: 48px; box-sizing: border-box; }
-        .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
-        .form-control:disabled { opacity: 0.6; cursor: not-allowed; }
-        .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-        .form-actions { display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--border); }
-        .form-actions .btn { padding: 10px 28px; font-size: 14px; }
+        /* ===== INFO CARD (вместо формы смены пароля) ===== */
+        .info-card { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 24px; }
+        .info-card .info-title { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
+        .info-card .info-message { padding: 24px; background: #FEF3C7; border-radius: var(--border-radius-lg); border-left: 4px solid var(--warning); }
+        .info-card .info-message .icon { font-size: 32px; display: block; margin-bottom: 8px; }
+        .info-card .info-message p { font-size: 15px; color: var(--text-primary); line-height: 1.7; }
+        .info-card .info-message p strong { color: var(--warning-dark); }
 
         /* ===== ALERT ===== */
         .alert { padding: 12px 16px; border-radius: var(--border-radius); margin-bottom: 16px; font-size: 14px; display: none; }
@@ -132,18 +127,6 @@
         .badge-admin { background: #FDEBD0; color: #7E5109; }
         .badge-teacher { background: #D5F5E3; color: #1A6E3A; }
         .badge-viewer { background: #D6EAF8; color: #1A5276; }
-
-        .password-wrapper { position: relative; }
-        .password-wrapper .form-control { padding-right: 48px; }
-        .password-wrapper .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; color: var(--text-muted); background: none; border: none; padding: 4px; transition: var(--transition); line-height: 1; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; }
-        .password-wrapper .toggle-password:hover { color: var(--primary-light); background: var(--bg-hover); }
-
-        .password-strength { height: 4px; border-radius: 4px; margin-top: 8px; background: #e2e8f0; transition: var(--transition); overflow: hidden; }
-        .password-strength .bar { height: 100%; width: 0%; border-radius: 4px; transition: var(--transition); }
-        .password-strength .bar.weak { width: 25%; background: linear-gradient(90deg, var(--danger), var(--danger-dark)); }
-        .password-strength .bar.medium { width: 50%; background: linear-gradient(90deg, var(--warning), var(--warning-dark)); }
-        .password-strength .bar.strong { width: 75%; background: linear-gradient(90deg, var(--primary-light), var(--secondary)); }
-        .password-strength .bar.very-strong { width: 100%; background: linear-gradient(90deg, var(--success), var(--success-dark)); }
 
         .toast-notification {
             position: fixed; top: 80px; right: 20px; padding: 16px 24px;
@@ -164,17 +147,16 @@
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 16px; }
             .profile-card { padding: 20px; }
-            .form-card { padding: 20px; }
+            .info-card { padding: 20px; }
             .profile-info { grid-template-columns: 1fr; }
             .profile-info .item .label { width: 120px; }
-            .form-actions { flex-direction: column; }
-            .form-actions .btn { width: 100%; justify-content: center; }
             .page-title { font-size: 20px; }
             #menuToggle { display: inline-block !important; }
             .position-edit-wrapper { flex-wrap: wrap; }
             .position-edit-wrapper .form-control { width: 100%; }
             .name-edit-wrapper { flex-wrap: wrap; }
             .name-edit-wrapper .form-control { width: 100%; max-width: 100%; }
+            .info-card .info-message { padding: 16px; }
         }
 
         @media (max-width: 480px) {
@@ -248,59 +230,16 @@
             <div class="profile-info" id="profileInfo"></div>
         </div>
 
-        <!-- Смена логина и пароля -->
-        <div class="form-card" id="changeCredentialsCard">
-            <div class="form-title">🔐 Смена логина и пароля</div>
-
-            <div id="changeAlert" class="alert alert-danger">
-                <span id="changeMessage"></span>
-                <span class="close-btn" onclick="this.parentElement.classList.remove('show')">×</span>
+        <!-- Информационное сообщение вместо формы смены пароля -->
+        <div class="info-card">
+            <div class="info-title">🔐 Смена логина и пароля</div>
+            <div class="info-message">
+                <span class="icon">ℹ️</span>
+                <p>
+                    <strong>Для смены логина или пароля обратитесь к программисту или администратору.</strong><br>
+                    Только пользователи с правами <strong>Администратора</strong> или <strong>Супер-Админа</strong> могут изменять учётные данные.
+                </p>
             </div>
-
-            <form id="changeCredentialsForm" onsubmit="return false;">
-                <!-- Логин -->
-                <div class="form-group">
-                    <label class="form-label" for="newLogin">Новый логин</label>
-                    <input type="text" class="form-control" id="newLogin" placeholder="Введите новый логин (мин. 3 символа)" minlength="3">
-                    <div class="form-hint">Логин должен содержать минимум 3 символа. Оставьте пустым, чтобы не менять.</div>
-                </div>
-
-                <!-- Текущий пароль -->
-                <div class="form-group">
-                    <label class="form-label" for="currentPassword">Текущий пароль <span class="required">*</span></label>
-                    <div class="password-wrapper">
-                        <input type="password" class="form-control" id="currentPassword" placeholder="Введите текущий пароль" required>
-                        <button type="button" class="toggle-password" onclick="togglePassword('currentPassword')">👁️</button>
-                    </div>
-                </div>
-
-                <!-- Новый пароль -->
-                <div class="form-group">
-                    <label class="form-label" for="newPassword">Новый пароль</label>
-                    <div class="password-wrapper">
-                        <input type="password" class="form-control" id="newPassword" placeholder="Введите новый пароль (мин. 6 символов)" minlength="6">
-                        <button type="button" class="toggle-password" onclick="togglePassword('newPassword')">👁️</button>
-                    </div>
-                    <div class="password-strength">
-                        <div class="bar" id="strengthBar"></div>
-                    </div>
-                    <div class="form-hint" id="strengthText">Введите пароль для оценки надёжности</div>
-                </div>
-
-                <!-- Подтверждение пароля -->
-                <div class="form-group">
-                    <label class="form-label" for="confirmPassword">Подтверждение пароля</label>
-                    <div class="password-wrapper">
-                        <input type="password" class="form-control" id="confirmPassword" placeholder="Повторите новый пароль">
-                        <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">👁️</button>
-                    </div>
-                    <div class="form-hint" id="confirmHint">Пароли должны совпадать</div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary" id="saveCredentialsBtn">💾 Сохранить изменения</button>
-                </div>
-            </form>
         </div>
 
     </div>
@@ -353,28 +292,6 @@ function generateDeviceSessionId() {
 }
 
 // ============================================================
-// ЗАВЕРШЕНИЕ СЕССИИ НА ВСЕХ УСТРОЙСТВАХ
-// ============================================================
-async function invalidateAllSessions(userId) {
-    try {
-        const { error } = await supabaseClient
-            .from('users')
-            .update({ 
-                active_session_id: null,
-                session_invalidated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-
-        if (error) throw error;
-        console.log('✅ Все сессии пользователя завершены');
-        return true;
-    } catch (error) {
-        console.error('❌ Ошибка завершения сессий:', error);
-        return false;
-    }
-}
-
-// ============================================================
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
 
@@ -410,28 +327,24 @@ document.getElementById('logoutBtn').onclick = () => {
 
 async function loadUserData() {
     try {
-        // Загружаем данные сотрудника (employee)
-        const { data: employee, error: empError } = await supabaseClient
-            .from('employees')
-            .select('*')
-            .eq('id', currentUser.employee_id)
-            .single();
-
-        if (empError) {
-            console.error('❌ Ошибка загрузки сотрудника:', empError);
-            // Если нет связи с employee, пробуем загрузить только пользователя
-            const { data: user, error: userError } = await supabaseClient
-                .from('users')
+        // Загружаем данные сотрудника (employees)
+        if (currentUser.employee_id) {
+            const { data: employee, error: empError } = await supabaseClient
+                .from('employees')
                 .select('*')
-                .eq('id', currentUser.id)
+                .eq('id', currentUser.employee_id)
                 .single();
-            if (userError) throw userError;
-            currentUser = { ...currentUser, ...user };
-            currentEmployee = null;
-        } else {
-            currentEmployee = employee;
-            // Объединяем данные
-            currentUser = { ...currentUser, ...employee };
+
+            if (empError) {
+                console.warn('⚠️ Сотрудник не найден:', empError);
+                currentEmployee = null;
+            } else {
+                currentEmployee = employee;
+                currentUser.full_name = employee.full_name;
+                currentUser.position = employee.position;
+                currentUser.category = employee.category;
+                currentUser.groups = employee.groups || [];
+            }
         }
 
         // Загружаем группы
@@ -481,7 +394,7 @@ function renderProfile() {
         'other': 'Другие'
     };
 
-    // ФИО в карточке профиля
+    // ФИО в карточке профиля (используем full_name из employees)
     const fullName = currentEmployee?.full_name || currentUser.full_name || currentUser.login || '';
     const nameInput = document.getElementById('fullNameInput');
     nameInput.value = fullName;
@@ -496,7 +409,7 @@ function renderProfile() {
     };
     document.getElementById('profileRole').innerHTML = `<span class="badge-role ${roleBadge[currentUser.role]}">${accessMap[currentUser.role] || '—'}</span>`;
     
-    // Должность (из employee, если есть)
+    // Должность
     const positionEl = document.getElementById('profilePosition');
     const positionValue = currentEmployee?.position || currentUser.position || '';
     if (positionValue && positionValue.trim() !== '') {
@@ -510,7 +423,7 @@ function renderProfile() {
     const infoDiv = document.getElementById('profileInfo');
     let html = '';
 
-    // Должность (с возможностью редактирования) - обновляем в таблице employees
+    // Должность (с возможностью редактирования)
     html += `
         <div class="item" style="grid-column:1/-1;">
             <span class="label">💼 Должность</span>
@@ -588,7 +501,7 @@ function renderProfile() {
 }
 
 // ============================================================
-// РЕДАКТИРОВАНИЕ ФИО
+// РЕДАКТИРОВАНИЕ ФИО (сохранение в таблице employees)
 // ============================================================
 
 function enableNameEditing() {
@@ -627,16 +540,14 @@ async function saveFullName() {
         btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;"></span>';
         btn.disabled = true;
 
-        // Определяем, где обновлять ФИО
-        if (currentEmployee) {
-            // Обновляем в таблице employees
+        // Обновляем в таблице employees (если есть employee_id)
+        if (currentUser.employee_id) {
             const { error } = await supabaseClient
                 .from('employees')
                 .update({ 
-                    full_name: newFullName,
-                    updated_at: new Date().toISOString()
+                    full_name: newFullName
                 })
-                .eq('id', currentEmployee.id);
+                .eq('id', currentUser.employee_id);
 
             if (error) throw error;
             
@@ -644,12 +555,11 @@ async function saveFullName() {
             currentUser.full_name = newFullName;
             
         } else {
-            // Если нет employee, обновляем в users
+            // Если нет employee_id, обновляем в users (как запасной вариант)
             const { error } = await supabaseClient
                 .from('users')
                 .update({ 
-                    full_name: newFullName,
-                    updated_at: new Date().toISOString()
+                    full_name: newFullName
                 })
                 .eq('id', currentUser.id);
 
@@ -673,9 +583,6 @@ async function saveFullName() {
         document.getElementById('userNameDisplay').textContent = newFullName;
 
         showToast('✅ ФИО успешно обновлено!', 'success');
-        
-        // Перерисовываем профиль для обновления всех данных
-        renderProfile();
 
     } catch (error) {
         console.error('❌ Ошибка сохранения ФИО:', error);
@@ -687,7 +594,7 @@ async function saveFullName() {
 }
 
 // ============================================================
-// СОХРАНЕНИЕ ДОЛЖНОСТИ (в таблице employees)
+// СОХРАНЕНИЕ ДОЛЖНОСТИ
 // ============================================================
 
 async function savePosition() {
@@ -696,28 +603,22 @@ async function savePosition() {
     const btn = document.getElementById('savePositionBtn');
     const originalText = btn.innerHTML;
 
-    // Если нет employee_id, обновляем в users (как запасной вариант)
-    const targetId = currentUser.employee_id || currentUser.id;
+    // Если нет employee_id, используем users
     const tableName = currentUser.employee_id ? 'employees' : 'users';
+    const targetId = currentUser.employee_id || currentUser.id;
 
     try {
         btn.innerHTML = '<span class="loading-spinner" style="width:14px;height:14px;"></span>';
         btn.disabled = true;
 
-        // Обновляем в базе данных
         const { error } = await supabaseClient
             .from(tableName)
             .update({ 
-                position: newPosition || null,
-                updated_at: new Date().toISOString()
+                position: newPosition || null
             })
             .eq('id', targetId);
 
-        if (error) {
-            console.error('❌ Ошибка Supabase:', error);
-            showToast('❌ Ошибка сохранения: ' + error.message, 'error');
-            return;
-        }
+        if (error) throw error;
 
         // Обновляем локальные данные
         if (currentEmployee) {
@@ -764,247 +665,6 @@ function showToast(message, type = 'success') {
         if (toast.parentElement) toast.remove();
     }, 4000);
 }
-
-// ============================================================
-// ФУНКЦИИ
-// ============================================================
-
-function togglePassword(inputId) {
-    const input = document.getElementById(inputId);
-    const button = input.parentElement.querySelector('.toggle-password');
-    if (input.type === 'password') {
-        input.type = 'text';
-        button.textContent = '🙈';
-    } else {
-        input.type = 'password';
-        button.textContent = '👁️';
-    }
-}
-
-function showAlert(type, message) {
-    const container = document.getElementById('changeAlert');
-    const msgSpan = document.getElementById('changeMessage');
-    msgSpan.textContent = message;
-    container.className = `alert alert-${type} show`;
-}
-
-function hideAlert() {
-    document.getElementById('changeAlert').classList.remove('show');
-}
-
-function checkPasswordStrength(password) {
-    let score = 0;
-    if (password.length >= 6) score++;
-    if (password.length >= 10) score++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-    if (/\d/.test(password)) score++;
-    if (/[^a-zA-Z0-9]/.test(password)) score++;
-    
-    const levels = ['', 'weak', 'medium', 'strong', 'very-strong'];
-    const labels = ['', 'Слабый', 'Средний', 'Хороший', 'Отличный'];
-    return { level: levels[Math.min(score, 4)], label: labels[Math.min(score, 4)] };
-}
-
-// ============================================================
-// ИНДИКАТОР СИЛЫ ПАРОЛЯ
-// ============================================================
-
-document.getElementById('newPassword').addEventListener('input', function() {
-    const result = checkPasswordStrength(this.value);
-    const bar = document.getElementById('strengthBar');
-    const text = document.getElementById('strengthText');
-    
-    bar.className = 'bar';
-    if (this.value.length > 0 && result.level) {
-        bar.classList.add(result.level);
-        text.textContent = `Надёжность: ${result.label}`;
-    } else {
-        text.textContent = 'Введите пароль для оценки надёжности';
-    }
-});
-
-document.getElementById('confirmPassword').addEventListener('input', function() {
-    const newPass = document.getElementById('newPassword').value;
-    const hint = document.getElementById('confirmHint');
-    if (this.value.length > 0) {
-        hint.textContent = this.value === newPass ? '✅ Пароли совпадают' : '❌ Пароли не совпадают';
-        hint.style.color = this.value === newPass ? '#10B981' : '#EF4444';
-    } else {
-        hint.textContent = 'Пароли должны совпадать';
-        hint.style.color = '#94A3B8';
-    }
-});
-
-// ============================================================
-// ОБРАБОТЧИК ENTER
-// ============================================================
-
-document.getElementById('changeCredentialsForm').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        document.getElementById('saveCredentialsBtn').click();
-    }
-});
-
-// ============================================================
-// СОХРАНЕНИЕ ИЗМЕНЕНИЙ (Логин + Пароль) С ЗАВЕРШЕНИЕМ ВСЕХ СЕССИЙ
-// ============================================================
-
-document.getElementById('saveCredentialsBtn').onclick = async function() {
-    hideAlert();
-
-    const newLogin = document.getElementById('newLogin').value.trim();
-    const currentPassword = document.getElementById('currentPassword').value;
-    const newPassword = document.getElementById('newPassword').value;
-    const confirmPassword = document.getElementById('confirmPassword').value;
-
-    const hasLoginChange = newLogin.length > 0;
-    const hasPasswordChange = newPassword.length > 0;
-
-    if (!hasLoginChange && !hasPasswordChange) {
-        showAlert('danger', '❌ Нет изменений для сохранения');
-        return;
-    }
-
-    if (hasLoginChange) {
-        if (newLogin.length < 3) {
-            showAlert('danger', '❌ Логин должен содержать минимум 3 символа');
-            return;
-        }
-
-        const { data: existing } = await supabaseClient
-            .from('users')
-            .select('id')
-            .eq('login', newLogin)
-            .neq('id', currentUser.id)
-            .single();
-
-        if (existing) {
-            showAlert('danger', '❌ Этот логин уже занят');
-            return;
-        }
-    }
-
-    if (hasPasswordChange) {
-        if (!currentPassword) {
-            showAlert('danger', '❌ Введите текущий пароль');
-            return;
-        }
-
-        if (newPassword.length < 6) {
-            showAlert('danger', '❌ Новый пароль должен содержать минимум 6 символов');
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            showAlert('danger', '❌ Пароли не совпадают');
-            return;
-        }
-
-        // 🔐 ПРОВЕРКА ТЕКУЩЕГО ПАРОЛЯ С ИСПОЛЬЗОВАНИЕМ BCRYPT
-        const { data: user, error: findError } = await supabaseClient
-            .from('users')
-            .select('password_hash')
-            .eq('id', currentUser.id)
-            .single();
-
-        if (findError || !user) {
-            showAlert('danger', '❌ Пользователь не найден');
-            return;
-        }
-
-        // Сравниваем введенный пароль с хешем из базы данных
-        try {
-            const isPasswordValid = await window.bcrypt.compare(currentPassword, user.password_hash);
-            if (!isPasswordValid) {
-                showAlert('danger', '❌ Неверный текущий пароль');
-                return;
-            }
-        } catch (bcryptError) {
-            console.error('❌ Ошибка проверки пароля:', bcryptError);
-            showAlert('danger', '❌ Ошибка проверки пароля');
-            return;
-        }
-    }
-
-    const btn = this;
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '<span class="loading-spinner"></span> Сохранение...';
-    btn.disabled = true;
-
-    try {
-        const updateData = { 
-            updated_at: new Date().toISOString(),
-            // 🔐 Завершаем все старые сессии при смене пароля
-            active_session_id: null,
-            session_invalidated_at: new Date().toISOString()
-        };
-
-        if (hasLoginChange) {
-            updateData.login = newLogin;
-        }
-
-        if (hasPasswordChange) {
-            // Хешируем новый пароль перед сохранением
-            const saltRounds = 10;
-            const hashedNewPassword = await window.bcrypt.hash(newPassword, saltRounds);
-            updateData.password_hash = hashedNewPassword;
-            updateData.force_change = false;
-            updateData.password_changed_at = new Date().toISOString();
-        }
-
-        const { error: updateError } = await supabaseClient
-            .from('users')
-            .update(updateData)
-            .eq('id', currentUser.id);
-
-        if (updateError) throw updateError;
-
-        // Обновляем сессию
-        if (hasLoginChange) {
-            currentUser.login = newLogin;
-        }
-        if (hasPasswordChange) {
-            currentUser.password_hash = newPassword;
-            currentUser.force_change = false;
-        }
-
-        // Обновляем localStorage для текущего устройства
-        const savedUser = JSON.parse(localStorage.getItem('currentUser'));
-        if (hasLoginChange) savedUser.login = newLogin;
-        localStorage.setItem('currentUser', JSON.stringify(savedUser));
-
-        // Устанавливаем новую сессию для текущего устройства
-        await supabaseClient
-            .from('users')
-            .update({
-                active_session_id: currentDeviceSessionId
-            })
-            .eq('id', currentUser.id);
-
-        // Очищаем поля
-        document.getElementById('newLogin').value = '';
-        document.getElementById('currentPassword').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
-        document.getElementById('strengthBar').className = 'bar';
-        document.getElementById('strengthText').textContent = 'Введите пароль для оценки надёжности';
-        document.getElementById('confirmHint').textContent = 'Пароли должны совпадать';
-        document.getElementById('confirmHint').style.color = '#94A3B8';
-
-        renderProfile();
-        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.login;
-
-        showAlert('success', '✅ Данные успешно обновлены! Все старые сессии завершены. Другие устройства будут выведены из системы.');
-
-    } catch (error) {
-        console.error('❌ Ошибка:', error);
-        showAlert('danger', '❌ Ошибка при сохранении: ' + (error.message || 'Неизвестная ошибка'));
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-    }
-};
 
 // ============================================================
 // МОБИЛЬНОЕ МЕНЮ
