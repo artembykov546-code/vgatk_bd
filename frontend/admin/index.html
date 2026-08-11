@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ-панель | vgatk_bd</title>
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #1E3A8A; --primary-light: #3B82F6; --secondary: #2563EB;
+            --success: #10B981; --success-dark: #059669; --warning: #F59E0B; --warning-dark: #D97706;
+            --danger: #EF4444; --danger-dark: #DC2626;
+            --bg-main: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
+            --bg-card: rgba(255, 255, 255, 0.96);
+            --text-primary: #1E293B; --text-secondary: #475569; --text-muted: #64748B;
+            --border: #dbeafe; --border-radius: 8px; --border-radius-lg: 12px; --border-radius-xl: 16px;
+            --shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+            --header-height: 74px; --sidebar-width: 220px; --transition: all 0.3s ease;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-main); background-attachment: fixed; min-height: 100vh; color: var(--text-primary); line-height: 1.6; }
+        a { text-decoration: none; color: inherit; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .header { background: var(--bg-card); backdrop-filter: blur(12px); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); border-bottom: 1px solid var(--border); min-height: var(--header-height); }
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .college-name { font-family: 'Lobster', cursive; font-size: 16px; color: var(--primary); line-height: 1.2; }
+        .college-name .sub { font-family: 'Lobster', cursive; font-size: 16px; color: var(--primary); }
+        .header-user { display: flex; align-items: center; gap: 16px; }
+        .header-user-info { text-align: right; }
+        .header-user-name { font-weight: 600; font-size: 14px; }
+        .header-user-role { font-size: 12px; color: var(--text-muted); }
+        .btn-logout { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; border: none; padding: 8px 16px; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; font-size: 13px; transition: var(--transition); }
+        .btn-logout:hover { transform: translateY(-2px); }
+
+        .sidebar { position: fixed; left: 0; top: var(--header-height); width: var(--sidebar-width); height: calc(100vh - var(--header-height)); background: var(--bg-card); backdrop-filter: blur(12px); padding: 20px 0; overflow-y: auto; z-index: 90; border-right: 1px solid var(--border); }
+        .sidebar-nav { list-style: none; padding: 0 16px; }
+        .sidebar-nav li { margin-bottom: 4px; }
+        .sidebar-nav .nav-label { padding: 12px 16px 6px; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+        .sidebar-nav a { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: var(--border-radius); color: var(--text-secondary); font-weight: 500; font-size: 14px; transition: var(--transition); text-decoration: none; }
+        .sidebar-nav a:hover { background: rgba(59, 130, 246, 0.08); color: var(--primary-light); }
+        .sidebar-nav a.active { background: rgba(59, 130, 246, 0.12); color: var(--primary-light); }
+        .sidebar-nav a .icon { font-size: 20px; width: 24px; text-align: center; }
+
+        .main-content { margin-left: var(--sidebar-width); padding: 24px 32px; min-height: calc(100vh - var(--header-height)); animation: fadeIn 0.6s ease; }
+
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 600; font-size: 13px; transition: var(--transition); }
+        .btn:hover { transform: translateY(-2px); }
+        .btn-success { background: linear-gradient(135deg, var(--success), var(--success-dark)); color: white; }
+        .btn-secondary { background: linear-gradient(135deg, #94A3B8, #64748B); color: white; }
+        .btn-warning { background: linear-gradient(135deg, var(--warning), var(--warning-dark)); color: white; }
+        .btn-danger { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; }
+        .btn-info { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
+        .btn-xs { padding: 3px 10px; font-size: 11px; border-radius: 6px; }
+
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+
+        .admin-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; border-bottom: 2px solid var(--border); padding-bottom: 12px; }
+        .admin-tabs .tab { padding: 8px 20px; border-radius: var(--border-radius); cursor: pointer; transition: var(--transition); font-weight: 600; background: var(--bg-card); border: 2px solid transparent; }
+        .admin-tabs .tab:hover { background: var(--bg-hover); }
+        .admin-tabs .tab.active { border-color: var(--primary); background: var(--bg-active); color: var(--primary); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card { background: var(--bg-card); border-radius: var(--border-radius-lg); padding: 24px; border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
+        .card .card-title { font-size: 18px; font-weight: 600; color: var(--primary); margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 8px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-weight: 600; font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-label .required { color: var(--danger); margin-left: 2px; }
+        .form-control { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; background: var(--bg-card); height: 44px; box-sizing: border-box; transition: var(--transition); }
+        .form-control:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .form-control:disabled { opacity: 0.6; cursor: not-allowed; }
+        .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+        .table-container { overflow-x: auto; border-radius: var(--border-radius-lg); border: 1px solid var(--border); background: var(--bg-card); }
+        .table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .table thead { background: var(--bg-main); }
+        .table th { padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); font-size: 13px; }
+        .table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .table tbody tr:hover { background: var(--bg-hover); }
+        .table-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 16px 24px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: fadeIn 0.3s ease; max-width: 400px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
+
+        .status-badge { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+        .status-active { background: #D1FAE5; color: #065F46; }
+        .status-inactive { background: #FEE2E2; color: #991B1B; }
+
+        .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; max-width: 600px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); animation: fadeIn 0.3s ease; border: 1px solid var(--border); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+        .modal-title { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .modal-close { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-muted); transition: var(--transition); }
+        .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 2px solid var(--border); }
+
+        .field-type-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #DBEAFE; color: #1A5276; }
+
+        @media (max-width: 768px) {
+            .header { padding: 10px 16px; }
+            .header-user-info { display: none; }
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 16px; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .admin-tabs { flex-wrap: wrap; }
+            .admin-tabs .tab { flex: 1; text-align: center; padding: 8px 12px; font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="header">
+    <div class="header-logo">
+        <span class="college-name">
+            Учреждение образования<br>
+            <span class="sub">"Витебский государственный аграрно-технический колледж"</span>
+        </span>
+    </div>
+    <div class="header-user">
+        <div class="header-user-info">
+            <div class="header-user-name" id="userNameDisplay">Загрузка...</div>
+            <div class="header-user-role" id="userRoleDisplay">Загрузка...</div>
+        </div>
+        <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
+    </div>
+</header>
+
+<aside class="sidebar" id="sidebar">
+    <ul class="sidebar-nav">
+        <li class="nav-label">Главное</li>
+        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
+        <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
+        <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
+        <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
+        <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/admin/index.html" class="active"><span class="icon">⚙️</span> Админ-панель</a></li>
+        <li><a href="/invites/index.html"><span class="icon">📨</span> Приглашения</a></li>
+        <li><a href="/profile/index.html"><span class="icon">👤</span> Профиль</a></li>
+    </ul>
+</aside>
+
+<main class="main-content">
+    <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
+
+    <div class="page-container">
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">⚙️ Админ-панель <small>управление системой</small></h1>
+            </div>
+            <div>
+                <span id="adminRoleBadge" style="padding:4px 16px;border-radius:12px;background:#FEF3C7;color:#92400E;font-weight:600;">👑 Супер-Админ</span>
+            </div>
+        </div>
+
+        <!-- Вкладки -->
+        <div class="admin-tabs">
+            <button class="tab active" data-tab="tables">📊 Таблицы</button>
+            <button class="tab" data-tab="fields">📝 Поля</button>
+            <button class="tab" data-tab="pages">📄 Страницы</button>
+            <button class="tab" data-tab="settings">⚙️ Настройки</button>
+            <button class="tab" data-tab="logs">📋 Логи</button>
+        </div>
+
+        <!-- Вкладка: Таблицы -->
+        <div class="tab-content active" id="tab-tables">
+            <div class="card">
+                <div class="card-title">📊 Управление таблицами</div>
+                <div style="margin-bottom:16px;">
+                    <button class="btn btn-success" id="createTableBtn">➕ Создать таблицу</button>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Кол-во полей</th>
+                                <th>Записей</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablesBody">
+                            <tr><td colspan="5"><div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Поля -->
+        <div class="tab-content" id="tab-fields">
+            <div class="card">
+                <div class="card-title">📝 Управление полями</div>
+                <div style="margin-bottom:16px;">
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Выберите таблицу <span class="required">*</span></label>
+                            <select class="form-control" id="fieldTableSelect">
+                                <option value="">-- Выберите таблицу --</option>
+                            </select>
+                        </div>
+                        <div style="display:flex;align-items:flex-end;">
+                            <button class="btn btn-success" id="addFieldBtn">➕ Добавить поле</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Тип</th>
+                                <th>Обязательное</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fieldsBody">
+                            <tr><td colspan="4"><div class="empty-state"><span class="icon">📭</span><p>Выберите таблицу</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Страницы -->
+        <div class="tab-content" id="tab-pages">
+            <div class="card">
+                <div class="card-title">📄 Управление страницами</div>
+                <div style="margin-bottom:16px;">
+                    <button class="btn btn-success" id="createPageBtn">➕ Создать страницу</button>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Название</th>
+                                <th>Путь</th>
+                                <th>Шаблон</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pagesBody">
+                            <tr><td colspan="5"><div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Вкладка: Настройки -->
+        <div class="tab-content" id="tab-settings">
+            <div class="card">
+                <div class="card-title">⚙️ Настройки системы</div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Название сайта</label>
+                        <input type="text" class="form-control" id="siteName" value="Витебский государственный аграрно-технический колледж">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Режим</label>
+                        <select class="form-control" id="siteMode">
+                            <option value="production">Production</option>
+                            <option value="development">Development</option>
+                            <option value="maintenance">Maintenance</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Логотип</label>
+                        <input type="text" class="form-control" id="siteLogo" placeholder="/images/logo.png">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Favicon</label>
+                        <input type="text" class="form-control" id="siteFavicon" placeholder="/images/favicon.ico">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="saveSettingsBtn">💾 Сохранить настройки</button>
+            </div>
+        </div>
+
+        <!-- Вкладка: Логи -->
+        <div class="tab-content" id="tab-logs">
+            <div class="card">
+                <div class="card-title">📋 Логи системы</div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Пользователь</th>
+                                <th>Действие</th>
+                                <th>IP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsBody">
+                            <tr><td colspan="4"><div class="empty-state"><span class="icon">📭</span><p>Логов пока нет</p></div></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ТАБЛИЦЫ -->
+<div class="modal-overlay" id="createTableModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">📊 Создать таблицу</h2>
+            <button class="modal-close" id="createTableCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Название таблицы <span class="required">*</span></label>
+                <input type="text" class="form-control" id="newTableName" placeholder="например: categories">
+                <div class="form-hint">Только латинские буквы, цифры и подчёркивания</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Описание</label>
+                <input type="text" class="form-control" id="newTableDesc" placeholder="Краткое описание таблицы">
+            </div>
+            <div class="form-group" id="tableFieldsContainer">
+                <label class="form-label">Поля таблицы</label>
+                <div id="tableFieldsList">
+                    <div class="field-row" style="display:flex;gap:8px;margin-bottom:8px;">
+                        <input type="text" class="form-control" placeholder="Название поля" style="flex:1;">
+                        <select class="form-control" style="width:120px;">
+                            <option value="text">Текст</option>
+                            <option value="number">Число</option>
+                            <option value="boolean">Да/Нет</option>
+                            <option value="date">Дата</option>
+                            <option value="json">JSON</option>
+                        </select>
+                        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="addFieldRow()">➕ Добавить поле</button>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="createTableCancelBtn">Отмена</button>
+            <button class="btn btn-success" id="createTableConfirmBtn">✅ Создать</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// КОНФИГУРАЦИЯ
+// ============================================================
+const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser = null;
+let tables = [];
+let fields = [];
+let pages = [];
+
+// ============================================================
+// ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ
+// ============================================================
+function loadUser() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) { window.location.href = '/index.html'; return; }
+    try {
+        currentUser = JSON.parse(savedUser);
+        const roleMap = { 'super_admin': '👑 Супер-Админ', 'admin': '🛡️ Администратор', 'teacher': '👨‍🏫 Преподаватель', 'viewer': '👀 Наблюдатель' };
+        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+        document.getElementById('adminRoleBadge').textContent = roleMap[currentUser.role] || currentUser.role;
+        
+        // Проверка прав
+        if (!['super_admin', 'admin'].includes(currentUser.role)) {
+            document.querySelector('.admin-tabs').innerHTML = '<div style="padding:20px;background:#FEE2E2;border-radius:8px;color:#991B1B;font-weight:600;">⚠️ У вас нет прав доступа к админ-панели</div>';
+            document.querySelector('.tab-content.active').innerHTML = '<div class="empty-state"><span class="icon">🔒</span><p>Доступ запрещён. Только для администраторов.</p></div>';
+            return;
+        }
+        
+        loadTables();
+        loadPages();
+    } catch(e) {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+    }
+}
+
+document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; };
+document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+
+// ============================================================
+// ВКЛАДКИ
+// ============================================================
+document.querySelectorAll('.admin-tabs .tab').forEach(tab => {
+    tab.onclick = function() {
+        document.querySelectorAll('.admin-tabs .tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        const tabId = this.dataset.tab;
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+    };
+});
+
+// ============================================================
+// ЗАГРУЗКА ТАБЛИЦ
+// ============================================================
+async function loadTables() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('system_tables')
+            .select('*')
+            .order('name');
+        
+        if (error) {
+            // Если таблица не существует, показываем пример
+            document.getElementById('tablesBody').innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <span class="icon">📊</span>
+                            <p>Таблиц пока нет. Создайте первую таблицу!</p>
+                            <button class="btn btn-success" onclick="document.getElementById('createTableBtn').click()" style="margin-top:12px;">➕ Создать таблицу</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        tables = data || [];
+        renderTables();
+    } catch(e) {
+        console.error('Ошибка загрузки таблиц:', e);
+    }
+}
+
+function renderTables() {
+    const tbody = document.getElementById('tablesBody');
+    if (!tables.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <span class="icon">📊</span>
+                        <p>Таблиц пока нет. Создайте первую таблицу!</p>
+                        <button class="btn btn-success" onclick="document.getElementById('createTableBtn').click()" style="margin-top:12px;">➕ Создать таблицу</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    tables.forEach(t => {
+        html += `
+            <tr>
+                <td><strong>${t.name}</strong></td>
+                <td>${t.fields ? JSON.parse(t.fields || '[]').length : 0}</td>
+                <td>0</td>
+                <td><span class="status-badge status-active">Активна</span></td>
+                <td>
+                    <button class="btn btn-info btn-xs" onclick="editTable('${t.id}')">✏️</button>
+                    <button class="btn btn-danger btn-xs" onclick="deleteTable('${t.id}')">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// СОЗДАНИЕ ТАБЛИЦЫ
+// ============================================================
+document.getElementById('createTableBtn').onclick = function() {
+    document.getElementById('newTableName').value = '';
+    document.getElementById('newTableDesc').value = '';
+    document.getElementById('tableFieldsList').innerHTML = `
+        <div class="field-row" style="display:flex;gap:8px;margin-bottom:8px;">
+            <input type="text" class="form-control" placeholder="Название поля" style="flex:1;">
+            <select class="form-control" style="width:120px;">
+                <option value="text">Текст</option>
+                <option value="number">Число</option>
+                <option value="boolean">Да/Нет</option>
+                <option value="date">Дата</option>
+                <option value="json">JSON</option>
+            </select>
+            <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+        </div>
+    `;
+    document.getElementById('createTableModal').classList.add('active');
+};
+
+function addFieldRow() {
+    const list = document.getElementById('tableFieldsList');
+    const row = document.createElement('div');
+    row.className = 'field-row';
+    row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;';
+    row.innerHTML = `
+        <input type="text" class="form-control" placeholder="Название поля" style="flex:1;">
+        <select class="form-control" style="width:120px;">
+            <option value="text">Текст</option>
+            <option value="number">Число</option>
+            <option value="boolean">Да/Нет</option>
+            <option value="date">Дата</option>
+            <option value="json">JSON</option>
+        </select>
+        <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
+    `;
+    list.appendChild(row);
+}
+
+document.getElementById('createTableCloseBtn').onclick = () => document.getElementById('createTableModal').classList.remove('active');
+document.getElementById('createTableCancelBtn').onclick = () => document.getElementById('createTableModal').classList.remove('active');
+document.getElementById('createTableModal').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('active');
+});
+
+document.getElementById('createTableConfirmBtn').onclick = async function() {
+    const name = document.getElementById('newTableName').value.trim();
+    const desc = document.getElementById('newTableDesc').value.trim();
+    const fields = [];
+    
+    document.querySelectorAll('#tableFieldsList .field-row').forEach(row => {
+        const nameInput = row.querySelector('input');
+        const typeSelect = row.querySelector('select');
+        if (nameInput && nameInput.value.trim()) {
+            fields.push({ name: nameInput.value.trim(), type: typeSelect.value });
+        }
+    });
+    
+    if (!name) {
+        showToast('❌ Введите название таблицы', 'error');
+        return;
+    }
+    
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+        showToast('❌ Название только латинские буквы, цифры и _', 'error');
+        return;
+    }
+    
+    const btn = this;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+    
+    try {
+        // Создаём запись в system_tables
+        const { error: insertError } = await supabaseClient
+            .from('system_tables')
+            .insert([{ 
+                name: name, 
+                description: desc, 
+                fields: JSON.stringify(fields),
+                created_at: new Date().toISOString(),
+                created_by: currentUser.id
+            }]);
+        
+        if (insertError) throw insertError;
+        
+        showToast(`✅ Таблица "${name}" создана!`, 'success');
+        document.getElementById('createTableModal').classList.remove('active');
+        await loadTables();
+        
+    } catch(e) {
+        console.error('Ошибка создания:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
+};
+
+// ============================================================
+// ЗАГРУЗКА СТРАНИЦ
+// ============================================================
+async function loadPages() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('system_pages')
+            .select('*')
+            .order('name');
+        
+        if (error) {
+            document.getElementById('pagesBody').innerHTML = `
+                <tr>
+                    <td colspan="5">
+                        <div class="empty-state">
+                            <span class="icon">📄</span>
+                            <p>Страниц пока нет. Создайте первую страницу!</p>
+                            <button class="btn btn-success" onclick="document.getElementById('createPageBtn').click()" style="margin-top:12px;">➕ Создать страницу</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        pages = data || [];
+        renderPages();
+    } catch(e) {
+        console.error('Ошибка загрузки страниц:', e);
+    }
+}
+
+function renderPages() {
+    const tbody = document.getElementById('pagesBody');
+    if (!pages.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <span class="icon">📄</span>
+                        <p>Страниц пока нет. Создайте первую страницу!</p>
+                        <button class="btn btn-success" onclick="document.getElementById('createPageBtn').click()" style="margin-top:12px;">➕ Создать страницу</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    pages.forEach(p => {
+        html += `
+            <tr>
+                <td><strong>${p.name}</strong></td>
+                <td><code>/pages/${p.path || p.name.toLowerCase()}/index.html</code></td>
+                <td>${p.template || 'Стандартный'}</td>
+                <td><span class="status-badge ${p.is_active ? 'status-active' : 'status-inactive'}">${p.is_active ? 'Активна' : 'Скрыта'}</span></td>
+                <td>
+                    <button class="btn btn-info btn-xs" onclick="editPage('${p.id}')">✏️</button>
+                    <button class="btn btn-danger btn-xs" onclick="deletePage('${p.id}')">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// СОЗДАНИЕ СТРАНИЦЫ
+// ============================================================
+document.getElementById('createPageBtn').onclick = function() {
+    const name = prompt('Введите название страницы:');
+    if (!name) return;
+    
+    const path = prompt('Введите путь (например: about):', name.toLowerCase().replace(/\s/g, '_'));
+    if (!path) return;
+    
+    createPage(name, path);
+};
+
+async function createPage(name, path) {
+    try {
+        const { error } = await supabaseClient
+            .from('system_pages')
+            .insert([{
+                name: name,
+                path: path,
+                template: 'Стандартный',
+                is_active: true,
+                created_at: new Date().toISOString(),
+                created_by: currentUser.id
+            }]);
+        
+        if (error) throw error;
+        
+        showToast(`✅ Страница "${name}" создана!`, 'success');
+        await loadPages();
+        
+        // Генерируем HTML файл
+        const htmlContent = generatePageHTML(name, path);
+        downloadPageHTML(path, htmlContent);
+        
+    } catch(e) {
+        console.error('Ошибка создания:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+function generatePageHTML(name, path) {
+    return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${name} | vgatk_bd</title>
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%); background-attachment: fixed; min-height: 100vh; color: #1E293B; line-height: 1.6; padding: 40px 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.96); border-radius: 16px; padding: 40px; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08); border: 1px solid #dbeafe; }
+        h1 { font-size: 28px; color: #1E3A8A; margin-bottom: 16px; }
+        p { color: #475569; margin-bottom: 12px; }
+        .back-link { display: inline-block; margin-top: 20px; color: #3B82F6; text-decoration: none; font-weight: 600; }
+        .back-link:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📄 ${name}</h1>
+        <p>Страница создана автоматически через админ-панель.</p>
+        <p>Вы можете отредактировать этот HTML-файл в папке <code>/pages/${path}/</code></p>
+        <a href="/dashboard.html" class="back-link">← На главную</a>
+    </div>
+    <script>
+        // Проверка авторизации
+        if (!localStorage.getItem('currentUser')) {
+            window.location.href = '/index.html';
+        }
+    </script>
+</body>
+</html>`;
+}
+
+function downloadPageHTML(path, content) {
+    // Создаём папку и файл
+    console.log(`📄 Страница создана: /pages/${path}/index.html`);
+    console.log('📝 Содержимое:');
+    console.log(content);
+    showToast(`✅ Страница создана! Файл: /pages/${path}/index.html`, 'success');
+}
+
+// ============================================================
+// TOAST УВЕДОМЛЕНИЯ
+// ============================================================
+function showToast(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${message}`;
+    document.body.appendChild(toast);
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+loadUser();
+</script>
+</body>
+</html>
