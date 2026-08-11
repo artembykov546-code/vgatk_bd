@@ -117,6 +117,75 @@
         .badge-master { background: #DBEAFE; color: #1A5276; border: 1px solid #3B82F6; }
         .badge-viewer { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
 
+        /* ===== СТИЛИ ДЛЯ БЛОКИРОВКИ ===== */
+        .locked-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .locked-overlay.active {
+            display: flex;
+        }
+        .locked-overlay .lock-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+        .locked-overlay h2 {
+            font-size: 28px;
+            margin-bottom: 12px;
+            color: #FEF3C7;
+        }
+        .locked-overlay p {
+            font-size: 18px;
+            max-width: 500px;
+            color: #E5E7EB;
+            line-height: 1.8;
+        }
+        .locked-overlay .invite-code {
+            font-size: 32px;
+            font-weight: 700;
+            font-family: monospace;
+            background: #FEF3C7;
+            color: #92400E;
+            padding: 16px 32px;
+            border-radius: 12px;
+            margin: 20px 0;
+            letter-spacing: 3px;
+            border: 2px solid #F59E0B;
+        }
+        .locked-overlay .btn-logout-red {
+            background: #EF4444;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.3s;
+            margin-top: 12px;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
+        }
+        .locked-overlay .btn-logout-red:hover {
+            transform: scale(1.05);
+        }
+        .locked-overlay .register-link {
+            color: #93C5FD;
+            text-decoration: underline;
+            font-weight: 600;
+        }
+
         .toast-notification {
             position: fixed;
             top: 80px;
@@ -166,6 +235,12 @@
         .password-strength .bar.strong { width: 75%; background: linear-gradient(90deg, var(--primary-light), var(--secondary)); }
         .password-strength .bar.very-strong { width: 100%; background: linear-gradient(90deg, var(--success), var(--success-dark)); }
 
+        /* Модальное окно подтверждения сброса */
+        .confirm-modal .modal { max-width: 450px; }
+        .confirm-modal .confirm-icon { font-size: 56px; text-align: center; display: block; margin-bottom: 12px; }
+        .confirm-modal .confirm-text { text-align: center; font-size: 16px; color: var(--text-secondary); margin-bottom: 16px; }
+        .confirm-modal .confirm-danger { color: var(--danger); font-weight: 700; }
+
         @media (max-width: 768px) {
             .header { padding: 10px 16px; }
             .header-user-info { display: none; }
@@ -175,6 +250,9 @@
             .categories-grid { grid-template-columns: repeat(2, 1fr); }
             .modal { padding: 20px; }
             .toast-notification { left: 20px; right: 20px; top: 80px; }
+            .locked-overlay .invite-code { font-size: 24px; padding: 12px 20px; }
+            .locked-overlay h2 { font-size: 22px; }
+            .locked-overlay p { font-size: 16px; }
         }
     </style>
 </head>
@@ -195,6 +273,25 @@
         <button class="btn-logout" id="logoutBtn">🚪 Выйти</button>
     </div>
 </header>
+
+<!-- БЛОКИРОВКА ЭКРАНА ПРИ СБРОСЕ ДОСТУПА -->
+<div class="locked-overlay" id="lockedOverlay">
+    <div class="lock-icon">🔒</div>
+    <h2>⚠️ Доступ заблокирован</h2>
+    <p>
+        Ваша учётная запись была сброшена администратором.<br>
+        Для восстановления доступа используйте новый пригласительный код:
+    </p>
+    <div class="invite-code" id="lockedInviteCode">---- ---- ---- ----</div>
+    <p>
+        Перейдите по ссылке для регистрации:<br>
+        <a href="#" id="lockedRegisterLink" class="register-link">Открыть регистрацию</a>
+    </p>
+    <button class="btn-logout-red" id="lockedLogoutBtn">🚪 Выйти из системы</button>
+    <p style="margin-top:16px;font-size:14px;color:#9CA3AF;">
+        После выхода нажмите на ссылку регистрации выше
+    </p>
+</div>
 
 <aside class="sidebar" id="sidebar">
     <ul class="sidebar-nav">
@@ -274,6 +371,38 @@
     </div>
 </div>
 
+<!-- МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ СБРОСА -->
+<div class="modal-overlay confirm-modal" id="confirmResetModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">⚠️ Подтверждение сброса</h2>
+            <button class="modal-close" id="confirmResetCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <span class="confirm-icon">🔐</span>
+            <div class="confirm-text">
+                <strong id="confirmResetName">Пользователь</strong>
+                <p style="margin-top:8px;">
+                    Это действие:
+                </p>
+                <ul style="text-align:left;padding-left:20px;margin-top:8px;color:var(--text-secondary);">
+                    <li>🔑 Сгенерирует <strong>НОВЫЙ</strong> пригласительный код</li>
+                    <li>🗑️ Удалит текущий логин и пароль</li>
+                    <li>🔒 Завершит все активные сессии</li>
+                    <li>📝 Потребует повторной регистрации</li>
+                </ul>
+                <p style="margin-top:12px;font-weight:700;color:var(--danger);">
+                    Пользователь будет немедленно заблокирован!
+                </p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="confirmResetCancelBtn">Отмена</button>
+            <button class="btn btn-danger" id="confirmResetConfirmBtn">✅ Подтвердить сброс</button>
+        </div>
+    </div>
+</div>
+
 <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ДЛЯ ПОЛЬЗОВАТЕЛЕЙ) -->
 <div class="modal-overlay profile-edit-modal" id="profileEditModal">
     <div class="modal">
@@ -347,6 +476,7 @@ let editingId = null;
 let currentCategory = 'all';
 let canManageEmployees = false;
 let canResetPassword = false;
+let pendingResetId = null;
 
 // ============================================================
 // ГЕНЕРАЦИЯ ID УСТРОЙСТВА
@@ -411,7 +541,10 @@ function showToast(message, type = 'success') {
 // ============================================================
 async function init() {
     const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
+    if (!savedUser) { 
+        window.location.href = '/index.html'; 
+        return; 
+    }
     
     try {
         const localUser = JSON.parse(savedUser);
@@ -437,6 +570,22 @@ async function init() {
             return;
         }
 
+        // ПРОВЕРКА: если у пользователя нет логина или пароля - блокируем
+        if (!userData.login || !userData.active_session_id) {
+            console.log('⚠️ У пользователя нет активной сессии');
+            // Пытаемся получить invite_code
+            const { data: inviteData } = await supabaseClient
+                .from('users')
+                .select('invite_code')
+                .eq('id', userData.id)
+                .single();
+            
+            if (inviteData && inviteData.invite_code) {
+                showLockScreen(inviteData.invite_code);
+                return;
+            }
+        }
+
         currentUser = { ...localUser, role: userData.role, login: userData.login, employee_id: userData.employee_id };
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
@@ -458,6 +607,32 @@ async function init() {
         window.location.href = '/index.html';
     }
 }
+
+// ============================================================
+// ПОКАЗАТЬ ЭКРАН БЛОКИРОВКИ
+// ============================================================
+function showLockScreen(inviteCode) {
+    const overlay = document.getElementById('lockedOverlay');
+    document.getElementById('lockedInviteCode').textContent = inviteCode;
+    document.getElementById('lockedRegisterLink').href = `/register/index.html?code=${inviteCode}`;
+    overlay.classList.add('active');
+    
+    // Блокируем все кнопки на странице
+    document.querySelectorAll('.btn, .sidebar-nav a, .btn-logout, .btn-logout-red').forEach(el => {
+        if (!el.id || el.id !== 'lockedLogoutBtn') {
+            el.style.pointerEvents = 'none';
+            el.style.opacity = '0.5';
+        }
+    });
+}
+
+// ============================================================
+// ВЫХОД ИЗ БЛОКИРОВКИ
+// ============================================================
+document.getElementById('lockedLogoutBtn').onclick = function() {
+    localStorage.removeItem('currentUser');
+    window.location.href = '/index.html';
+};
 
 document.getElementById('logoutBtn').onclick = () => { 
     const userId = currentUser?.id;
@@ -597,7 +772,7 @@ function renderEmployees() {
                 <button class="btn btn-info btn-xs" onclick="viewEmployee('${e.id}')" title="Просмотр">👁️</button>
                 <button class="btn btn-warning btn-xs" onclick="openModal('${e.id}')" title="Редактировать">✏️</button>
                 <button class="btn btn-danger btn-xs" onclick="deleteEmployee('${e.id}')" title="Удалить">🗑️</button>
-                ${canResetPassword ? `<button class="btn btn-secondary btn-xs" onclick="resetCredentials('${e.id}')" title="Сбросить доступ">🔄 Сброс</button>` : ''}
+                ${canResetPassword ? `<button class="btn btn-secondary btn-xs" onclick="openConfirmReset('${e.id}')" title="Сбросить доступ">🔄 Сброс</button>` : ''}
             `;
         } else {
             // Обычный пользователь видит только себя
@@ -775,6 +950,87 @@ function showModalForm(data) {
     document.getElementById('empCategory').addEventListener('change', updateGroupSelect);
     updateGroupSelect();
 }
+
+// ============================================================
+// МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ СБРОСА
+// ============================================================
+function openConfirmReset(id) {
+    if (!canResetPassword) return;
+    const e = employees.find(x => x.id === id);
+    if (!e) return;
+    if (currentUser.employee_id === id) {
+        showToast('❌ Нельзя сбросить самого себя', 'error');
+        return;
+    }
+    pendingResetId = id;
+    document.getElementById('confirmResetName').textContent = e.full_name;
+    document.getElementById('confirmResetModal').classList.add('active');
+}
+
+function closeConfirmReset() {
+    document.getElementById('confirmResetModal').classList.remove('active');
+    pendingResetId = null;
+}
+
+document.getElementById('confirmResetCloseBtn').onclick = closeConfirmReset;
+document.getElementById('confirmResetCancelBtn').onclick = closeConfirmReset;
+document.getElementById('confirmResetModal').addEventListener('click', function(e) {
+    if (e.target === this) closeConfirmReset();
+});
+
+// ============================================================
+// ВЫПОЛНЕНИЕ СБРОСА
+// ============================================================
+document.getElementById('confirmResetConfirmBtn').onclick = async function() {
+    const id = pendingResetId;
+    if (!id) return;
+    
+    const e = employees.find(x => x.id === id);
+    if (!e) return;
+    
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+    
+    try {
+        const part1 = Math.floor(1000 + Math.random() * 9000).toString();
+        const part2 = Math.floor(1000 + Math.random() * 9000).toString();
+        const newInviteCode = `${part1}-${part2}`;
+        
+        const { data: userData } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('employee_id', id)
+            .single();
+        
+        if (userData) {
+            // Завершаем сессию и сбрасываем данные
+            await supabaseClient
+                .from('users')
+                .update({ 
+                    login: null,
+                    password_hash: null,
+                    invite_code: newInviteCode,
+                    invite_used: false,
+                    invite_status: 'pending',
+                    active_session_id: null
+                })
+                .eq('id', userData.id);
+        }
+        
+        closeConfirmReset();
+        showToast(`✅ Доступ сброшен!\n\nНовый код: ${newInviteCode}`, 'success');
+        await loadEmployees();
+        
+    } catch (e) { 
+        console.error('Ошибка сброса:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
 
 // ============================================================
 // МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ДЛЯ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ)
@@ -1061,7 +1317,7 @@ document.getElementById('modalSaveBtn').onclick = async function() {
 };
 
 // ============================================================
-// УДАЛЕНИЕ И СБРОС ПАРОЛЯ (ДЛЯ АДМИНОВ)
+// УДАЛЕНИЕ (ДЛЯ АДМИНОВ)
 // ============================================================
 async function deleteEmployee(id) {
     if (!canManageEmployees || currentUser.employee_id === id) {
@@ -1089,55 +1345,6 @@ async function deleteEmployee(id) {
         showToast('✅ Сотрудник удалён, сессия завершена', 'success');
     } catch (e) { 
         console.error('Ошибка удаления:', e);
-        showToast('❌ Ошибка: ' + e.message, 'error');
-    }
-}
-
-async function resetCredentials(id) {
-    if (!canResetPassword || currentUser.employee_id === id) {
-        showToast('❌ Недостаточно прав', 'error');
-        return;
-    }
-    
-    const e = employees.find(x => x.id === id);
-    if (!e) return;
-    
-    if (!confirm(`Сбросить доступ для ${e.full_name}?\n\nЭто действие:\n• Сгенерирует НОВЫЙ пригласительный код\n• Удалит текущий логин и пароль\n• Завершит все активные сессии\n• Потребует повторной регистрации`)) return;
-    
-    try {
-        const part1 = Math.floor(1000 + Math.random() * 9000).toString();
-        const part2 = Math.floor(1000 + Math.random() * 9000).toString();
-        const newInviteCode = `${part1}-${part2}`;
-        
-        const { data: userData } = await supabaseClient
-            .from('users')
-            .select('id')
-            .eq('employee_id', id)
-            .single();
-        
-        if (userData) {
-            await invalidateUserSession(userData.id);
-        }
-        
-        const { error } = await supabaseClient
-            .from('users')
-            .update({ 
-                login: null,
-                password_hash: null,
-                invite_code: newInviteCode,
-                invite_used: false,
-                invite_status: 'pending',
-                active_session_id: null
-            })
-            .eq('employee_id', id);
-            
-        if (error) throw error;
-        
-        showToast(`✅ Доступ сброшен! Все сессии завершены.\n\nНовый код: ${newInviteCode}`, 'success');
-        await loadEmployees();
-        
-    } catch (e) { 
-        console.error('Ошибка сброса:', e);
         showToast('❌ Ошибка: ' + e.message, 'error');
     }
 }
@@ -1172,11 +1379,18 @@ async function checkSessionOnLoad() {
         const user = JSON.parse(savedUser);
         const { data: dbUser, error } = await supabaseClient
             .from('users')
-            .select('active_session_id')
+            .select('active_session_id, invite_code')
             .eq('id', user.id)
             .single();
             
         if (error) return;
+        
+        // Если нет активной сессии и есть invite_code — блокируем
+        if (!dbUser.active_session_id && dbUser.invite_code) {
+            console.log('⚠️ Пользователь заблокирован, показываем экран блокировки');
+            showLockScreen(dbUser.invite_code);
+            return;
+        }
         
         if (dbUser.active_session_id && dbUser.active_session_id !== deviceSessionId) {
             console.log('⚠️ Сессия недействительна, выполняется выход');
@@ -1193,7 +1407,7 @@ async function checkSessionOnLoad() {
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 init();
-checkSessionOnLoad();
+setTimeout(checkSessionOnLoad, 500);
 
 console.log('🆔 ID устройства:', deviceSessionId);
 </script>
