@@ -7,9 +7,9 @@
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
     
     <style>
-        /* ===== ВАШИ ОРИГИНАЛЬНЫЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
             --primary: #1E3A8A; --primary-light: #3B82F6; --secondary: #2563EB;
@@ -57,7 +57,9 @@
         .btn-warning { background: linear-gradient(135deg, var(--warning), var(--warning-dark)); color: white; }
         .btn-danger { background: linear-gradient(135deg, var(--danger), var(--danger-dark)); color: white; }
         .btn-info { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; }
+        .btn-primary { background: linear-gradient(135deg, var(--primary-light), var(--secondary)); color: white; }
         .btn-xs { padding: 3px 10px; font-size: 11px; border-radius: 6px; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; }
 
         .page-container { max-width: 1400px; margin: 0 auto; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
@@ -149,6 +151,21 @@
             opacity: 1;
         }
 
+        /* ===== МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ ===== */
+        .profile-edit-modal .modal { max-width: 500px; }
+        .profile-edit-modal .form-control { height: 42px; }
+        .password-wrapper { position: relative; }
+        .password-wrapper .form-control { padding-right: 48px; }
+        .password-wrapper .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; color: var(--text-muted); background: none; border: none; padding: 4px; transition: var(--transition); line-height: 1; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; }
+        .password-wrapper .toggle-password:hover { color: var(--primary-light); background: var(--bg-hover); }
+
+        .password-strength { height: 4px; border-radius: 4px; margin-top: 8px; background: #e2e8f0; transition: var(--transition); overflow: hidden; }
+        .password-strength .bar { height: 100%; width: 0%; border-radius: 4px; transition: var(--transition); }
+        .password-strength .bar.weak { width: 25%; background: linear-gradient(90deg, var(--danger), var(--danger-dark)); }
+        .password-strength .bar.medium { width: 50%; background: linear-gradient(90deg, var(--warning), var(--warning-dark)); }
+        .password-strength .bar.strong { width: 75%; background: linear-gradient(90deg, var(--primary-light), var(--secondary)); }
+        .password-strength .bar.very-strong { width: 100%; background: linear-gradient(90deg, var(--success), var(--success-dark)); }
+
         @media (max-width: 768px) {
             .header { padding: 10px 16px; }
             .header-user-info { display: none; }
@@ -188,6 +205,7 @@
         <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
         <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
         <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/invites/index.html"><span class="icon">📨</span> Приглашения</a></li>
 </ul>
 </aside>
 
@@ -229,7 +247,7 @@
                         <th>Телефон</th>
                         <th>Группы</th>
                         <th id="inviteHeader" style="display:none;">Приглашение</th>
-                        <th id="actionsHeader" style="display:none;">Действия</th>
+                        <th id="actionsHeader">Действия</th>
                     </tr>
                 </thead>
                 <tbody id="employeesTableBody">
@@ -240,7 +258,7 @@
     </div>
 </main>
 
-<!-- МОДАЛЬНОЕ ОКНО -->
+<!-- МОДАЛЬНОЕ ОКНО ДЛЯ АДМИНОВ -->
 <div class="modal-overlay" id="employeeModal">
     <div class="modal">
         <div class="modal-header">
@@ -255,7 +273,67 @@
     </div>
 </div>
 
+<!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ДЛЯ ПОЛЬЗОВАТЕЛЕЙ) -->
+<div class="modal-overlay profile-edit-modal" id="profileEditModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">✏️ Редактировать профиль</h2>
+            <button class="modal-close" id="profileEditCloseBtn">&times;</button>
+        </div>
+        <div class="modal-body" id="profileEditBody">
+            <div id="profileEditAlert" class="alert alert-danger" style="display:none;padding:12px 16px;border-radius:var(--border-radius);margin-bottom:16px;background:#FEE2E2;color:#991B1B;border-left:4px solid #EF4444;">
+                <span id="profileEditMessage"></span>
+            </div>
+            <form id="profileEditForm" onsubmit="return false;">
+                <div class="form-group">
+                    <label class="form-label">Новый логин</label>
+                    <input type="text" class="form-control" id="profileNewLogin" placeholder="Введите новый логин (мин. 3 символа)" minlength="3">
+                    <div class="form-hint">Оставьте пустым, чтобы не менять</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Текущий пароль <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="profileCurrentPassword" placeholder="Введите текущий пароль" required>
+                        <button type="button" class="toggle-password" onclick="togglePassword('profileCurrentPassword')">👁️</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Новый пароль</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="profileNewPassword" placeholder="Введите новый пароль (мин. 6 символов)" minlength="6">
+                        <button type="button" class="toggle-password" onclick="togglePassword('profileNewPassword')">👁️</button>
+                    </div>
+                    <div class="password-strength"><div class="bar" id="profileStrengthBar"></div></div>
+                    <div class="form-hint" id="profileStrengthText">Введите пароль для оценки надёжности</div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Подтверждение пароля</label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="profileConfirmPassword" placeholder="Повторите новый пароль">
+                        <button type="button" class="toggle-password" onclick="togglePassword('profileConfirmPassword')">👁️</button>
+                    </div>
+                    <div class="form-hint" id="profileConfirmHint">Пароли должны совпадать</div>
+                </div>
+                <div class="form-actions" style="display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:2px solid var(--border);">
+                    <button type="button" class="btn btn-secondary" id="profileEditCancelBtn">Отмена</button>
+                    <button type="submit" class="btn btn-primary" id="profileEditSaveBtn">💾 Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
+// ============================================================
+// ПРОВЕРКА ЗАГРУЗКИ BCRYPTJS
+// ============================================================
+if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
+    window.bcrypt = dcodeIO.bcrypt;
+    console.log('✅ bcryptjs успешно загружен');
+} else {
+    console.error('❌ Ошибка: Библиотека bcryptjs не загрузилась!');
+}
+
 const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -295,8 +373,7 @@ async function invalidateUserSession(userId) {
         const { error } = await supabaseClient
             .from('users')
             .update({ 
-                active_session_id: null,
-                session_invalidated_at: new Date().toISOString()
+                active_session_id: null
             })
             .eq('id', userId);
         if (error) throw error;
@@ -362,7 +439,7 @@ async function init() {
         currentUser = { ...localUser, role: userData.role, login: userData.login, employee_id: userData.employee_id };
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
         const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
         document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
 
@@ -371,7 +448,6 @@ async function init() {
 
         document.getElementById('addEmployeeBtn').style.display = canManageEmployees ? 'inline-flex' : 'none';
         document.getElementById('inviteHeader').style.display = canManageEmployees ? '' : 'none';
-        document.getElementById('actionsHeader').style.display = canManageEmployees ? '' : 'none';
 
         await loadGroups();
         await loadEmployees();
@@ -383,7 +459,6 @@ async function init() {
 }
 
 document.getElementById('logoutBtn').onclick = () => { 
-    // При выходе завершаем сессию
     const userId = currentUser?.id;
     if (userId) {
         invalidateUserSession(userId);
@@ -407,7 +482,7 @@ async function loadGroups() {
 async function loadEmployees() {
     const { data, error } = await supabaseClient
         .from('employees')
-        .select(`*, users!inner(invite_code, invite_used, role, login)`)
+        .select(`*, users!inner(invite_code, invite_used, role, login, id)`)
         .eq('is_hidden', false)
         .order('full_name');
 
@@ -506,18 +581,26 @@ function renderEmployees() {
             else if (e.invite_used) inviteBadge = `<span style="background:#D1FAE5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">✅ Использован</span>`;
         }
 
-        // Кнопки действий
+        // ===== КНОПКИ ДЕЙСТВИЙ =====
         let actionsHtml = '';
-        if (canManageEmployees) {
-            const myself = isSelf(e.id);
+        const myself = isSelf(e.id);
+        
+        // Кнопка "Редактировать себя" — доступна ВСЕМ пользователям
+        if (myself) {
+            actionsHtml = `
+                <button class="btn btn-warning btn-xs" onclick="openProfileEditModal()" title="Редактировать свой профиль">✏️ Редактировать</button>
+            `;
+        } else if (canManageEmployees) {
+            // Админ видит все кнопки для других пользователей
             actionsHtml = `
                 <button class="btn btn-info btn-xs" onclick="viewEmployee('${e.id}')" title="Просмотр">👁️</button>
-                ${!myself ? `
-                    <button class="btn btn-warning btn-xs" onclick="openModal('${e.id}')" title="Редактировать">✏️</button>
-                    <button class="btn btn-danger btn-xs" onclick="deleteEmployee('${e.id}')" title="Удалить">🗑️</button>
-                    ${canResetPassword ? `<button class="btn btn-secondary btn-xs" onclick="resetCredentials('${e.id}')" title="Сбросить доступ">🔄 Сброс</button>` : ''}
-                ` : `<span style="font-size:11px;color:var(--text-muted);">🔒 Себя нельзя</span>`}
+                <button class="btn btn-warning btn-xs" onclick="openModal('${e.id}')" title="Редактировать">✏️</button>
+                <button class="btn btn-danger btn-xs" onclick="deleteEmployee('${e.id}')" title="Удалить">🗑️</button>
+                ${canResetPassword ? `<button class="btn btn-secondary btn-xs" onclick="resetCredentials('${e.id}')" title="Сбросить доступ">🔄 Сброс</button>` : ''}
             `;
+        } else {
+            // Обычный пользователь видит только себя
+            actionsHtml = `<span style="font-size:11px;color:var(--text-muted);">👤 Вы</span>`;
         }
 
         html += `
@@ -529,7 +612,7 @@ function renderEmployees() {
                 <td>${e.phone || '—'}</td>
                 <td style="max-width:300px;">${groupsHtml}</td>
                 ${canManageEmployees ? `<td>${inviteBadge}</td>` : ''}
-                ${canManageEmployees ? `<td><div class="table-actions">${actionsHtml}</div></td>` : ''}
+                <td><div class="table-actions">${actionsHtml}</div></td>
             </tr>`;
     });
     tbody.innerHTML = html;
@@ -582,7 +665,7 @@ function viewEmployee(id) {
 }
 
 // ============================================================
-// МОДАЛЬНОЕ ОКНО СОЗДАНИЯ/РЕДАКТИРОВАНИЯ
+// МОДАЛЬНОЕ ОКНО СОЗДАНИЯ/РЕДАКТИРОВАНИЯ (ДЛЯ АДМИНОВ)
 // ============================================================
 function openModal(id = null) {
     if (!canManageEmployees) return;
@@ -693,7 +776,211 @@ function showModalForm(data) {
 }
 
 // ============================================================
-// ОБРАБОТЧИК ENTER В МОДАЛЬНОМ ОКНЕ
+// МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ДЛЯ ВСЕХ ПОЛЬЗОВАТЕЛЕЙ)
+// ============================================================
+function openProfileEditModal() {
+    document.getElementById('profileEditAlert').style.display = 'none';
+    document.getElementById('profileNewLogin').value = '';
+    document.getElementById('profileCurrentPassword').value = '';
+    document.getElementById('profileNewPassword').value = '';
+    document.getElementById('profileConfirmPassword').value = '';
+    document.getElementById('profileStrengthBar').className = 'bar';
+    document.getElementById('profileStrengthText').textContent = 'Введите пароль для оценки надёжности';
+    document.getElementById('profileConfirmHint').textContent = 'Пароли должны совпадать';
+    document.getElementById('profileConfirmHint').style.color = '#94A3B8';
+    document.getElementById('profileEditModal').classList.add('active');
+}
+
+function closeProfileEditModal() {
+    document.getElementById('profileEditModal').classList.remove('active');
+}
+
+document.getElementById('profileEditCloseBtn').onclick = closeProfileEditModal;
+document.getElementById('profileEditCancelBtn').onclick = closeProfileEditModal;
+document.getElementById('profileEditModal').addEventListener('click', function(e) {
+    if (e.target === this) closeProfileEditModal();
+});
+
+// Индикатор силы пароля
+document.getElementById('profileNewPassword').addEventListener('input', function() {
+    const result = checkPasswordStrength(this.value);
+    const bar = document.getElementById('profileStrengthBar');
+    const text = document.getElementById('profileStrengthText');
+    bar.className = 'bar';
+    if (this.value.length > 0 && result.level) {
+        bar.classList.add(result.level);
+        text.textContent = `Надёжность: ${result.label}`;
+    } else {
+        text.textContent = 'Введите пароль для оценки надёжности';
+    }
+});
+
+document.getElementById('profileConfirmPassword').addEventListener('input', function() {
+    const newPass = document.getElementById('profileNewPassword').value;
+    const hint = document.getElementById('profileConfirmHint');
+    if (this.value.length > 0) {
+        hint.textContent = this.value === newPass ? '✅ Пароли совпадают' : '❌ Пароли не совпадают';
+        hint.style.color = this.value === newPass ? '#10B981' : '#EF4444';
+    } else {
+        hint.textContent = 'Пароли должны совпадать';
+        hint.style.color = '#94A3B8';
+    }
+});
+
+function checkPasswordStrength(password) {
+    let score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 10) score++;
+    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
+    if (/\d/.test(password)) score++;
+    if (/[^a-zA-Z0-9]/.test(password)) score++;
+    const levels = ['', 'weak', 'medium', 'strong', 'very-strong'];
+    const labels = ['', 'Слабый', 'Средний', 'Хороший', 'Отличный'];
+    return { level: levels[Math.min(score, 4)], label: labels[Math.min(score, 4)] };
+}
+
+function showProfileEditAlert(message, type = 'danger') {
+    const alert = document.getElementById('profileEditAlert');
+    const msg = document.getElementById('profileEditMessage');
+    msg.textContent = message;
+    alert.style.display = 'block';
+    alert.style.background = type === 'danger' ? '#FEE2E2' : '#D1FAE5';
+    alert.style.color = type === 'danger' ? '#991B1B' : '#065F46';
+    alert.style.borderLeft = type === 'danger' ? '4px solid #EF4444' : '4px solid #10B981';
+}
+
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.parentElement.querySelector('.toggle-password');
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+    }
+}
+
+// ===== СОХРАНЕНИЕ ПРОФИЛЯ (ДЛЯ СЕБЯ) =====
+document.getElementById('profileEditSaveBtn').onclick = async function() {
+    const alert = document.getElementById('profileEditAlert');
+    alert.style.display = 'none';
+
+    const newLogin = document.getElementById('profileNewLogin').value.trim();
+    const currentPassword = document.getElementById('profileCurrentPassword').value;
+    const newPassword = document.getElementById('profileNewPassword').value;
+    const confirmPassword = document.getElementById('profileConfirmPassword').value;
+
+    const hasLoginChange = newLogin.length > 0;
+    const hasPasswordChange = newPassword.length > 0;
+
+    if (!hasLoginChange && !hasPasswordChange) {
+        showProfileEditAlert('❌ Нет изменений для сохранения');
+        return;
+    }
+
+    if (hasLoginChange) {
+        if (newLogin.length < 3) {
+            showProfileEditAlert('❌ Логин должен содержать минимум 3 символа');
+            return;
+        }
+        const { data: existing, error: checkError } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('login', newLogin)
+            .neq('id', currentUser.id);
+        if (checkError) {
+            showProfileEditAlert('❌ Ошибка проверки логина: ' + checkError.message);
+            return;
+        }
+        if (existing && existing.length > 0) {
+            showProfileEditAlert('❌ Этот логин уже занят');
+            return;
+        }
+    }
+
+    if (hasPasswordChange) {
+        if (!currentPassword) {
+            showProfileEditAlert('❌ Введите текущий пароль');
+            return;
+        }
+        if (newPassword.length < 6) {
+            showProfileEditAlert('❌ Новый пароль должен содержать минимум 6 символов');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            showProfileEditAlert('❌ Пароли не совпадают');
+            return;
+        }
+
+        // Проверка текущего пароля
+        const { data: user, error: findError } = await supabaseClient
+            .from('users')
+            .select('password_hash')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (findError || !user) {
+            showProfileEditAlert('❌ Пользователь не найден');
+            return;
+        }
+
+        try {
+            const isPasswordValid = await window.bcrypt.compare(currentPassword, user.password_hash);
+            if (!isPasswordValid) {
+                showProfileEditAlert('❌ Неверный текущий пароль');
+                return;
+            }
+        } catch (bcryptError) {
+            console.error('❌ Ошибка проверки пароля:', bcryptError);
+            showProfileEditAlert('❌ Ошибка проверки пароля');
+            return;
+        }
+    }
+
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="login-loader"></span> Сохранение...';
+    btn.disabled = true;
+
+    try {
+        const updateData = {};
+        if (hasLoginChange) updateData.login = newLogin;
+        if (hasPasswordChange) {
+            const saltRounds = 10;
+            const hashedNewPassword = await window.bcrypt.hash(newPassword, saltRounds);
+            updateData.password_hash = hashedNewPassword;
+        }
+
+        const { error: updateError } = await supabaseClient
+            .from('users')
+            .update(updateData)
+            .eq('id', currentUser.id);
+
+        if (updateError) throw updateError;
+
+        if (hasLoginChange) {
+            currentUser.login = newLogin;
+            const savedUser = JSON.parse(localStorage.getItem('currentUser'));
+            savedUser.login = newLogin;
+            localStorage.setItem('currentUser', JSON.stringify(savedUser));
+        }
+
+        showProfileEditAlert('✅ Данные успешно обновлены!', 'success');
+        setTimeout(closeProfileEditModal, 1500);
+        await loadEmployees();
+
+    } catch (error) {
+        console.error('❌ Ошибка:', error);
+        showProfileEditAlert('❌ Ошибка: ' + (error.message || 'Неизвестная ошибка'));
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+};
+
+// ============================================================
+// ОБРАБОТЧИК ENTER В МОДАЛЬНЫХ ОКНАХ
 // ============================================================
 document.getElementById('employeeModal').addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && this.classList.contains('active')) {
@@ -705,8 +992,18 @@ document.getElementById('employeeModal').addEventListener('keydown', function(e)
     }
 });
 
+document.getElementById('profileEditModal').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && this.classList.contains('active')) {
+        e.preventDefault();
+        const saveBtn = document.getElementById('profileEditSaveBtn');
+        if (saveBtn && !saveBtn.disabled) {
+            saveBtn.click();
+        }
+    }
+});
+
 // ============================================================
-// СОХРАНЕНИЕ ДАННЫХ
+// СОХРАНЕНИЕ ДАННЫХ (ДЛЯ АДМИНОВ)
 // ============================================================
 document.getElementById('modalSaveBtn').onclick = async function() {
     if (!canManageEmployees) return;
@@ -763,7 +1060,7 @@ document.getElementById('modalSaveBtn').onclick = async function() {
 };
 
 // ============================================================
-// УДАЛЕНИЕ И СБРОС ПАРОЛЯ
+// УДАЛЕНИЕ И СБРОС ПАРОЛЯ (ДЛЯ АДМИНОВ)
 // ============================================================
 async function deleteEmployee(id) {
     if (!canManageEmployees || currentUser.employee_id === id) {
@@ -773,7 +1070,6 @@ async function deleteEmployee(id) {
     if (!confirm('Удалить сотрудника и его учётную запись?')) return;
     
     try {
-        // Получаем пользователя для завершения сессии
         const { data: userData } = await supabaseClient
             .from('users')
             .select('id')
@@ -781,7 +1077,6 @@ async function deleteEmployee(id) {
             .single();
         
         if (userData) {
-            // Завершаем сессию пользователя
             await invalidateUserSession(userData.id);
         }
         
@@ -813,7 +1108,6 @@ async function resetCredentials(id) {
         const part2 = Math.floor(1000 + Math.random() * 9000).toString();
         const newInviteCode = `${part1}-${part2}`;
         
-        // Получаем ID пользователя для завершения сессии
         const { data: userData } = await supabaseClient
             .from('users')
             .select('id')
@@ -821,7 +1115,6 @@ async function resetCredentials(id) {
             .single();
         
         if (userData) {
-            // Завершаем все сессии пользователя
             await invalidateUserSession(userData.id);
         }
         
