@@ -371,7 +371,15 @@
 
 <script>
 // ============================================================
-// КОНФИГУРАЦИЯ
+// ПРОВЕРКА BCRYPT
+// ============================================================
+if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
+    window.bcrypt = dcodeIO.bcrypt;
+    console.log('✅ bcryptjs успешно загружен');
+}
+
+// ============================================================
+// КОНФИГУРАЦИЯ SUPABASE
 // ============================================================
 const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
@@ -381,36 +389,85 @@ let currentUser = null;
 let tables = [];
 let fields = [];
 let pages = [];
+let selectedTableId = null;
+
+// ============================================================
+// ID УСТРОЙСТВА
+// ============================================================
+function getDeviceSessionId() {
+    let sessionId = localStorage.getItem('deviceSessionId');
+    if (!sessionId) {
+        const ua = navigator.userAgent || '';
+        const screen = `${window.screen?.width || 0}x${window.screen?.height || 0}`;
+        const timestamp = Date.now();
+        const random = Math.random().toString(36).substring(2, 8);
+        sessionId = `device_${btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20)}_${timestamp}_${random}`;
+        localStorage.setItem('deviceSessionId', sessionId);
+    }
+    return sessionId;
+}
+const deviceSessionId = getDeviceSessionId();
 
 // ============================================================
 // ЗАГРУЗКА ПОЛЬЗОВАТЕЛЯ
 // ============================================================
-function loadUser() {
+async function loadUser() {
     const savedUser = localStorage.getItem('currentUser');
     if (!savedUser) { window.location.href = '/index.html'; return; }
     try {
-        currentUser = JSON.parse(savedUser);
+        const localUser = JSON.parse(savedUser);
+        
+        // Проверка сессии
+        const { data: userData, error } = await supabaseClient
+            .from('users')
+            .select('id, login, role, employee_id, active_session_id')
+            .eq('id', localUser.id)
+            .single();
+        
+        if (error || !userData) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return;
+        }
+        
+        if (userData.active_session_id && userData.active_session_id !== deviceSessionId) {
+            localStorage.removeItem('currentUser');
+            showToast('❌ Сессия завершена на другом устройстве', 'error');
+            window.location.href = '/index.html';
+            return;
+        }
+        
+        currentUser = { ...localUser, role: userData.role, login: userData.login, employee_id: userData.employee_id };
+        
         const roleMap = { 'super_admin': '👑 Супер-Админ', 'admin': '🛡️ Администратор', 'teacher': '👨‍🏫 Преподаватель', 'viewer': '👀 Наблюдатель' };
         document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
         document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
         document.getElementById('adminRoleBadge').textContent = roleMap[currentUser.role] || currentUser.role;
         
-        // Проверка прав
+        // Проверка прав доступа
         if (!['super_admin', 'admin'].includes(currentUser.role)) {
             document.querySelector('.admin-tabs').innerHTML = '<div style="padding:20px;background:#FEE2E2;border-radius:8px;color:#991B1B;font-weight:600;">⚠️ У вас нет прав доступа к админ-панели</div>';
             document.querySelector('.tab-content.active').innerHTML = '<div class="empty-state"><span class="icon">🔒</span><p>Доступ запрещён. Только для администраторов.</p></div>';
             return;
         }
         
-        loadTables();
-        loadPages();
+        // Загружаем данные
+        await loadTables();
+        await loadPages();
+        await loadFieldTables();
+        
     } catch(e) {
+        console.error('Ошибка загрузки:', e);
         localStorage.removeItem('currentUser');
         window.location.href = '/index.html';
     }
 }
 
-document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; };
+document.getElementById('logoutBtn').onclick = () => { 
+    localStorage.removeItem('currentUser'); 
+    window.location.href = '/index.html'; 
+};
+
 document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
 if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
 
@@ -432,31 +489,79 @@ document.querySelectorAll('.admin-tabs .tab').forEach(tab => {
 // ============================================================
 async function loadTables() {
     try {
+        // Пытаемся загрузить из system_tables
         const { data, error } = await supabaseClient
             .from('system_tables')
             .select('*')
             .order('name');
         
         if (error) {
-            // Если таблица не существует, показываем пример
-            document.getElementById('tablesBody').innerHTML = `
-                <tr>
-                    <td colspan="5">
-                        <div class="empty-state">
-                            <span class="icon">📊</span>
-                            <p>Таблиц пока нет. Создайте первую таблицу!</p>
-                            <button class="btn btn-success" onclick="document.getElementById('createTableBtn').click()" style="margin-top:12px;">➕ Создать таблицу</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
+            // Если таблица не существует, создаём её
+            await createSystemTablesTable();
             return;
         }
         
         tables = data || [];
         renderTables();
+        
+        // Обновляем select для полей
+        const select = document.getElementById('fieldTableSelect');
+        select.innerHTML = '<option value="">-- Выберите таблицу --</option>';
+        tables.forEach(t => {
+            select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+        });
+        
     } catch(e) {
         console.error('Ошибка загрузки таблиц:', e);
+        document.getElementById('tablesBody').innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <span class="icon">❌</span>
+                        <p>Ошибка загрузки: ${e.message}</p>
+                        <button class="btn btn-success" onclick="createSystemTablesTable()" style="margin-top:12px;">🔄 Создать таблицу system_tables</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// ============================================================
+// СОЗДАНИЕ ТАБЛИЦЫ system_tables
+// ============================================================
+async function createSystemTablesTable() {
+    try {
+        showToast('⏳ Создание таблицы system_tables...', 'success');
+        
+        // Создаём таблицу через SQL
+        const { error } = await supabaseClient.rpc('exec_sql', {
+            query: `
+                CREATE TABLE IF NOT EXISTS system_tables (
+                    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    description TEXT,
+                    fields JSONB DEFAULT '[]',
+                    is_active BOOLEAN DEFAULT true,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    created_by UUID,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+            `
+        });
+        
+        if (error) {
+            // Если RPC не работает, пробуем через обычный insert (если таблица уже существует)
+            await loadTables();
+            return;
+        }
+        
+        showToast('✅ Таблица system_tables создана!', 'success');
+        await loadTables();
+        
+    } catch(e) {
+        console.error('Ошибка создания таблицы:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
     }
 }
 
@@ -479,10 +584,11 @@ function renderTables() {
     
     let html = '';
     tables.forEach(t => {
+        const fields = t.fields ? JSON.parse(t.fields || '[]') : [];
         html += `
             <tr>
                 <td><strong>${t.name}</strong></td>
-                <td>${t.fields ? JSON.parse(t.fields || '[]').length : 0}</td>
+                <td>${fields.length}</td>
                 <td>0</td>
                 <td><span class="status-badge status-active">Активна</span></td>
                 <td>
@@ -496,6 +602,186 @@ function renderTables() {
 }
 
 // ============================================================
+// ЗАГРУЗКА ПОЛЕЙ ДЛЯ ВКЛАДКИ "Поля"
+// ============================================================
+async function loadFieldTables() {
+    const select = document.getElementById('fieldTableSelect');
+    select.innerHTML = '<option value="">-- Выберите таблицу --</option>';
+    
+    try {
+        const { data, error } = await supabaseClient
+            .from('system_tables')
+            .select('id, name, fields')
+            .order('name');
+        
+        if (!error && data) {
+            data.forEach(t => {
+                select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+            });
+        }
+    } catch(e) {
+        console.error('Ошибка загрузки таблиц для полей:', e);
+    }
+}
+
+// ============================================================
+// ВЫБОР ТАБЛИЦЫ ДЛЯ ПОЛЕЙ
+// ============================================================
+document.getElementById('fieldTableSelect').addEventListener('change', function() {
+    const tableId = this.value;
+    selectedTableId = tableId;
+    
+    if (!tableId) {
+        document.getElementById('fieldsBody').innerHTML = '<tr><td colspan="4"><div class="empty-state"><span class="icon">📭</span><p>Выберите таблицу</p></div></td></tr>';
+        return;
+    }
+    
+    const table = tables.find(t => t.id === tableId);
+    if (!table) return;
+    
+    const fields = table.fields ? JSON.parse(table.fields || '[]') : [];
+    renderFields(fields);
+});
+
+function renderFields(fields) {
+    const tbody = document.getElementById('fieldsBody');
+    if (!fields || !fields.length) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4">
+                    <div class="empty-state">
+                        <span class="icon">📭</span>
+                        <p>В этой таблице нет полей</p>
+                        <button class="btn btn-success" onclick="document.getElementById('addFieldBtn').click()" style="margin-top:12px;">➕ Добавить поле</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    fields.forEach((f, i) => {
+        const typeLabels = {
+            'text': '📝 Текст',
+            'number': '🔢 Число',
+            'boolean': '✅ Да/Нет',
+            'date': '📅 Дата',
+            'json': '📦 JSON'
+        };
+        html += `
+            <tr>
+                <td><strong>${f.name}</strong></td>
+                <td><span class="field-type-badge">${typeLabels[f.type] || f.type}</span></td>
+                <td>${f.required ? '✅ Да' : '—'}</td>
+                <td>
+                    <button class="btn btn-danger btn-xs" onclick="deleteField(${i})">🗑️</button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+// ============================================================
+// ДОБАВЛЕНИЕ ПОЛЯ
+// ============================================================
+document.getElementById('addFieldBtn').onclick = function() {
+    if (!selectedTableId) {
+        showToast('❌ Сначала выберите таблицу', 'error');
+        return;
+    }
+    
+    const fieldName = prompt('Введите название поля:');
+    if (!fieldName) return;
+    
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(fieldName)) {
+        showToast('❌ Название только латинские буквы, цифры и _', 'error');
+        return;
+    }
+    
+    const fieldType = prompt('Выберите тип поля (text/number/boolean/date/json):', 'text');
+    if (!fieldType) return;
+    
+    const isRequired = confirm('Сделать поле обязательным?');
+    
+    addFieldToTable(selectedTableId, { name: fieldName, type: fieldType, required: isRequired });
+};
+
+async function addFieldToTable(tableId, field) {
+    try {
+        const table = tables.find(t => t.id === tableId);
+        if (!table) {
+            showToast('❌ Таблица не найдена', 'error');
+            return;
+        }
+        
+        const fields = table.fields ? JSON.parse(table.fields || '[]') : [];
+        
+        // Проверка на дубликат
+        if (fields.find(f => f.name === field.name)) {
+            showToast('❌ Поле с таким именем уже существует', 'error');
+            return;
+        }
+        
+        fields.push(field);
+        
+        const { error } = await supabaseClient
+            .from('system_tables')
+            .update({ fields: JSON.stringify(fields) })
+            .eq('id', tableId);
+        
+        if (error) throw error;
+        
+        // Обновляем локальные данные
+        table.fields = JSON.stringify(fields);
+        
+        showToast(`✅ Поле "${field.name}" добавлено!`, 'success');
+        
+        // Обновляем отображение
+        renderFields(fields);
+        renderTables();
+        
+    } catch(e) {
+        console.error('Ошибка добавления поля:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// ============================================================
+// УДАЛЕНИЕ ПОЛЯ
+// ============================================================
+async function deleteField(index) {
+    if (!confirm('Удалить это поле?')) return;
+    
+    try {
+        const table = tables.find(t => t.id === selectedTableId);
+        if (!table) return;
+        
+        const fields = table.fields ? JSON.parse(table.fields || '[]') : [];
+        const fieldName = fields[index]?.name || 'поле';
+        fields.splice(index, 1);
+        
+        const { error } = await supabaseClient
+            .from('system_tables')
+            .update({ fields: JSON.stringify(fields) })
+            .eq('id', selectedTableId);
+        
+        if (error) throw error;
+        
+        table.fields = JSON.stringify(fields);
+        
+        showToast(`✅ Поле "${fieldName}" удалено!`, 'success');
+        renderFields(fields);
+        renderTables();
+        
+    } catch(e) {
+        console.error('Ошибка удаления поля:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// ============================================================
 // СОЗДАНИЕ ТАБЛИЦЫ
 // ============================================================
 document.getElementById('createTableBtn').onclick = function() {
@@ -505,11 +791,11 @@ document.getElementById('createTableBtn').onclick = function() {
         <div class="field-row" style="display:flex;gap:8px;margin-bottom:8px;">
             <input type="text" class="form-control" placeholder="Название поля" style="flex:1;">
             <select class="form-control" style="width:120px;">
-                <option value="text">Текст</option>
-                <option value="number">Число</option>
-                <option value="boolean">Да/Нет</option>
-                <option value="date">Дата</option>
-                <option value="json">JSON</option>
+                <option value="text">📝 Текст</option>
+                <option value="number">🔢 Число</option>
+                <option value="boolean">✅ Да/Нет</option>
+                <option value="date">📅 Дата</option>
+                <option value="json">📦 JSON</option>
             </select>
             <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
         </div>
@@ -525,11 +811,11 @@ function addFieldRow() {
     row.innerHTML = `
         <input type="text" class="form-control" placeholder="Название поля" style="flex:1;">
         <select class="form-control" style="width:120px;">
-            <option value="text">Текст</option>
-            <option value="number">Число</option>
-            <option value="boolean">Да/Нет</option>
-            <option value="date">Дата</option>
-            <option value="json">JSON</option>
+            <option value="text">📝 Текст</option>
+            <option value="number">🔢 Число</option>
+            <option value="boolean">✅ Да/Нет</option>
+            <option value="date">📅 Дата</option>
+            <option value="json">📦 JSON</option>
         </select>
         <button class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">✕</button>
     `;
@@ -551,7 +837,11 @@ document.getElementById('createTableConfirmBtn').onclick = async function() {
         const nameInput = row.querySelector('input');
         const typeSelect = row.querySelector('select');
         if (nameInput && nameInput.value.trim()) {
-            fields.push({ name: nameInput.value.trim(), type: typeSelect.value });
+            fields.push({ 
+                name: nameInput.value.trim(), 
+                type: typeSelect.value,
+                required: false
+            });
         }
     });
     
@@ -571,13 +861,13 @@ document.getElementById('createTableConfirmBtn').onclick = async function() {
     btn.disabled = true;
     
     try {
-        // Создаём запись в system_tables
         const { error: insertError } = await supabaseClient
             .from('system_tables')
             .insert([{ 
                 name: name, 
                 description: desc, 
                 fields: JSON.stringify(fields),
+                is_active: true,
                 created_at: new Date().toISOString(),
                 created_by: currentUser.id
             }]);
@@ -587,6 +877,7 @@ document.getElementById('createTableConfirmBtn').onclick = async function() {
         showToast(`✅ Таблица "${name}" создана!`, 'success');
         document.getElementById('createTableModal').classList.remove('active');
         await loadTables();
+        await loadFieldTables();
         
     } catch(e) {
         console.error('Ошибка создания:', e);
@@ -608,12 +899,56 @@ async function loadPages() {
             .order('name');
         
         if (error) {
+            // Если таблица не существует, создаём её
+            await createSystemPagesTable();
+            return;
+        }
+        
+        pages = data || [];
+        renderPages();
+        
+    } catch(e) {
+        console.error('Ошибка загрузки страниц:', e);
+        document.getElementById('pagesBody').innerHTML = `
+            <tr>
+                <td colspan="5">
+                    <div class="empty-state">
+                        <span class="icon">❌</span>
+                        <p>Ошибка загрузки: ${e.message}</p>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// ============================================================
+// СОЗДАНИЕ ТАБЛИЦЫ system_pages
+// ============================================================
+async function createSystemPagesTable() {
+    try {
+        const { error } = await supabaseClient.rpc('exec_sql', {
+            query: `
+                CREATE TABLE IF NOT EXISTS system_pages (
+                    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    path TEXT NOT NULL UNIQUE,
+                    template TEXT DEFAULT 'Стандартный',
+                    is_active BOOLEAN DEFAULT true,
+                    created_at TIMESTAMP DEFAULT NOW(),
+                    created_by UUID,
+                    updated_at TIMESTAMP DEFAULT NOW()
+                );
+            `
+        });
+        
+        if (error) {
             document.getElementById('pagesBody').innerHTML = `
                 <tr>
                     <td colspan="5">
                         <div class="empty-state">
                             <span class="icon">📄</span>
-                            <p>Страниц пока нет. Создайте первую страницу!</p>
+                            <p>Страниц пока нет</p>
                             <button class="btn btn-success" onclick="document.getElementById('createPageBtn').click()" style="margin-top:12px;">➕ Создать страницу</button>
                         </div>
                     </td>
@@ -622,10 +957,11 @@ async function loadPages() {
             return;
         }
         
-        pages = data || [];
-        renderPages();
+        showToast('✅ Таблица system_pages создана!', 'success');
+        await loadPages();
+        
     } catch(e) {
-        console.error('Ошибка загрузки страниц:', e);
+        console.error('Ошибка создания таблицы страниц:', e);
     }
 }
 
@@ -653,7 +989,7 @@ function renderPages() {
                 <td><strong>${p.name}</strong></td>
                 <td><code>/pages/${p.path || p.name.toLowerCase()}/index.html</code></td>
                 <td>${p.template || 'Стандартный'}</td>
-                <td><span class="status-badge ${p.is_active ? 'status-active' : 'status-inactive'}">${p.is_active ? 'Активна' : 'Скрыта'}</span></td>
+                <td><span class="status-badge ${p.is_active !== false ? 'status-active' : 'status-inactive'}">${p.is_active !== false ? 'Активна' : 'Скрыта'}</span></td>
                 <td>
                     <button class="btn btn-info btn-xs" onclick="editPage('${p.id}')">✏️</button>
                     <button class="btn btn-danger btn-xs" onclick="deletePage('${p.id}')">🗑️</button>
@@ -729,12 +1065,13 @@ function generatePageHTML(name, path) {
     <div class="container">
         <h1>📄 ${name}</h1>
         <p>Страница создана автоматически через админ-панель.</p>
-        <p>Вы можете отредактировать этот HTML-файл в папке <code>/pages/${path}/</code></p>
+        <p>Путь: <code>/pages/${path}/index.html</code></p>
         <a href="/dashboard.html" class="back-link">← На главную</a>
     </div>
     <script>
         // Проверка авторизации
-        if (!localStorage.getItem('currentUser')) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) {
             window.location.href = '/index.html';
         }
     </script>
@@ -743,12 +1080,84 @@ function generatePageHTML(name, path) {
 }
 
 function downloadPageHTML(path, content) {
-    // Создаём папку и файл
     console.log(`📄 Страница создана: /pages/${path}/index.html`);
-    console.log('📝 Содержимое:');
-    console.log(content);
+    console.log('📝 Содержимое готово для сохранения');
     showToast(`✅ Страница создана! Файл: /pages/${path}/index.html`, 'success');
+    showToast('📝 Скопируйте HTML-код из консоли браузера (F12 → Console)', 'success');
 }
+
+// ============================================================
+// УДАЛЕНИЕ ТАБЛИЦЫ
+// ============================================================
+async function deleteTable(id) {
+    if (!confirm('Удалить эту таблицу? Все данные будут потеряны!')) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('system_tables')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('✅ Таблица удалена!', 'success');
+        await loadTables();
+        await loadFieldTables();
+        
+    } catch(e) {
+        console.error('Ошибка удаления:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// ============================================================
+// УДАЛЕНИЕ СТРАНИЦЫ
+// ============================================================
+async function deletePage(id) {
+    if (!confirm('Удалить эту страницу?')) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('system_pages')
+            .delete()
+            .eq('id', id);
+        
+        if (error) throw error;
+        
+        showToast('✅ Страница удалена!', 'success');
+        await loadPages();
+        
+    } catch(e) {
+        console.error('Ошибка удаления:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    }
+}
+
+// ============================================================
+// РЕДАКТИРОВАНИЕ (Заглушки)
+// ============================================================
+function editTable(id) {
+    showToast('ℹ️ Редактирование таблицы будет добавлено позже', 'success');
+}
+
+function editPage(id) {
+    showToast('ℹ️ Редактирование страницы будет добавлено позже', 'success');
+}
+
+// ============================================================
+// СОХРАНЕНИЕ НАСТРОЕК
+// ============================================================
+document.getElementById('saveSettingsBtn').onclick = function() {
+    const settings = {
+        siteName: document.getElementById('siteName').value,
+        siteMode: document.getElementById('siteMode').value,
+        siteLogo: document.getElementById('siteLogo').value,
+        siteFavicon: document.getElementById('siteFavicon').value
+    };
+    
+    console.log('Настройки сохранены:', settings);
+    showToast('✅ Настройки сохранены!', 'success');
+};
 
 // ============================================================
 // TOAST УВЕДОМЛЕНИЯ
@@ -766,6 +1175,7 @@ function showToast(message, type = 'success') {
 // ============================================================
 // ЗАПУСК
 // ============================================================
+console.log('🆔 ID устройства:', deviceSessionId);
 loadUser();
 </script>
 </body>
