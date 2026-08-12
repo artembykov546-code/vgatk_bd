@@ -239,10 +239,31 @@ if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
 // ============================================================
 // ПОЛУЧАЕМ КЛИЕНТ ИЗ СЕССИИ
 // ============================================================
-const supabaseClient = window.Session ? window.Session.supabase() : null;
-if (!supabaseClient) {
-    console.error('❌ Supabase клиент не доступен');
+// Сначала пытаемся получить из Session
+let supabaseClient = null;
+let sb = null;
+
+if (window.Session) {
+    supabaseClient = window.Session.supabase();
 }
+
+// Если не получилось, создаём свой
+if (!supabaseClient) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient !== 'undefined') {
+        supabaseClient = window.supabaseClient;
+    } else if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    } else {
+        console.error('❌ Не удалось создать Supabase клиент');
+    }
+}
+
+sb = supabaseClient;
+console.log('✅ Supabase готов к использованию');
 
 let currentUser = null;
 let invites = [];
@@ -254,7 +275,25 @@ let isAccessDenied = false;
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
 function loadUser() {
-    const user = window.Session ? window.Session.getUser() : null;
+    let user = null;
+    
+    // Пытаемся получить из Session
+    if (window.Session) {
+        user = window.Session.getUser();
+    }
+    
+    // Если не получилось, пробуем из localStorage
+    if (!user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+            try {
+                user = JSON.parse(savedUser);
+            } catch (e) {
+                console.error('Ошибка парсинга пользователя:', e);
+            }
+        }
+    }
+    
     if (!user) { 
         window.location.href = '/index.html'; 
         return; 
@@ -339,7 +378,7 @@ function showAccessDenied() {
 // ============================================================
 // ВЫХОД
 // ============================================================
-document.getElementById('logoutBtn').onclick = () => {
+document.getElementById('logoutBtn').onclick = function() {
     if (window.Session) {
         window.Session.logout();
     } else {
@@ -351,20 +390,28 @@ document.getElementById('logoutBtn').onclick = () => {
 // ============================================================
 // МОБИЛЬНОЕ МЕНЮ
 // ============================================================
-document.getElementById('menuToggle').onclick = () => document.getElementById('sidebar').classList.toggle('open');
-if (window.innerWidth <= 768) document.getElementById('menuToggle').style.display = 'inline-block';
+document.getElementById('menuToggle').onclick = function() {
+    document.getElementById('sidebar').classList.toggle('open');
+};
+if (window.innerWidth <= 768) {
+    document.getElementById('menuToggle').style.display = 'inline-block';
+}
 
 // ============================================================
 // ЗАГРУЗКА ПРИГЛАШЕНИЙ
 // ============================================================
 async function loadInvites() {
-    if (!supabaseClient) {
+    if (!sb) {
         console.error('❌ Supabase клиент не доступен');
+        const container = document.getElementById('inviteContainer');
+        if (container) {
+            container.innerHTML = '<div class="empty-state"><span class="icon">❌</span><p>Ошибка подключения к базе данных</p></div>';
+        }
         return;
     }
     
     try {
-        var result = await supabaseClient
+        var result = await sb
             .from('users')
             .select(`
                 id,
@@ -374,12 +421,15 @@ async function loadInvites() {
                 invite_used,
                 invite_status,
                 employee_id,
-                employees!inner(full_name, position, category)
+                employees!inner (full_name, position, category)
             `)
             .not('invite_code', 'is', null)
             .order('created_at', { ascending: false });
 
-        if (result.error) throw result.error;
+        if (result.error) {
+            console.error('Ошибка Supabase:', result.error);
+            throw result.error;
+        }
 
         invites = (result.data || []).map(function(item) {
             return {
@@ -534,7 +584,7 @@ function copyCode(code) {
 async function revokeInvite(userId) {
     if (!confirm('Отозвать пригласительный код? Пользователь не сможет зарегистрироваться.')) return;
     try {
-        var result = await supabaseClient
+        var result = await sb
             .from('users')
             .update({ invite_status: 'expired' })
             .eq('id', userId);
@@ -557,7 +607,7 @@ async function resetUserCredentials(userId, fullName) {
         var part2 = Math.floor(1000 + Math.random() * 9000).toString();
         var newInviteCode = part1 + '-' + part2;
         
-        var result = await supabaseClient
+        var result = await sb
             .from('users')
             .update({
                 login: null,
@@ -592,7 +642,7 @@ async function generateInvite() {
     btn.disabled = true;
 
     try {
-        var empResult = await supabaseClient
+        var empResult = await sb
             .from('employees')
             .select('id, full_name, position, category')
             .eq('is_hidden', false)
@@ -600,7 +650,7 @@ async function generateInvite() {
 
         if (empResult.error) throw empResult.error;
 
-        var usersResult = await supabaseClient
+        var usersResult = await sb
             .from('users')
             .select('employee_id, invite_code')
             .not('invite_code', 'is', null);
@@ -626,7 +676,7 @@ async function generateInvite() {
         var part2 = Math.floor(1000 + Math.random() * 9000).toString();
         var code = part1 + '-' + part2;
 
-        var insertResult = await supabaseClient
+        var insertResult = await sb
             .from('users')
             .insert([{
                 employee_id: emp.id,
@@ -670,10 +720,28 @@ console.log('🆔 ID устройства:', window.Session ? window.Session.get
 
 // Инициализация
 async function init() {
+    // Проверяем сессию через Session
     if (window.Session) {
-        const isValid = await window.Session.check();
-        if (!isValid) return;
+        try {
+            const isValid = await window.Session.check();
+            if (!isValid) {
+                console.log('Сессия невалидна');
+                window.location.href = '/index.html';
+                return;
+            }
+        } catch (e) {
+            console.warn('Ошибка проверки сессии:', e);
+        }
+    } else {
+        console.warn('⚠️ Модуль Session не загружен');
+        // Проверяем хотя бы localStorage
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) {
+            window.location.href = '/index.html';
+            return;
+        }
     }
+    
     loadUser();
 }
 
