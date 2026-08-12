@@ -14,8 +14,10 @@
     <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
     <link rel="stylesheet" href="/css/components.css">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
     
     <!-- ===== CHART.JS ===== -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -310,22 +312,28 @@
     </div>
 </div>
 
-<script src="/js/components.js"></script>
-
 <script>
 // ============================================================
-// ПРОВЕРКА НАЛИЧИЯ SUPABASE
+// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient ИЗ СЕССИИ
 // ============================================================
-if (typeof window.supabaseClient === 'undefined') {
-    console.warn('⚠️ components.js не загружен, создаём supabaseClient локально');
-    window.supabaseClient = window.supabase.createClient(
-        'https://selbolepupendprhixas.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
-    );
-}
-console.log('✅ Supabase готов к использованию');
 
-const sb = window.supabaseClient;
+// Получаем клиент из сессии
+const sb = window.Session ? window.Session.supabase() : null;
+
+if (!sb) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = sb;
+}
+
+console.log('✅ Supabase готов к использованию');
 
 // ============================================================
 // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
@@ -379,22 +387,33 @@ function showToast(message, type = 'success') {
 }
 
 // ============================================================
-// ПОЛЬЗОВАТЕЛЬ
+// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
 // ============================================================
 function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-    } catch (e) {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+    const user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return; }
+        try {
+            currentUser = JSON.parse(savedUser);
+        } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return;
+        }
+    } else {
+        currentUser = user;
     }
+    
+    document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.full_name || currentUser.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
 }
-document.getElementById('logoutBtn').onclick = () => { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; };
+document.getElementById('logoutBtn').onclick = () => {
+    if (window.Session) { window.Session.logout(); } 
+    else { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
+};
 
 // ============================================================
 // ФУНКЦИИ ДЛЯ ТЕГОВ В МОДАЛКЕ
@@ -484,7 +503,7 @@ function getCourseData(student, course) {
 // ЗАГРУЗКА КУРАТОРОВ И МАСТЕРОВ
 // ============================================================
 async function loadStaffFromEmployees(groupType) {
-    const { data: employees, error } = await sb
+    const { data: employees, error } = await window.supabase
         .from('employees')
         .select('id, full_name, category, groups')
         .eq('is_hidden', false);
@@ -510,10 +529,10 @@ async function checkEditRights(staff) {
     if (currentUser.role === 'super_admin' || currentUser.role === 'admin') return true;
 
     try {
-        const { data: userData } = await sb.from('users').select('employee_id').eq('id', currentUser.id).single();
+        const { data: userData } = await window.supabase.from('users').select('employee_id').eq('id', currentUser.id).single();
         if (!userData?.employee_id) return false;
 
-        const { data: employee } = await sb.from('employees').select('full_name').eq('id', userData.employee_id).single();
+        const { data: employee } = await window.supabase.from('employees').select('full_name').eq('id', userData.employee_id).single();
         if (!employee) return false;
 
         if (staff.curators.includes(employee.full_name)) return true;
@@ -537,7 +556,7 @@ async function loadGroup() {
     }
 
     try {
-        const { data: group, error } = await sb.from('groups').select('*').eq('id', groupId).single();
+        const { data: group, error } = await window.supabase.from('groups').select('*').eq('id', groupId).single();
         if (error) throw error;
         if (!group) {
             groupContent.innerHTML = `<div class="error-state"><span class="icon">❌</span><h3>Группа не найдена</h3><a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a></div>`;
@@ -622,7 +641,7 @@ function renderGroupInfo(group, staff) {
 async function loadStudents() {
     const tbody = document.getElementById('studentsTableBody');
     try {
-        const { data: students, error } = await sb.from('students').select('*').eq('group_id', groupId).order('full_name');
+        const { data: students, error } = await window.supabase.from('students').select('*').eq('group_id', groupId).order('full_name');
         if (error) throw error;
 
         studentsData = students || [];
@@ -894,7 +913,7 @@ function updateChartData(students, course) {
 async function deleteStudent(studentId) {
     if (!hasEditRights) return;
     
-    const { data: student } = await sb.from('students').select('full_name, status, group_id').eq('id', studentId).single();
+    const { data: student } = await window.supabase.from('students').select('full_name, status, group_id').eq('id', studentId).single();
     if (!student) { showToast('❌ Студент не найден', 'error'); return; }
     
     if (student.status === 'graduated') {
@@ -909,9 +928,9 @@ async function deleteStudent(studentId) {
     if (!confirm(`🗑️ Вы уверены, что хотите полностью удалить студента "${student.full_name}"?\n\nЭто действие нельзя отменить! Все данные о студенте будут удалены.`)) return;
 
     try {
-        await sb.from('student_parents').delete().eq('student_id', studentId);
-        await sb.from('student_siblings').delete().eq('student_id', studentId);
-        const { error } = await sb.from('students').delete().eq('id', studentId);
+        await window.supabase.from('student_parents').delete().eq('student_id', studentId);
+        await window.supabase.from('student_siblings').delete().eq('student_id', studentId);
+        const { error } = await window.supabase.from('students').delete().eq('id', studentId);
         if (error) throw error;
         showToast(`✅ Студент "${student.full_name}" полностью удалён`, 'success');
         await loadStudents();
@@ -1052,7 +1071,7 @@ async function saveGroupChanges() {
     };
 
     try {
-        const { error } = await sb.from('groups').update(updateData).eq('id', groupId);
+        const { error } = await window.supabase.from('groups').update(updateData).eq('id', groupId);
         if (error) {
             console.error('❌ Ошибка Supabase:', error);
             throw error;
@@ -1075,7 +1094,7 @@ document.getElementById('graduateGroupBtn').onclick = async () => {
         return;
     }
     
-    const { data: students } = await sb.from('students').select('id, full_name').eq('group_id', groupId).eq('status', 'active');
+    const { data: students } = await window.supabase.from('students').select('id, full_name').eq('group_id', groupId).eq('status', 'active');
     if (!students || students.length === 0) {
         showToast('❌ В группе нет активных студентов', 'error');
         return;
@@ -1108,8 +1127,23 @@ window.onresize = () => {
 // ============================================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
-loadUser();
-loadGroup();
+async function init() {
+    // Проверяем сессию
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+    }
+    
+    loadUser();
+    loadGroup();
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 
 </body>

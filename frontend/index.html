@@ -15,6 +15,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
     
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
+    <script src="/js/session.js"></script>
+    
     <style>
         /* ===== БАЗОВЫЕ СТИЛИ ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -224,11 +227,24 @@ if (typeof dcodeIO === 'undefined' || typeof dcodeIO.bcrypt === 'undefined') {
 }
 
 // ============================================================
-// КОНФИГУРАЦИЯ SUPABASE
+// ПОЛУЧАЕМ КЛИЕНТ ИЗ СЕССИИ
 // ============================================================
-const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.Session ? window.Session.supabase() : null;
+
+if (!supabaseClient) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = supabaseClient;
+}
+
+console.log('✅ Supabase готов к использованию');
 
 let tempUserId = null;
 let tempUserSessionVersion = null;
@@ -265,7 +281,7 @@ async function checkAuth() {
         const user = JSON.parse(savedUser);
         
         // Проверяем текущую версию сессии пользователя в БД
-        const { data, error } = await supabaseClient
+        const { data, error } = await window.supabase
             .from('users')
             .select('id, session_version')
             .eq('id', user.id)
@@ -320,7 +336,7 @@ async function handleLogin(login, password) {
     try {
         console.log('🔍 Поиск пользователя:', login);
         
-        const { data: user, error } = await supabaseClient
+        const { data: user, error } = await window.supabase
             .from('users')
             .select(`id, login, password_hash, employee_id, force_change, role, session_version`)
             .eq('login', login)
@@ -362,7 +378,7 @@ async function handleLogin(login, password) {
         let fullName = user.login;
         if (user.employee_id) {
             try {
-                const { data: emp } = await supabaseClient
+                const { data: emp } = await window.supabase
                     .from('employees')
                     .select('full_name')
                     .eq('id', user.employee_id)
@@ -422,14 +438,24 @@ async function handleChangePassword() {
     try {
         const hashedPassword = await window.bcrypt.hash(newPassword, 10);
         
-        // При смене пароля увеличиваем session_version на 1
-        // Это приведет к выходу со всех устройств
-        const { error } = await supabaseClient
+        // Получаем текущую версию сессии и увеличиваем её
+        const { data: userData, error: fetchError } = await window.supabase
             .from('users')
-            .update({ 
+            .select('session_version')
+            .eq('id', tempUserId)
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        const newVersion = (userData?.session_version || 0) + 1;
+
+        // Обновляем пароль и увеличиваем версию сессии
+        const { error } = await window.supabase
+            .from('users')
+            .update({
                 password_hash: hashedPassword,
                 force_change: false,
-                session_version: supabaseClient.rpc('increment_session_version', { user_id: tempUserId }),
+                session_version: newVersion,
                 updated_at: new Date().toISOString()
             })
             .eq('id', tempUserId);

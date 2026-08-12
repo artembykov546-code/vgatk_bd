@@ -239,7 +239,7 @@ if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
 // ============================================================
 // ПОЛУЧАЕМ КЛИЕНТ ИЗ СЕССИИ
 // ============================================================
-const supabaseClient = window.Session.supabase();
+const supabaseClient = window.Session ? window.Session.supabase() : null;
 if (!supabaseClient) {
     console.error('❌ Supabase клиент не доступен');
 }
@@ -254,7 +254,7 @@ let isAccessDenied = false;
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
 function loadUser() {
-    const user = window.Session.getUser();
+    const user = window.Session ? window.Session.getUser() : null;
     if (!user) { 
         window.location.href = '/index.html'; 
         return; 
@@ -340,7 +340,12 @@ function showAccessDenied() {
 // ВЫХОД
 // ============================================================
 document.getElementById('logoutBtn').onclick = () => {
-    window.Session.logout();
+    if (window.Session) {
+        window.Session.logout();
+    } else {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+    }
 };
 
 // ============================================================
@@ -661,12 +666,23 @@ function showToast(message, type) {
 // ============================================================
 // ЗАПУСК
 // ============================================================
-console.log('🆔 ID устройства:', window.Session.getDeviceId());
+console.log('🆔 ID устройства:', window.Session ? window.Session.getDeviceId() : 'unknown');
 
-// Ждём инициализацию сессии
-setTimeout(function() {
+// Инициализация
+async function init() {
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+    }
     loadUser();
-}, 100);
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 
 </body>

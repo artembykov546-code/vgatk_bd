@@ -11,8 +11,13 @@
     <!-- ===== ШРИФТЫ ===== -->
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
+    <link rel="stylesheet" href="/css/components.css">
+    
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -150,6 +155,7 @@
         <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
         <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
         <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/invites/index.html"><span class="icon">📨</span> Приглашения</a></li>
         <li><a href="/profile/index.html" class="active"><span class="icon">⚙️</span> Профиль</a></li>
     </ul>
 </aside>
@@ -181,14 +187,26 @@
 
 <script>
 // ============================================================
-// КОНФИГУРАЦИЯ SUPABASE
+// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient ИЗ СЕССИИ
 // ============================================================
 
-const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+// Получаем клиент из сессии
+const supabaseClient = window.Session ? window.Session.supabase() : null;
 
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-console.log('✅ Supabase инициализирован');
+if (!supabaseClient) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = supabaseClient;
+}
+
+console.log('✅ Supabase готов к использованию');
 
 // ============================================================
 // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
@@ -198,47 +216,44 @@ let currentUser = null;
 let currentEmployee = null;
 let groups = [];
 
-// Генерируем уникальный ID устройства при загрузке
-function generateDeviceSessionId() {
-    const ua = navigator.userAgent || '';
-    const screen = window.screen.width + 'x' + window.screen.height;
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    const base = btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-    return 'device_' + base + '_' + timestamp + '_' + random;
-}
-
-const currentDeviceSessionId = generateDeviceSessionId();
-console.log('🆔 ID устройства:', currentDeviceSessionId);
-
 // ============================================================
-// ПОЛЬЗОВАТЕЛЬ
+// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
 // ============================================================
 
 function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) {
-        window.location.href = '/index.html';
-        return;
-    }
-
-    try {
-        const user = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = user.full_name || user.name || user.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[user.role] || user.role;
+    const user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) {
+            window.location.href = '/index.html';
+            return;
+        }
+        try {
+            currentUser = JSON.parse(savedUser);
+        } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return;
+        }
+    } else {
         currentUser = user;
-        
-        loadUserData();
-    } catch (e) {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
     }
+    
+    document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+    
+    loadUserData();
 }
 
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    if (window.Session) {
+        window.Session.logout();
+    } else {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+    }
 };
 
 // ============================================================
@@ -249,7 +264,7 @@ async function loadUserData() {
     try {
         // Загружаем данные сотрудника (employee)
         if (currentUser.employee_id) {
-            const { data: employee, error: empError } = await supabaseClient
+            const { data: employee, error: empError } = await window.supabase
                 .from('employees')
                 .select('*')
                 .eq('id', currentUser.employee_id)
@@ -268,7 +283,7 @@ async function loadUserData() {
         }
 
         // Загружаем группы
-        const { data: groupsData, error: groupsError } = await supabaseClient
+        const { data: groupsData, error: groupsError } = await window.supabase
             .from('groups')
             .select('id, name, type')
             .eq('is_archived', false)
@@ -426,10 +441,25 @@ window.onresize = function() {
 };
 
 // ============================================================
-// ЗАПУСК
+// ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 
-loadUser();
+async function init() {
+    // Проверяем сессию
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+    }
+    
+    loadUser();
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 
 </body>

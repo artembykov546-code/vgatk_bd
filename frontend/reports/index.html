@@ -9,7 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/components.css">
     
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -441,18 +445,28 @@
     </div>
 </div>
 
-<script src="/js/components.js"></script>
-
 <script>
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = window.supabase.createClient(
-        'https://selbolepupendprhixas.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
-    );
-}
-console.log('✅ Supabase готов к использованию');
+// ============================================================
+// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient ИЗ СЕССИИ
+// ============================================================
 
-const sb = window.supabaseClient;
+// Получаем клиент из сессии
+const sb = window.Session ? window.Session.supabase() : null;
+
+if (!sb) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = sb;
+}
+
+console.log('✅ Supabase готов к использованию');
 
 let currentUser = null;
 let currentReport = 'students';
@@ -486,24 +500,36 @@ const REPORTS = {
     avg_grade_college: { label: 'Ср.балл в колледже', icon: '📊', columns: ['№ п/п','Категория','Наименование','Курс','Средний балл','Студентов','Примечание'], filters: ['type','course','group'] }
 };
 
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
+// ============================================================
+
 function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-        document.getElementById('pdfDirectorName').value = currentUser.full_name || currentUser.name || '__________________';
-    } catch (e) {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+    const user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return; }
+        try {
+            currentUser = JSON.parse(savedUser);
+        } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return;
+        }
+    } else {
+        currentUser = user;
     }
+    
+    document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+    document.getElementById('pdfDirectorName').value = currentUser.full_name || currentUser.name || '__________________';
 }
 
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    if (window.Session) { window.Session.logout(); } 
+    else { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
 };
 
 function showToast(message, type = 'success') {
@@ -567,7 +593,7 @@ function getCourseNumberFromGroupName(groupName) {
 
 async function loadGraduationYears() {
     try {
-        const { data, error } = await sb
+        const { data, error } = await window.supabase
             .from('graduates')
             .select('graduation_year')
             .not('graduation_year', 'is', null)
@@ -676,7 +702,7 @@ async function renderFilters(reportKey) {
 
 async function loadGroupsFilter() {
     try {
-        const { data, error } = await sb.from('groups').select('id, name, type, is_archived').order('name');
+        const { data, error } = await window.supabase.from('groups').select('id, name, type, is_archived').order('name');
         if (error) throw error;
         allGroups = data || [];
     } catch (error) { console.error('❌ Ошибка загрузки групп:', error); }
@@ -752,7 +778,6 @@ function renderTable(data, columns) {
         columns.forEach(c => {
             let val = row[c] || '—';
             if (c === '№ п/п') val = i + 1;
-            // Обрезаем длинные значения для отображения
             if (typeof val === 'string' && val.length > 50) {
                 val = val.substring(0, 47) + '...';
             }
@@ -765,7 +790,7 @@ function renderTable(data, columns) {
 }
 
 async function getStudentsReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -787,20 +812,20 @@ async function getStudentsReport(f) {
 }
 
 async function getGroupsReport(f) {
-    let q = sb.from('groups').select(`*`);
+    let q = window.supabase.from('groups').select(`*`);
     if (f.type !== 'all') q = q.eq('type', f.type);
     const { data, error } = await q;
     if (error) throw error;
     const result = [];
     for (const g of data) {
-        const { count } = await sb.from('students').select('*', { count: 'exact', head: true }).eq('group_id', g.id);
+        const { count } = await window.supabase.from('students').select('*', { count: 'exact', head: true }).eq('group_id', g.id);
         result.push({ 'Название': g.name, 'Тип': getTypeLabel(g.type), 'Дата начала': g.date_start || '—', 'Дата окончания': g.date_end || '—', 'Студентов': count || 0, 'Куратор': g.curator||'—' });
     }
     return result;
 }
 
 async function getGraduatesReport(f) {
-    let q = sb.from('graduates').select('*');
+    let q = window.supabase.from('graduates').select('*');
     if (f.type !== 'all') q = q.eq('type', f.type);
     if (f.graduation_year !== 'all') q = q.eq('graduation_year', f.graduation_year);
     const { data, error } = await q;
@@ -809,7 +834,7 @@ async function getGraduatesReport(f) {
 }
 
 async function getExpelledReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
@@ -826,7 +851,7 @@ async function getExpelledReport(f) {
 }
 
 async function getAcademicReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
@@ -843,7 +868,7 @@ async function getAcademicReport(f) {
 }
 
 async function getCitizenshipReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -855,7 +880,7 @@ async function getCitizenshipReport(f) {
 }
 
 async function getAddressReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -879,7 +904,7 @@ async function getAddressReport(f) {
 }
 
 async function getAccountingReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -903,7 +928,7 @@ async function getAccountingReport(f) {
 }
 
 async function getAgeReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -914,7 +939,7 @@ async function getAgeReport(f) {
 }
 
 async function getGenderReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -926,7 +951,7 @@ async function getGenderReport(f) {
 }
 
 async function getByGroupsReport(f) {
-    let q = sb.from('groups').select(`id, name, type, students:students(id, full_name, status)`);
+    let q = window.supabase.from('groups').select(`id, name, type, students:students(id, full_name, status)`);
     if (f.type !== 'all') q = q.eq('type', f.type);
     const { data, error } = await q;
     if (error) throw error;
@@ -947,14 +972,14 @@ async function getByGroupsReport(f) {
 
 async function getStatisticsReport(f) {
     const [students, groups, graduates] = await Promise.all([
-        sb.from('students').select('*', { count: 'exact' }),
-        sb.from('groups').select('*', { count: 'exact' }),
-        sb.from('graduates').select('*', { count: 'exact' })
+        window.supabase.from('students').select('*', { count: 'exact' }),
+        window.supabase.from('groups').select('*', { count: 'exact' }),
+        window.supabase.from('graduates').select('*', { count: 'exact' })
     ]);
-    const { data: genderData } = await sb.from('students').select('gender').not('gender', 'is', null);
+    const { data: genderData } = await window.supabase.from('students').select('gender').not('gender', 'is', null);
     const maleCount = genderData?.filter(g => g.gender === 'Мужской').length || 0;
     const femaleCount = genderData?.filter(g => g.gender === 'Женский').length || 0;
-    const { data: ageData } = await sb.from('students').select('birth_date').not('birth_date', 'is', null);
+    const { data: ageData } = await window.supabase.from('students').select('birth_date').not('birth_date', 'is', null);
     let under18 = 0, age18_20 = 0, age21_25 = 0, age25plus = 0;
     ageData?.forEach(s => {
         const age = calcAge(s.birth_date);
@@ -963,7 +988,7 @@ async function getStatisticsReport(f) {
         else if (age >= 21 && age <= 25) age21_25++;
         else if (age > 25) age25plus++;
     });
-    const { data: accountingData } = await sb.from('students').select('accounting_type').not('accounting_type', 'is', null);
+    const { data: accountingData } = await window.supabase.from('students').select('accounting_type').not('accounting_type', 'is', null);
     const accountingCount = {};
     accountingData?.forEach(s => { if (s.accounting_type) s.accounting_type.forEach(type => accountingCount[type] = (accountingCount[type] || 0) + 1); });
     const stats = [
@@ -982,7 +1007,7 @@ async function getStatisticsReport(f) {
 }
 
 async function getUnderageReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -997,7 +1022,7 @@ async function getUnderageReport(f) {
 }
 
 async function getEmploymentReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
@@ -1012,7 +1037,7 @@ async function getEmploymentReport(f) {
 }
 
 async function getTargetTrainingReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -1030,7 +1055,7 @@ async function getTargetTrainingReport(f) {
 }
 
 async function getAvgGradeSchoolReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
@@ -1052,7 +1077,7 @@ async function getAvgGradeCollegeReport(f) {
     const courseFilter = f.course;
     const groupFilter = f.group;
 
-    let q = sb.from('groups').select(`id, name, type, date_start`);
+    let q = window.supabase.from('groups').select(`id, name, type, date_start`);
     if (typeFilter !== 'all') q = q.eq('type', typeFilter);
     const { data: groups, error: groupsError } = await q;
     if (groupsError) throw groupsError;
@@ -1066,7 +1091,7 @@ async function getAvgGradeCollegeReport(f) {
         filteredGroups = filteredGroups.filter(g => g.id === groupFilter);
     }
 
-    let studentsQuery = sb.from('students').select('*, groups!inner (name, type)').not('status', 'eq', 'graduated');
+    let studentsQuery = window.supabase.from('students').select('*, groups!inner (name, type)').not('status', 'eq', 'graduated');
     
     let allStudentsData = [];
     if (groupFilter !== 'all') {
@@ -1458,7 +1483,6 @@ function generatePDF() {
     const directorName = document.getElementById('pdfDirectorName').value || '__________________';
     const fontSize = 14;
     
-    // Строим таблицу для PDF с правильным переносом
     let tableHtml = `<table class="pdf-table"><thead><tr>`;
     reportColumns.forEach(c => {
         tableHtml += `<th>${c}</th>`;
@@ -1550,10 +1574,29 @@ window.onresize = () => {
     }
 };
 
-loadUser();
-loadGraduationYears();
-renderFilters('students');
-generateReport();
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+
+async function init() {
+    // Проверяем сессию
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+    }
+    
+    loadUser();
+    await loadGraduationYears();
+    await renderFilters('students');
+    await generateReport();
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 
 </body>

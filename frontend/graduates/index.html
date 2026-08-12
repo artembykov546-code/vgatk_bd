@@ -14,8 +14,10 @@
     <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
     <link rel="stylesheet" href="/css/components.css">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
     
     <!-- ===== XLSX ДЛЯ ЭКСПОРТА ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -247,21 +249,27 @@
     </div>
 </main>
 
-<script src="/js/components.js"></script>
-
 <script>
 // ============================================================
-// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient
+// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient ИЗ СЕССИИ
 // ============================================================
 
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = window.supabase.createClient(
-        'https://selbolepupendprhixas.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
-    );
+// Получаем клиент из сессии
+const sb = window.Session ? window.Session.supabase() : null;
+
+if (!sb) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = sb;
 }
 
-const sb = window.supabaseClient;
 console.log('✅ Supabase готов к использованию');
 
 // ============================================================
@@ -294,28 +302,36 @@ function showToast(message, type = 'success') {
 }
 
 // ============================================================
-// ПОЛЬЗОВАТЕЛЬ
+// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
 // ============================================================
 
 function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-
-        hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
-    } catch (e) {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+    const user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return; }
+        try {
+            currentUser = JSON.parse(savedUser);
+        } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return;
+        }
+    } else {
+        currentUser = user;
     }
+    
+    document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.full_name || currentUser.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+
+    hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
 }
 
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    if (window.Session) { window.Session.logout(); } 
+    else { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
 };
 
 // ============================================================
@@ -355,7 +371,7 @@ async function loadGroups() {
 
     try {
         // 1. Получаем все группы (включая архивные и активные)
-        const { data: groups, error: groupsError } = await sb
+        const { data: groups, error: groupsError } = await window.supabase
             .from('groups')
             .select('*')
             .order('date_start', { ascending: false });
@@ -363,21 +379,21 @@ async function loadGroups() {
         if (groupsError) throw groupsError;
 
         // 2. Получаем выпускников из graduates
-        const { data: graduates, error: gradError } = await sb
+        const { data: graduates, error: gradError } = await window.supabase
             .from('graduates')
             .select('*');
 
         if (gradError) throw gradError;
 
         // 3. Получаем отчисленных из expelled_students
-        const { data: expelled, error: expelledError } = await sb
+        const { data: expelled, error: expelledError } = await window.supabase
             .from('expelled_students')
             .select('*');
 
         if (expelledError) throw expelledError;
 
         // 4. Получаем студентов в академ. отпуске из academic_leave_students
-        const { data: academic, error: academicError } = await sb
+        const { data: academic, error: academicError } = await window.supabase
             .from('academic_leave_students')
             .select('*');
 
@@ -755,8 +771,23 @@ window.onresize = () => {
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 
-loadUser();
-loadGroups();
+async function init() {
+    // Проверяем сессию
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+    }
+    
+    loadUser();
+    loadGroups();
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 
 window.addEventListener('pageshow', function() {
     loadGroups();

@@ -14,8 +14,10 @@
     <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
     <link rel="stylesheet" href="/css/components.css">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
     
     <style>
         /* ===== ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ГРУПП ===== */
@@ -498,49 +500,26 @@
         </div>
         <div class="modal-footer">
             <button class="btn btn-secondary" id="confirmCancelBtn">Отмена</button>
-            <button class="btn btn-danger" id="confirmDeleteBtn">️ Удалить</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">🗑️ Удалить</button>
         </div>
     </div>
 </div>
 
 <!-- ============================================================
-   SCRIPT — ИСПОЛЬЗУЕМ ТОЛЬКО ОДИН РАЗ!
-   components.js уже создал window.supabaseClient
+   SCRIPT — ИСПОЛЬЗУЕМ СЕССИЮ
    ============================================================ -->
-<script src="/js/components.js"></script>
-
 <script>
 // ============================================================
-// НЕ СОЗДАЁМ НОВЫЙ supabase — ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ!
-// components.js уже создал window.supabaseClient
-// ============================================================
-
-// Проверяем, что supabaseClient доступен
-if (typeof window.supabaseClient === 'undefined') {
-    console.warn('⚠️ components.js не загружен, создаём supabaseClient локально');
-    window.supabaseClient = window.supabase.createClient(
-        'https://selbolepupendprhixas.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
-    );
-}
-
-// БЕРЁМ ГОТОВЫЙ КЛИЕНТ, НЕ СОЗДАЁМ НОВЫЙ!
-console.log('✅ Supabase готов к использованию');
-
-// ============================================================
-// TOAST УВЕДОМЛЕНИЯ (АВТОМАТИЧЕСКИ ИСЧЕЗАЮТ)
+// ТОСТ УВЕДОМЛЕНИЯ
 // ============================================================
 
 function showToast(message, type = 'success', duration = 4000) {
-    // Удаляем старые тосты
-    const existingContainer = document.querySelector('.toast-container');
-    if (!existingContainer) {
-        const container = document.createElement('div');
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-    }
-    
-    const container = document.querySelector('.toast-container');
+    const container = document.querySelector('.toast-container') || (() => {
+        const c = document.createElement('div');
+        c.className = 'toast-container';
+        document.body.appendChild(c);
+        return c;
+    })();
     
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
@@ -552,7 +531,6 @@ function showToast(message, type = 'success', duration = 4000) {
     
     container.appendChild(toast);
     
-    // Автоматическое удаление через duration
     setTimeout(() => {
         if (toast.parentElement) {
             toast.style.opacity = '0';
@@ -572,26 +550,29 @@ let currentUser = null;
 let groupToDelete = null;
 
 // ============================================================
-// ПОЛЬЗОВАТЕЛЬ
+// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
 // ============================================================
 
 function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-    } catch (e) {
-        localStorage.removeItem('currentUser');
+    const user = window.Session.getUser();
+    if (!user) {
         window.location.href = '/index.html';
+        return;
     }
+    
+    currentUser = user;
+    document.getElementById('userNameDisplay').textContent = user.name || user.full_name || user.login;
+    const roleMap = {
+        'super_admin': 'Супер-Админ',
+        'admin': 'Администратор',
+        'teacher': 'Преподаватель',
+        'viewer': 'Наблюдатель'
+    };
+    document.getElementById('userRoleDisplay').textContent = roleMap[user.role] || user.role;
 }
 
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    window.Session.logout();
 };
 
 // ============================================================
@@ -623,9 +604,21 @@ function getGroupYear(dateStart) {
 
 async function loadGroups() {
     const container = document.getElementById('groupsContainer');
+    const sb = window.Session.supabase();
+    
+    if (!sb) {
+        console.error('❌ Supabase клиент не доступен');
+        container.innerHTML = `
+            <div class="empty-state">
+                <span class="icon">❌</span>
+                <p>Ошибка подключения</p>
+            </div>
+        `;
+        return;
+    }
 
     try {
-        const { data: groups, error } = await window.supabaseClient
+        const { data: groups, error } = await sb
             .from('groups')
             .select('*')
             .eq('is_archived', false)
@@ -644,7 +637,7 @@ async function loadGroups() {
             return;
         }
 
-        const { data: students, error: studentsError } = await window.supabaseClient
+        const { data: students, error: studentsError } = await sb
             .from('students')
             .select('group_id, status');
 
@@ -663,15 +656,11 @@ async function loadGroups() {
             filtered = filtered.filter(g => g.name.toLowerCase().includes(search));
         }
 
-        // Разделяем на ПТО и ССО
         const ptoGroups = filtered.filter(g => g.type === 'pto');
         const ssoGroups = filtered.filter(g => g.type === 'sso');
 
         let html = '';
-        
-        // Сначала ПТО
         html += renderTypeSection('ПТО', '🔧', ptoGroups, studentCounts);
-        // Потом ССО
         html += renderTypeSection('ССО', '🎓', ssoGroups, studentCounts);
 
         container.innerHTML = html;
@@ -805,9 +794,15 @@ function showDeleteConfirm(groupId, groupName) {
 
 async function confirmDelete() {
     if (!groupToDelete) return;
+    
+    const sb = window.Session.supabase();
+    if (!sb) {
+        showToast('❌ Ошибка подключения к базе данных', 'error');
+        return;
+    }
 
     try {
-        const { data: students, error: checkError } = await window.supabaseClient
+        const { data: students, error: checkError } = await sb
             .from('students')
             .select('id')
             .eq('group_id', groupToDelete)
@@ -816,12 +811,12 @@ async function confirmDelete() {
         if (checkError) throw checkError;
 
         if (students && students.length > 0) {
-            showToast(` Нельзя удалить группу, в которой есть активные студенты (${students.length} чел.)`, 'error');
+            showToast(`❌ Нельзя удалить группу, в которой есть активные учащиеся (${students.length} чел.)`, 'error');
             closeConfirmModal();
             return;
         }
 
-        const { error } = await window.supabaseClient
+        const { error } = await sb
             .from('groups')
             .delete()
             .eq('id', groupToDelete);
@@ -889,8 +884,21 @@ window.onresize = () => {
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 
-loadUser();
-loadGroups();
+async function init() {
+    // Проверяем сессию
+    const isValid = await window.Session.check();
+    if (!isValid) return;
+    
+    loadUser();
+    loadGroups();
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 
 </body>

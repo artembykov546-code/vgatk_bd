@@ -662,6 +662,13 @@ if (typeof window.Session === 'undefined') {
 }
 
 // ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+let refreshInterval = null;
+let sessionCheckInterval = null;
+let isInitialized = false;
+
+// ============================================================
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
 function loadUser() {
@@ -746,6 +753,33 @@ async function loadStats() {
 }
 
 // ============================================================
+// АВТООБНОВЛЕНИЕ СТАТИСТИКИ
+// ============================================================
+function startAutoRefresh() {
+    // Обновление статистики каждые 30 секунд
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(loadStats, 30000);
+    
+    // Проверка сессии каждые 10 секунд
+    if (sessionCheckInterval) clearInterval(sessionCheckInterval);
+    sessionCheckInterval = setInterval(() => {
+        if (!isInitialized) return;
+        window.Session.check();
+    }, 10000);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+    if (sessionCheckInterval) {
+        clearInterval(sessionCheckInterval);
+        sessionCheckInterval = null;
+    }
+}
+
+// ============================================================
 // МОБИЛЬНОЕ МЕНЮ
 // ============================================================
 const menuToggle = document.getElementById('menuToggle');
@@ -768,6 +802,33 @@ if (menuToggle && sidebar) {
 }
 
 // ============================================================
+// ПРОВЕРКА СЕССИИ ПРИ ВОССТАНОВЛЕНИИ ФОКУСА
+// ============================================================
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && isInitialized) {
+        // При возврате на страницу проверяем сессию
+        window.Session.check();
+        // И обновляем статистику
+        loadStats();
+    }
+});
+
+// ============================================================
+// ПРОВЕРКА СЕССИИ ПРИ ВОССТАНОВЛЕНИИ СЕТИ
+// ============================================================
+window.addEventListener('online', function() {
+    if (isInitialized) {
+        window.Session.check();
+        loadStats();
+    }
+});
+
+// ============================================================
+// ОСТАНОВКА ИНТЕРВАЛОВ ПРИ УХОДЕ
+// ============================================================
+window.addEventListener('beforeunload', stopAutoRefresh);
+
+// ============================================================
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 async function initDashboard() {
@@ -776,14 +837,29 @@ async function initDashboard() {
     
     // Проверяем сессию
     const isSessionValid = await window.Session.check();
-    if (!isSessionValid) return;
+    if (!isSessionValid) {
+        console.log('🔒 Сессия невалидна');
+        return;
+    }
     
     // Загружаем пользователя
     const isUserLoaded = loadUser();
-    if (!isUserLoaded) return;
+    if (!isUserLoaded) {
+        console.log('❌ Пользователь не загружен');
+        return;
+    }
     
     // Загружаем статистику
-    await loadStats();
+    try {
+        await loadStats();
+        console.log('✅ Статистика загружена');
+    } catch (error) {
+        console.error('❌ Ошибка загрузки статистики:', error);
+    }
+    
+    // Запускаем автообновление
+    startAutoRefresh();
+    isInitialized = true;
     
     console.log('✅ Дашборд успешно загружен');
 }
@@ -794,6 +870,24 @@ if (document.readyState === 'loading') {
 } else {
     initDashboard();
 }
+
+// ============================================================
+// ОБРАБОТКА ОШИБОК
+// ============================================================
+window.addEventListener('error', function(e) {
+    console.error('❌ Ошибка на странице:', e.message);
+    // Не показываем пользователю ошибки, чтобы не нарушать работу
+});
+
+// Экспортируем функции для отладки (опционально)
+window.__dashboard = {
+    loadStats,
+    refresh: loadStats,
+    checkSession: window.Session.check,
+    user: window.Session.getUser
+};
+
+console.log('✅ Дашборд готов к работе. Используйте window.__dashboard для отладки');
 </script>
 
 </body>

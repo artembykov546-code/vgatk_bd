@@ -15,6 +15,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
     
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
+    <script src="/js/session.js"></script>
+    
     <style>
         /* ===== ВАШИ ОРИГИНАЛЬНЫЕ СТИЛИ (БЕЗ ИЗМЕНЕНИЙ) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -141,10 +144,10 @@
                     <div class="form-hint">Введите код в формате XXXX-XXXX</div>
                 </div>
 
-                <button class="btn btn-primary" id="checkCodeBtn"> Проверить код</button>
+                <button class="btn btn-primary" id="checkCodeBtn">🔍 Проверить код</button>
 
                 <div class="register-footer" style="margin-top:16px;">
-                    Уже есть аккаунт? <a href="/pages/index.html">Войти</a>
+                    Уже есть аккаунт? <a href="/index.html">Войти</a>
                 </div>
             </div>
 
@@ -174,7 +177,7 @@
                     <label class="form-label">Придумайте пароль <span class="required">*</span></label>
                     <div class="password-wrapper">
                         <input type="password" class="form-control" id="newPassword" placeholder="Введите пароль (мин. 6 символов)">
-                        <button type="button" class="toggle-password" onclick="togglePassword('newPassword')">️</button>
+                        <button type="button" class="toggle-password" onclick="togglePassword('newPassword')">👁️</button>
                     </div>
                     <div class="password-strength"><div class="bar" id="strengthBar"></div></div>
                     <div class="form-hint" id="strengthText">Введите пароль для оценки надёжности</div>
@@ -184,7 +187,7 @@
                     <label class="form-label">Подтвердите пароль <span class="required">*</span></label>
                     <div class="password-wrapper">
                         <input type="password" class="form-control" id="confirmPassword" placeholder="Повторите пароль">
-                        <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">️</button>
+                        <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">👁️</button>
                     </div>
                     <div class="form-hint" id="confirmHint">Пароли должны совпадать</div>
                 </div>
@@ -205,7 +208,7 @@
 // ПРОВЕРКА ЗАГРУЗКИ BCRYPTJS
 // ============================================================
 if (typeof dcodeIO === 'undefined' || typeof dcodeIO.bcrypt === 'undefined') {
-    console.error(' ОШИБКА: Библиотека bcryptjs не загрузилась!');
+    console.error('❌ ОШИБКА: Библиотека bcryptjs не загрузилась!');
     alert('Ошибка загрузки системы безопасности. Пожалуйста, обновите страницу.');
 } else {
     window.bcrypt = dcodeIO.bcrypt;
@@ -213,11 +216,24 @@ if (typeof dcodeIO === 'undefined' || typeof dcodeIO.bcrypt === 'undefined') {
 }
 
 // ============================================================
-// КОНФИГУРАЦИЯ SUPABASE
+// ПОЛУЧАЕМ КЛИЕНТ ИЗ СЕССИИ
 // ============================================================
-const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.Session ? window.Session.supabase() : null;
+
+if (!supabaseClient) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = supabaseClient;
+}
+
+console.log('✅ Supabase готов к использованию');
 
 let verifiedUserId = null; // ID пользователя из таблицы users
 let userFullName = '';     // Имя сотрудника для отображения
@@ -228,7 +244,7 @@ let userFullName = '';     // Имя сотрудника для отображ�
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     const button = input.parentElement.querySelector('.toggle-password');
-    if (input.type === 'password') { input.type = 'text'; button.textContent = ''; } 
+    if (input.type === 'password') { input.type = 'text'; button.textContent = '🙈'; } 
     else { input.type = 'password'; button.textContent = '👁️'; }
 }
 
@@ -304,7 +320,7 @@ document.getElementById('confirmPassword').addEventListener('input', function() 
 });
 
 // ============================================================
-// ЛОГИКА ШАГА 1: ПРОВЕРКА КОДА (ИСПРАВЛЕНО!)
+// ЛОГИКА ШАГА 1: ПРОВЕРКА КОДА
 // ============================================================
 document.getElementById('checkCodeBtn').addEventListener('click', async () => {
     const code = document.getElementById('inviteCode').value.trim().toUpperCase();
@@ -319,9 +335,7 @@ document.getElementById('checkCodeBtn').addEventListener('click', async () => {
     hideAlert('step1Alert');
 
     try {
-        // Ищем ПОЛЬЗОВАТЕЛЯ по invite_code в таблице users
-        // ВАЖНО: Мы запрашиваем конкретные поля, чтобы не触发 RLS ошибки на скрытых полях
-        const { data: user, error } = await supabaseClient
+        const { data: user, error } = await window.supabase
             .from('users')
             .select('id, employee_id, invite_code, invite_used, login')
             .eq('invite_code', code)
@@ -330,26 +344,23 @@ document.getElementById('checkCodeBtn').addEventListener('click', async () => {
 
         if (error) {
             console.error('Supabase Error:', error);
-            // Если ошибка 403 или 500, скорее всего проблема в RLS
             showAlert('step1Alert', 'danger', '❌ Ошибка сервера. Попробуйте позже.');
             return;
         }
 
         if (!user) {
-            showAlert('step1Alert', 'danger', ' Неверный или уже использованный код');
+            showAlert('step1Alert', 'danger', '❌ Неверный или уже использованный код');
             return;
         }
 
-        // Если у пользователя уже есть логин, значит он уже зарегистрирован
         if (user.login) {
             showAlert('step1Alert', 'danger', '❌ Этот код уже был использован');
             return;
         }
 
-        // Получаем ФИО сотрудника через employee_id
         let fullName = 'Сотрудник';
         if (user.employee_id) {
-            const { data: emp, error: empError } = await supabaseClient
+            const { data: emp, error: empError } = await window.supabase
                 .from('employees')
                 .select('full_name')
                 .eq('id', user.employee_id)
@@ -358,7 +369,6 @@ document.getElementById('checkCodeBtn').addEventListener('click', async () => {
             if (!empError && emp && emp.full_name) fullName = emp.full_name;
         }
 
-        // Сохраняем ID пользователя (из таблицы users), а не сотрудника
         verifiedUserId = user.id;
         userFullName = fullName;
         
@@ -387,7 +397,7 @@ document.getElementById('backToCodeBtn').onclick = () => {
 };
 
 // ============================================================
-// ЛОГИКА ШАГА 2: РЕГИСТРАЦИЯ (ИСПРАВЛЕНО!)
+// ЛОГИКА ШАГА 2: РЕГИСТРАЦИЯ
 // ============================================================
 document.getElementById('registerBtn').addEventListener('click', async () => {
     hideAlert('step2Alert');
@@ -406,20 +416,17 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
     const pass = document.getElementById('newPassword').value;
     const conf = document.getElementById('confirmPassword').value;
 
-    if (login.length < 3) { showAlert('step2Alert', 'danger', ' Логин должен содержать минимум 3 символа'); return; }
+    if (login.length < 3) { showAlert('step2Alert', 'danger', '❌ Логин должен содержать минимум 3 символа'); return; }
     if (pass.length < 6) { showAlert('step2Alert', 'danger', '❌ Пароль должен содержать минимум 6 символов'); return; }
-    if (pass !== conf) { showAlert('step2Alert', 'danger', ' Пароли не совпадают'); return; }
+    if (pass !== conf) { showAlert('step2Alert', 'danger', '❌ Пароли не совпадают'); return; }
 
     const btn = document.getElementById('registerBtn');
     btn.innerHTML = '<span class="loading-spinner"></span> Регистрация...';
     btn.disabled = true;
 
     try {
-        console.log('🔍 Проверка уникальности логина в Supabase...');
-        
-        // 1. ПРОВЕРКА ЛОГИНА В SUPABASE
-        // Мы ищем, есть ли уже такой login в таблице users
-        const { data: existingLogin, error: loginCheckError } = await supabaseClient
+        // Проверка уникальности логина
+        const { data: existingLogin, error: loginCheckError } = await window.supabase
             .from('users')
             .select('id')
             .eq('login', login)
@@ -439,21 +446,16 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
 
         console.log('✅ Логин свободен. Хеширование пароля...');
         
-        // 2. ХЕШИРОВАНИЕ ПАРОЛЯ
-        // Пароль НЕ отправляется в базу в открытом виде.
-        // Мы превращаем его в хеш прямо здесь, в браузере.
         const passwordHash = await window.bcrypt.hash(pass, 10);
         console.log('✅ Пароль захеширован');
 
         console.log('💾 Сохранение в базу данных...');
         
-        // 3. ОБНОВЛЕНИЕ ЗАПИСИ В USERS
-        // Мы обновляем запись, которую нашли по коду (verifiedUserId)
-        const { error: updateError } = await supabaseClient
+        const { error: updateError } = await window.supabase
             .from('users')
             .update({
                 login: login,
-                password_hash: passwordHash, // Сохраняем ТОЛЬКО хеш
+                password_hash: passwordHash,
                 invite_used: true,
                 invite_status: 'used'
             })
@@ -464,29 +466,28 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
             throw updateError;
         }
 
-        // Получаем роль пользователя для localStorage
-        const { data: updatedUser } = await supabaseClient
+        const { data: updatedUser } = await window.supabase
             .from('users')
             .select('role, employee_id')
             .eq('id', verifiedUserId)
             .single();
 
-        // Сохраняем данные пользователя в localStorage
         const userData = {
             id: verifiedUserId,
             login: login,
             name: userFullName,
+            full_name: userFullName,
             role: updatedUser?.role || 'viewer',
-            employee_id: updatedUser?.employee_id
+            employee_id: updatedUser?.employee_id,
+            session_version: 1
         };
         localStorage.setItem('currentUser', JSON.stringify(userData));
         console.log('✅ Данные сохранены в localStorage');
 
         showAlert('step2Alert', 'success', '✅ Регистрация успешно завершена!');
         
-        // Перенаправление на главную
         setTimeout(() => {
-            window.location.href = '/pages/dashboard.html';
+            window.location.href = '/dashboard.html';
         }, 1500);
 
     } catch (err) {
@@ -501,7 +502,7 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
 // ПРОВЕРКА: ЕСЛИ УЖЕ АВТОРИЗОВАН
 // ============================================================
 if (localStorage.getItem('currentUser')) {
-    window.location.href = '/pages/dashboard.html';
+    window.location.href = '/dashboard.html';
 }
 
 console.log('✅ Страница регистрации загружена');
