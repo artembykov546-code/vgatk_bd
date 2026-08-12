@@ -14,8 +14,10 @@
     <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
     <link rel="stylesheet" href="/css/components.css">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
     
     <style>
         /* ===== ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ГЛАВНОЙ ===== */
@@ -489,6 +491,7 @@
         <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
         <li><a href="/reports/index.html"><span class="icon">📊</span> Отчёты</a></li>
         <li class="nav-label" style="margin-top:12px;">Система</li>
+        <li><a href="/invites/index.html"><span class="icon">📨</span> Приглашения</a></li>
         <li><a href="/profile/index.html"><span class="icon">⚙️</span> Профиль</a></li>
     </ul>
 </aside>
@@ -558,6 +561,11 @@
                 <span class="icon">📊</span>
                 <div class="label">Отчёты</div>
                 <div class="desc">Генерация отчётов</div>
+            </a>
+            <a href="/invites/index.html" class="menu-card">
+                <span class="icon">📨</span>
+                <div class="label">Приглашения</div>
+                <div class="desc">Управление доступом</div>
             </a>
             <a href="/profile/index.html" class="menu-card">
                 <span class="icon">⚙️</span>
@@ -643,209 +651,56 @@
 </div>
 
 <!-- ============================================================
-   SCRIPT — ИСПОЛЬЗУЕМ ГОТОВЫЙ SUPABASE ИЗ components.js
+   SCRIPT — ИСПОЛЬЗУЕМ ГОТОВЫЙ SUPABASE
    ============================================================ -->
-<script src="/js/components.js"></script>
-
 <script>
 // ============================================================
-// НЕ СОЗДАЁМ НОВЫЙ supabase — ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ!
-// components.js уже создал window.supabaseClient
+// ПРОВЕРКА, ЧТО СЕССИЯ ЗАГРУЖЕНА
 // ============================================================
-
-// Проверяем, что supabaseClient доступен
-if (typeof window.supabaseClient === 'undefined') {
-    console.warn('⚠️ components.js не загружен, создаём supabaseClient локально');
-    window.supabaseClient = window.supabase.createClient(
-        'https://selbolepupendprhixas.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
-    );
-}
-
-console.log('✅ Supabase готов к использованию');
-
-// ============================================================
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-// ============================================================
-
-let currentUser = null;
-let refreshInterval = null;
-let sessionCheckInterval = null;
-let isCheckingSession = false;
-let isSessionEnded = false;
-const SESSION_CHECK_INTERVAL = 5000; // 5 секунд (быстрая проверка)
-
-// ============================================================
-// ID УСТРОЙСТВА
-// ============================================================
-function getDeviceSessionId() {
-    let sessionId = localStorage.getItem('deviceSessionId');
-    if (!sessionId) {
-        const ua = navigator.userAgent || '';
-        const screen = window.screen.width + 'x' + window.screen.height;
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 8);
-        const base = btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-        sessionId = 'device_' + base + '_' + timestamp + '_' + random;
-        localStorage.setItem('deviceSessionId', sessionId);
-    }
-    return sessionId;
-}
-const deviceSessionId = getDeviceSessionId();
-
-// ============================================================
-// ПОКАЗ МОДАЛЬНОГО ОКНА ЗАВЕРШЕНИЯ СЕССИИ
-// ============================================================
-function showSessionEndedModal() {
-    if (isSessionEnded) return;
-    isSessionEnded = true;
-    
-    // Очищаем localStorage
-    localStorage.removeItem('currentUser');
-    
-    // Показываем модальное окно
-    const modal = document.getElementById('sessionModal');
-    if (modal) {
-        modal.classList.add('active');
-    } else {
-        // Если модальное окно не найдено, просто редиректим
-        window.location.href = '/index.html';
-    }
-    
-    // Останавливаем все интервалы
-    stopAutoRefresh();
-}
-
-// ============================================================
-// ФУНКЦИЯ ПРОВЕРКИ СЕССИИ (МГНОВЕННЫЙ ВЫХОД)
-// ============================================================
-async function checkSession() {
-    // Если сессия уже завершена - не проверяем
-    if (isSessionEnded) return false;
-    
-    // Предотвращаем одновременные проверки
-    if (isCheckingSession) return true;
-    isCheckingSession = true;
-
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) {
-        isCheckingSession = false;
-        showSessionEndedModal();
-        return false;
-    }
-
-    try {
-        const user = JSON.parse(savedUser);
-        
-        // Проверяем версию сессии в БД
-        const { data, error } = await window.supabaseClient
-            .from('users')
-            .select('id, session_version, active_session_id')
-            .eq('id', user.id)
-            .single();
-
-        if (error || !data) {
-            console.warn('⚠️ Ошибка проверки сессии:', error?.message || 'Нет данных');
-            isCheckingSession = false;
-            return true;
-        }
-
-        // 1. Проверяем активную сессию
-        if (data.active_session_id && data.active_session_id !== deviceSessionId) {
-            console.log('🔒 Сессия активна на другом устройстве! Завершение...');
-            isCheckingSession = false;
-            showSessionEndedModal();
-            return false;
-        }
-
-        // 2. Проверяем версию сессии (сброс пароля/логина)
-        if (user.session_version !== undefined && data.session_version !== undefined) {
-            if (data.session_version !== user.session_version) {
-                console.log('🔒 Сессия устарела (смена пароля)! Завершение...');
-                isCheckingSession = false;
-                showSessionEndedModal();
-                return false;
-            }
-        }
-
-        isCheckingSession = false;
-        return true;
-    } catch (e) {
-        console.warn('⚠️ Ошибка при проверке сессии:', e.message);
-        isCheckingSession = false;
-        return true;
-    }
-}
-
-// ============================================================
-// ТОСТ УВЕДОМЛЕНИЯ
-// ============================================================
-function showToast(message, type = 'success', duration = 4000) {
-    const container = document.querySelector('.toast-container') || (() => {
-        const c = document.createElement('div');
-        c.className = 'toast-container';
-        document.body.appendChild(c);
-        return c;
-    })();
-    
-    const toast = document.createElement('div');
-    toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = `
-        <span>${message}</span>
-        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
-        <div class="toast-progress"></div>
-    `;
-    
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(20px)';
-            setTimeout(() => toast.remove(), 300);
-        }
-    }, duration);
+if (typeof window.Session === 'undefined') {
+    console.error('❌ Модуль сессии не загружен!');
 }
 
 // ============================================================
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
 function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) {
+    const user = window.Session.getUser();
+    if (!user) {
         window.location.href = '/index.html';
         return false;
     }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.full_name || currentUser.login;
-        const roleMap = {
-            'super_admin': 'Супер-Админ',
-            'admin': 'Администратор',
-            'teacher': 'Преподаватель',
-            'viewer': 'Наблюдатель'
-        };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-        return true;
-    } catch (e) {
-        console.error('Ошибка загрузки пользователя:', e);
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
-        return false;
-    }
+    
+    document.getElementById('userNameDisplay').textContent = user.name || user.full_name || user.login;
+    const roleMap = {
+        'super_admin': 'Супер-Админ',
+        'admin': 'Администратор',
+        'teacher': 'Преподаватель',
+        'viewer': 'Наблюдатель'
+    };
+    document.getElementById('userRoleDisplay').textContent = roleMap[user.role] || user.role;
+    return true;
 }
 
+// ============================================================
+// ВЫХОД
+// ============================================================
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    window.Session.logout();
 };
 
 // ============================================================
 // ЗАГРУЗКА СТАТИСТИКИ
 // ============================================================
 async function loadStats() {
+    const sb = window.Session.supabase();
+    if (!sb) {
+        console.error('❌ Supabase клиент не доступен');
+        return;
+    }
+    
     try {
-        const { count: employeesCount, error: empErr } = await window.supabaseClient
+        const { count: employeesCount, error: empErr } = await sb
             .from('employees')
             .select('*', { count: 'exact', head: true })
             .eq('is_hidden', false)
@@ -853,7 +708,7 @@ async function loadStats() {
         
         if (empErr && empErr.code !== 'PGRST116') throw empErr;
 
-        const { data: groups, error: grpErr } = await window.supabaseClient
+        const { data: groups, error: grpErr } = await sb
             .from('groups')
             .select('id')
             .eq('is_archived', false);
@@ -864,7 +719,7 @@ async function loadStats() {
         let totalStudents = 0;
         if (groupsCount > 0) {
             const groupIds = groups.map(g => g.id);
-            const { count: studCount, error: studErr } = await window.supabaseClient
+            const { count: studCount, error: studErr } = await sb
                 .from('students')
                 .select('*', { count: 'exact', head: true })
                 .in('group_id', groupIds)
@@ -874,7 +729,7 @@ async function loadStats() {
             totalStudents = studCount || 0;
         }
 
-        const { count: gradCount, error: gradErr } = await window.supabaseClient
+        const { count: gradCount, error: gradErr } = await sb
             .from('graduates')
             .select('*', { count: 'exact', head: true });
             
@@ -887,29 +742,6 @@ async function loadStats() {
 
     } catch (error) {
         console.error('❌ Ошибка загрузки статистики:', error);
-    }
-}
-
-// ============================================================
-// АВТООБНОВЛЕНИЕ
-// ============================================================
-function startAutoRefresh() {
-    if (refreshInterval) clearInterval(refreshInterval);
-    refreshInterval = setInterval(loadStats, 30000);
-    
-    // Проверка сессии каждые 5 секунд (мгновенная реакция)
-    if (sessionCheckInterval) clearInterval(sessionCheckInterval);
-    sessionCheckInterval = setInterval(checkSession, SESSION_CHECK_INTERVAL);
-}
-
-function stopAutoRefresh() {
-    if (refreshInterval) {
-        clearInterval(refreshInterval);
-        refreshInterval = null;
-    }
-    if (sessionCheckInterval) {
-        clearInterval(sessionCheckInterval);
-        sessionCheckInterval = null;
     }
 }
 
@@ -940,17 +772,18 @@ if (menuToggle && sidebar) {
 // ============================================================
 async function initDashboard() {
     console.log('🚀 Инициализация дашборда...');
-    console.log('🆔 ID устройства:', deviceSessionId);
+    console.log('🆔 ID устройства:', window.Session.getDeviceId());
     
-    // Проверяем сессию при загрузке
-    const isSessionValid = await checkSession();
+    // Проверяем сессию
+    const isSessionValid = await window.Session.check();
     if (!isSessionValid) return;
     
+    // Загружаем пользователя
     const isUserLoaded = loadUser();
     if (!isUserLoaded) return;
     
+    // Загружаем статистику
     await loadStats();
-    startAutoRefresh();
     
     console.log('✅ Дашборд успешно загружен');
 }
@@ -961,25 +794,7 @@ if (document.readyState === 'loading') {
 } else {
     initDashboard();
 }
-
-window.addEventListener('beforeunload', stopAutoRefresh);
-
-// ============================================================
-// ВОССТАНОВЛЕНИЕ ПОСЛЕ ПОТЕРИ ФОКУСА (мобильные устройства)
-// ============================================================
-document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible' && !isSessionEnded) {
-        // При возврате на страницу проверяем сессию
-        checkSession();
-    }
-});
-
-// Перехватываем ошибки сети
-window.addEventListener('online', function() {
-    if (!isSessionEnded) {
-        checkSession();
-    }
-});
 </script>
+
 </body>
 </html>
