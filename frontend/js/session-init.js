@@ -1,6 +1,5 @@
 // ============================================================
-// ИНИЦИАЛИЗАЦИЯ СЕССИИ ДЛЯ СТРАНИЦ С АВТОРИЗАЦИЕЙ
-// Подключается после session.js
+// ИНИЦИАЛИЗАЦИЯ СЕССИИ ДЛЯ СТРАНИЦ
 // ============================================================
 
 (function() {
@@ -9,10 +8,7 @@
     async function init() {
         try {
             const success = await window.Session.init();
-            if (!success) {
-                // Сессия невалидна, редирект уже выполнен
-                return;
-            }
+            if (!success) return;
             
             const user = window.Session.getUser();
             if (!user) {
@@ -20,7 +16,7 @@
                 return;
             }
             
-            // Обновляем UI с данными пользователя
+            // Обновляем UI
             const nameDisplay = document.getElementById('userNameDisplay');
             const roleDisplay = document.getElementById('userRoleDisplay');
             
@@ -46,7 +42,6 @@
         }
     }
 
-    // Запускаем после загрузки DOM
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

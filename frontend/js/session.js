@@ -17,7 +17,6 @@
     // ПЕРЕМЕННЫЕ
     // ============================================================
     let currentUser = null;
-    let refreshInterval = null;
     let sessionCheckInterval = null;
     let isCheckingSession = false;
     let isSessionEnded = false;
@@ -28,14 +27,12 @@
     // ИНИЦИАЛИЗАЦИЯ SUPABASE
     // ============================================================
     function initSupabase() {
-        // Проверяем, есть ли уже клиент
         if (typeof window.supabaseClient !== 'undefined') {
             supabaseClient = window.supabaseClient;
             console.log('✅ Используем существующий Supabase клиент');
             return;
         }
 
-        // Проверяем, что supabase загружен
         if (typeof window.supabase === 'undefined') {
             console.error('❌ Supabase не загружен!');
             return;
@@ -73,30 +70,27 @@
     // ============================================================
     // ПОКАЗ МОДАЛЬНОГО ОКНА ЗАВЕРШЕНИЯ СЕССИИ
     // ============================================================
-    function showSessionEndedModal(reason = 'Ваша сессия была завершена.') {
+    function showSessionEndedModal(reason) {
         if (isSessionEnded) return;
         isSessionEnded = true;
         
         localStorage.removeItem('currentUser');
         stopAutoRefresh();
 
-        // Удаляем существующее модальное окно
         const existingModal = document.getElementById('sessionModal');
         if (existingModal) existingModal.remove();
 
-        // Создаём модальное окно
         const modalHTML = `
             <div class="session-modal-overlay" id="sessionModal" style="display:flex;">
                 <div class="session-modal">
                     <span class="modal-icon">🔒</span>
                     <h2 class="modal-title">Сессия завершена</h2>
-                    <p class="modal-desc">${reason}</p>
+                    <p class="modal-desc">${reason || 'Ваша сессия была завершена.'}</p>
                     <button class="btn-login" onclick="window.location.href='/index.html'">🔑 Войти заново</button>
                 </div>
             </div>
         `;
 
-        // Добавляем стили, если их нет
         if (!document.getElementById('sessionModalStyles')) {
             const styles = document.createElement('style');
             styles.id = 'sessionModalStyles';
@@ -192,7 +186,6 @@
             document.head.appendChild(styles);
         }
 
-        // Вставляем модальное окно
         document.body.insertAdjacentHTML('beforeend', modalHTML);
     }
 
@@ -257,7 +250,7 @@
                 }
             }
 
-            // Обновляем данные пользователя в localStorage
+            // Обновляем данные пользователя
             if (user.session_version !== data.session_version) {
                 user.session_version = data.session_version;
                 localStorage.setItem('currentUser', JSON.stringify(user));
@@ -278,9 +271,7 @@
     // ============================================================
     function loadUser() {
         const savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) {
-            return null;
-        }
+        if (!savedUser) return null;
         try {
             currentUser = JSON.parse(savedUser);
             return currentUser;
@@ -292,7 +283,7 @@
     }
 
     // ============================================================
-    // ВЫХОД ИЗ СИСТЕМЫ
+    // ВЫХОД
     // ============================================================
     function logout() {
         localStorage.removeItem('currentUser');
@@ -320,29 +311,21 @@
     // ============================================================
     async function initSession() {
         console.log('🔐 Инициализация сессии...');
-        
-        // Инициализируем Supabase
         initSupabase();
-        
-        // Получаем ID устройства
         getDeviceSessionId();
         console.log('🆔 ID устройства:', deviceSessionId);
         
-        // Проверяем сессию
         const isValid = await checkSession();
         if (!isValid) return false;
         
-        // Загружаем пользователя
         const user = loadUser();
         if (!user) {
             window.location.href = '/index.html';
             return false;
         }
         
-        // Запускаем автоматическую проверку
         startAutoRefresh();
-        
-        console.log('✅ Сессия успешно инициализирована, пользователь:', user.name || user.login);
+        console.log('✅ Сессия инициализирована, пользователь:', user.name || user.login);
         return true;
     }
 
@@ -364,7 +347,7 @@
     window.addEventListener('beforeunload', stopAutoRefresh);
 
     // ============================================================
-    // ЭКСПОРТ ГЛОБАЛЬНЫХ ФУНКЦИЙ
+    // ЭКСПОРТ
     // ============================================================
     window.Session = {
         init: initSession,
@@ -373,7 +356,8 @@
         getUser: () => currentUser || loadUser(),
         isSessionEnded: () => isSessionEnded,
         getDeviceId: () => deviceSessionId,
-        showModal: showSessionEndedModal
+        showModal: showSessionEndedModal,
+        supabase: () => supabaseClient
     };
 
     console.log('✅ Модуль сессии загружен');
