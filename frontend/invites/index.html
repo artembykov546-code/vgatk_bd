@@ -6,12 +6,13 @@
     <title>Пригласительные коды | vgatk_bd</title>
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
     
+    <!-- ===== СКРИПТЫ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
-
+    
     <!-- ===== СКРИПТЫ СЕССИИ ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/session.js"></script>
     <script src="/js/session-init.js"></script>
     
@@ -161,8 +162,6 @@
             box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
         }
 
-        .hidden { display: none !important; }
-
         @media (max-width: 768px) {
             .header { padding: 8px 12px; }
             .header-user-info { display: none; }
@@ -237,9 +236,13 @@ if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
     console.log('✅ bcryptjs успешно загружен');
 }
 
-const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// ============================================================
+// ПОЛУЧАЕМ КЛИЕНТ ИЗ СЕССИИ
+// ============================================================
+const supabaseClient = window.Session.supabase();
+if (!supabaseClient) {
+    console.error('❌ Supabase клиент не доступен');
+}
 
 let currentUser = null;
 let invites = [];
@@ -248,73 +251,32 @@ let canManage = false;
 let isAccessDenied = false;
 
 // ============================================================
-// ID УСТРОЙСТВА
-// ============================================================
-function getDeviceSessionId() {
-    let sessionId = localStorage.getItem('deviceSessionId');
-    if (!sessionId) {
-        const ua = navigator.userAgent || '';
-        const screen = window.screen.width + 'x' + window.screen.height;
-        const timestamp = Date.now();
-        const random = Math.random().toString(36).substring(2, 8);
-        const base = btoa(ua.substring(0, 50) + screen).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-        sessionId = 'device_' + base + '_' + timestamp + '_' + random;
-        localStorage.setItem('deviceSessionId', sessionId);
-    }
-    return sessionId;
-}
-var deviceSessionId = getDeviceSessionId();
-
-// ============================================================
-// ЗАВЕРШЕНИЕ СЕССИИ
-// ============================================================
-async function invalidateUserSession(userId) {
-    try {
-        var result = await supabaseClient
-            .from('users')
-            .update({ active_session_id: null })
-            .eq('id', userId);
-        if (result.error) throw result.error;
-        return true;
-    } catch (error) {
-        console.error('❌ Ошибка завершения сессии:', error);
-        return false;
-    }
-}
-
-// ============================================================
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
 function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { 
+    const user = window.Session.getUser();
+    if (!user) { 
         window.location.href = '/index.html'; 
         return; 
     }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-        
-        canManage = ['super_admin', 'admin'].includes(currentUser.role);
-        
-        if (!canManage) {
-            isAccessDenied = true;
-            showAccessDenied();
-            return;
-        }
-        
-        // Если права есть — загружаем содержимое
-        isAccessDenied = false;
-        renderMainContent();
-        loadInvites();
-        
-    } catch(e) {
-        console.error('Ошибка загрузки пользователя:', e);
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+    
+    currentUser = user;
+    document.getElementById('userNameDisplay').textContent = user.full_name || user.name || user.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[user.role] || user.role;
+    
+    canManage = ['super_admin', 'admin'].includes(user.role);
+    
+    if (!canManage) {
+        isAccessDenied = true;
+        showAccessDenied();
+        return;
     }
+    
+    // Если права есть — загружаем содержимое
+    isAccessDenied = false;
+    renderMainContent();
+    loadInvites();
 }
 
 // ============================================================
@@ -345,7 +307,6 @@ function renderMainContent() {
         </div>
     `;
 
-    // Назначаем обработчики для фильтров
     document.querySelectorAll('.filters .btn').forEach(function(btn) {
         btn.onclick = function() {
             document.querySelectorAll('.filters .btn').forEach(function(b) { b.classList.remove('active'); });
@@ -355,7 +316,6 @@ function renderMainContent() {
         };
     });
 
-    // Назначаем обработчик для кнопки создания кода
     document.getElementById('generateInviteBtn').onclick = generateInvite;
 }
 
@@ -380,8 +340,7 @@ function showAccessDenied() {
 // ВЫХОД
 // ============================================================
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    window.Session.logout();
 };
 
 // ============================================================
@@ -394,6 +353,11 @@ if (window.innerWidth <= 768) document.getElementById('menuToggle').style.displa
 // ЗАГРУЗКА ПРИГЛАШЕНИЙ
 // ============================================================
 async function loadInvites() {
+    if (!supabaseClient) {
+        console.error('❌ Supabase клиент не доступен');
+        return;
+    }
+    
     try {
         var result = await supabaseClient
             .from('users')
@@ -578,7 +542,7 @@ async function revokeInvite(userId) {
 }
 
 // ============================================================
-// СБРОС ДОСТУПА ДЛЯ ЗАРЕГИСТРИРОВАННОГО ПОЛЬЗОВАТЕЛЯ
+// СБРОС ДОСТУПА
 // ============================================================
 async function resetUserCredentials(userId, fullName) {
     if (!confirm('Сбросить доступ для ' + fullName + '?\n\nЭто действие:\n• Сгенерирует НОВЫЙ пригласительный код\n• Удалит текущий логин и пароль\n• Завершит все активные сессии\n• Потребует повторной регистрации')) return;
@@ -596,7 +560,8 @@ async function resetUserCredentials(userId, fullName) {
                 invite_code: newInviteCode,
                 invite_used: false,
                 invite_status: 'pending',
-                active_session_id: null
+                active_session_id: null,
+                session_version: (currentUser?.session_version || 0) + 1
             })
             .eq('id', userId);
         
@@ -694,40 +659,15 @@ function showToast(message, type) {
 }
 
 // ============================================================
-// ПРОВЕРКА СЕССИИ
-// ============================================================
-async function checkSessionOnLoad() {
-    // Если доступ запрещён — не проверяем сессию, чтобы не выкидывать пользователя
-    if (isAccessDenied) {
-        console.log('🔒 Доступ запрещён, проверка сессии пропущена');
-        return;
-    }
-    
-    var savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) return;
-    try {
-        var user = JSON.parse(savedUser);
-        var result = await supabaseClient
-            .from('users')
-            .select('active_session_id')
-            .eq('id', user.id)
-            .single();
-        if (result.error) return;
-        if (result.data.active_session_id && result.data.active_session_id !== deviceSessionId) {
-            localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
-        }
-    } catch(error) {
-        console.error('Ошибка проверки сессии:', error);
-    }
-}
-
-// ============================================================
 // ЗАПУСК
 // ============================================================
-console.log('🆔 ID устройства:', deviceSessionId);
-loadUser();
-setTimeout(checkSessionOnLoad, 500);
+console.log('🆔 ID устройства:', window.Session.getDeviceId());
+
+// Ждём инициализацию сессии
+setTimeout(function() {
+    loadUser();
+}, 100);
 </script>
+
 </body>
 </html>
