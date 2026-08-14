@@ -81,7 +81,8 @@
         .invite-card { background: var(--bg-card); border-radius: var(--border-radius-lg); padding: 14px 16px; border: 1px solid var(--border); box-shadow: var(--shadow); transition: var(--transition); }
         .invite-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); }
         .invite-card .name { font-size: 15px; font-weight: 700; color: var(--primary); }
-        .invite-card .position { color: var(--text-muted); font-size: 12px; margin-top: 1px; }
+        .invite-card .position { color: var(--text-secondary); font-size: 13px; margin-top: 2px; font-weight: 500; }
+        .invite-card .category { color: var(--text-muted); font-size: 12px; margin-top: 1px; }
         .invite-card .code { background: #FEF3C7; padding: 6px 12px; border-radius: var(--border-radius); font-family: monospace; font-size: 15px; font-weight: 700; color: var(--warning-dark); margin: 8px 0; border: 2px dashed var(--warning); text-align: center; letter-spacing: 1px; }
         .invite-card .status { display: inline-block; padding: 1px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
         .invite-card .status.pending { background: #FEF3C7; color: #92400E; }
@@ -208,7 +209,7 @@
 <aside class="sidebar" id="sidebar">
     <ul class="sidebar-nav">
         <li class="nav-label">Главное</li>
-        <li><a href="/dashboard.html"><span class="icon">🏠</span> Главная</a></li>
+        <li><a href="/dashboard.html"><span class="icon"></span> Главная</a></li>
         <li><a href="/employees/index.html"><span class="icon">👨‍🏫</span> Сотрудники</a></li>
         <li><a href="/students/index.html"><span class="icon">👨‍🎓</span> Учащиеся</a></li>
         <li><a href="/graduates/index.html"><span class="icon">🎓</span> Выпускники</a></li>
@@ -272,6 +273,16 @@ let canManage = false;
 let isAccessDenied = false;
 
 // ============================================================
+// КАТЕГОРИИ ДЛЯ ОТОБРАЖЕНИЯ
+// ============================================================
+const categoryLabels = {
+    'teachers': 'Преподаватель',
+    'masters': 'Мастер ПО',
+    'administration': 'Администрация',
+    'other': 'Другие'
+};
+
+// ============================================================
 // ПОЛЬЗОВАТЕЛЬ
 // ============================================================
 function loadUser() {
@@ -330,7 +341,6 @@ function renderMainContent() {
             </div>
             <div>
                 <button class="btn btn-secondary print-btn" onclick="window.print()">🖨️ Распечатать</button>
-                <button class="btn btn-success" id="generateInviteBtn">➕ Создать код</button>
             </div>
         </div>
 
@@ -342,7 +352,7 @@ function renderMainContent() {
         </div>
 
         <div id="inviteContainer">
-            <div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div>
+            <div class="empty-state"><span class="icon"></span><p>Загрузка...</p></div>
         </div>
     `;
 
@@ -354,8 +364,6 @@ function renderMainContent() {
             renderInvites();
         };
     });
-
-    document.getElementById('generateInviteBtn').onclick = generateInvite;
 }
 
 // ============================================================
@@ -447,6 +455,11 @@ async function loadInvites() {
             };
         });
 
+        // СОРТИРОВКА ПО АЛФАВИТУ (ФИО)
+        invites.sort(function(a, b) {
+            return (a.full_name || '').localeCompare(b.full_name || '', 'ru');
+        });
+
         renderInvites();
     } catch(error) {
         console.error('Ошибка загрузки:', error);
@@ -493,12 +506,6 @@ function renderInvites() {
         'master': 'badge-master',
         'viewer': 'badge-viewer'
     };
-    var categoryLabels = {
-        'teachers': 'Преподаватель',
-        'masters': 'Мастер ПО',
-        'administration': 'Администрация',
-        'other': 'Другие'
-    };
 
     var html = '<div class="invite-grid">';
     filtered.forEach(function(invite) {
@@ -510,7 +517,7 @@ function renderInvites() {
         
         if (isRegistered) {
             statusClass = 'registered';
-            statusLabel = '🔐 Зарегистрирован';
+            statusLabel = ' Зарегистрирован';
         } else if (isUsed) {
             statusClass = 'used';
             statusLabel = '✅ Использован';
@@ -520,6 +527,10 @@ function renderInvites() {
 
         var codeHtml = '';
         var actionsHtml = '';
+        
+        // Отображаем категорию
+        var categoryDisplay = categoryLabels[invite.category] || invite.category || 'Другие';
+        var positionDisplay = invite.position || '—';
         
         if (isRegistered) {
             codeHtml = '<div style="background:#D1FAE5;padding:6px 12px;border-radius:var(--border-radius);text-align:center;margin:8px 0;border:2px solid var(--success);"><span style="color:var(--success-dark);font-weight:600;">✅ Пользователь уже зарегистрирован</span></div>';
@@ -534,7 +545,6 @@ function renderInvites() {
             if (!isUsed) {
                 actionsHtml = `
                     <button class="btn btn-info btn-xs" onclick="copyCode('${invite.invite_code}')">📋 Копировать</button>
-                    <button class="btn btn-danger btn-xs" onclick="revokeInvite('${invite.id}')">🚫 Отозвать</button>
                 `;
             } else {
                 actionsHtml = `
@@ -547,14 +557,15 @@ function renderInvites() {
         html += '' +
             '<div class="invite-card">' +
             '<div class="name">' + invite.full_name + '</div>' +
-            '<div class="position">' + invite.position + ' · ' + (categoryLabels[invite.category] || invite.category) + '</div>' +
+            '<div class="position">' + positionDisplay + '</div>' +
+            '<div class="category">' + categoryDisplay + '</div>' +
             '<div style="margin:3px 0;">' +
             '<span class="badge-role ' + (roleBadgeClasses[invite.role] || 'badge-viewer') + '">' + (roleLabels[invite.role] || invite.role) + '</span>' +
             '<span class="status ' + statusClass + '">' + statusLabel + '</span>' +
             '</div>' +
             codeHtml +
             '<div style="font-size:11px;color:var(--text-muted);">' +
-            '🔗 <a href="' + registrationUrl + '" target="_blank" class="registration-link">' + registrationUrl + '</a>' +
+            ' <a href="' + registrationUrl + '" target="_blank" class="registration-link">' + registrationUrl + '</a>' +
             '</div>' +
             '<div class="actions">' + actionsHtml + '</div>' +
             '</div>';
@@ -575,24 +586,6 @@ function copyCode(code) {
         });
     } else {
         showToast('❌ Копирование не поддерживается', 'error');
-    }
-}
-
-// ============================================================
-// ОТЗЫВ КОДА
-// ============================================================
-async function revokeInvite(userId) {
-    if (!confirm('Отозвать пригласительный код? Пользователь не сможет зарегистрироваться.')) return;
-    try {
-        var result = await sb
-            .from('users')
-            .update({ invite_status: 'expired' })
-            .eq('id', userId);
-        if (result.error) throw result.error;
-        showToast('✅ Код отозван', 'success');
-        loadInvites();
-    } catch(error) {
-        showToast('❌ Ошибка: ' + error.message, 'error');
     }
 }
 
@@ -627,75 +620,7 @@ async function resetUserCredentials(userId, fullName) {
         
     } catch(error) {
         console.error('Ошибка сброса:', error);
-        showToast('❌ Ошибка: ' + error.message, 'error');
-    }
-}
-
-// ============================================================
-// СОЗДАНИЕ НОВОГО КОДА
-// ============================================================
-async function generateInvite() {
-    var btn = document.getElementById('generateInviteBtn');
-    if (!btn) return;
-    
-    btn.innerHTML = '⏳ ...';
-    btn.disabled = true;
-
-    try {
-        var empResult = await sb
-            .from('employees')
-            .select('id, full_name, position, category')
-            .eq('is_hidden', false)
-            .order('full_name');
-
-        if (empResult.error) throw empResult.error;
-
-        var usersResult = await sb
-            .from('users')
-            .select('employee_id, invite_code')
-            .not('invite_code', 'is', null);
-
-        var existingIds = new Set();
-        (usersResult.data || []).forEach(function(u) {
-            existingIds.add(u.employee_id);
-        });
-
-        var available = empResult.data.filter(function(e) {
-            return !existingIds.has(e.id);
-        });
-
-        if (!available.length) {
-            showToast('ℹ️ Нет сотрудников без приглашений', 'warning');
-            btn.innerHTML = '➕ Создать код';
-            btn.disabled = false;
-            return;
-        }
-
-        var emp = available[0];
-        var part1 = Math.floor(1000 + Math.random() * 9000).toString();
-        var part2 = Math.floor(1000 + Math.random() * 9000).toString();
-        var code = part1 + '-' + part2;
-
-        var insertResult = await sb
-            .from('users')
-            .insert([{
-                employee_id: emp.id,
-                invite_code: code,
-                invite_used: false,
-                invite_status: 'pending',
-                role: 'viewer'
-            }]);
-
-        if (insertResult.error) throw insertResult.error;
-
-        showToast('✅ Код создан для ' + emp.full_name + ': ' + code, 'success');
-        loadInvites();
-
-    } catch(error) {
-        showToast('❌ Ошибка: ' + error.message, 'error');
-    } finally {
-        btn.innerHTML = '➕ Создать код';
-        btn.disabled = false;
+        showToast(' Ошибка: ' + error.message, 'error');
     }
 }
 
