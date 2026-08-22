@@ -9,7 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/components.css">
     
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -18,6 +22,29 @@
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
         .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
         .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+
+        /* ===== ДОСТУП ЗАПРЕЩЁН ===== */
+        .access-denied {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .access-denied .icon {
+            font-size: 80px;
+            display: block;
+            margin-bottom: 20px;
+        }
+        .access-denied h2 {
+            font-size: 28px;
+            color: var(--danger);
+            margin-bottom: 12px;
+        }
+        .access-denied p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        .access-denied .btn {
+            margin-top: 20px;
+        }
 
         .report-selector {
             display: grid;
@@ -39,6 +66,9 @@
         .report-card:hover { border-color: var(--primary-light); transform: translateY(-2px); }
         .report-card.active { border-color: var(--primary); background: var(--primary); color: white; }
         .report-card .icon { font-size: 14px; display: block; margin-bottom: 2px; }
+        .report-card.dorm-report { border-color: #8B5CF6; }
+        .report-card.dorm-report.active { background: #8B5CF6; border-color: #8B5CF6; }
+        .report-card.dorm-report:hover { border-color: #7C3AED; }
 
         .filters-panel {
             background: var(--bg-card);
@@ -348,7 +378,7 @@
     </ul>
 </aside>
 
-<main class="main-content">
+<main class="main-content" id="mainContent">
     <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
 
     <div class="page-container">
@@ -359,25 +389,7 @@
             </div>
         </div>
 
-        <div class="report-selector" id="reportSelector">
-            <div class="report-card active" data-report="students"><span class="icon">👨‍🎓</span>Студенты</div>
-            <div class="report-card" data-report="groups"><span class="icon">📚</span>Группы</div>
-            <div class="report-card" data-report="graduates"><span class="icon">🎓</span>Выпускники</div>
-            <div class="report-card" data-report="expelled"><span class="icon">❌</span>Отчисленные</div>
-            <div class="report-card" data-report="academic"><span class="icon">📚</span>Академ. отпуск</div>
-            <div class="report-card" data-report="citizenship"><span class="icon">🌍</span>По гражданству</div>
-            <div class="report-card" data-report="address"><span class="icon">📍</span>По адресам</div>
-            <div class="report-card" data-report="accounting"><span class="icon">📋</span>По учёту</div>
-            <div class="report-card" data-report="age"><span class="icon">📅</span>По возрасту</div>
-            <div class="report-card" data-report="gender"><span class="icon">🧑‍🤝‍🧑</span>По полу</div>
-            <div class="report-card" data-report="by_groups"><span class="icon">📁</span>По группам</div>
-            <div class="report-card" data-report="statistics"><span class="icon">📊</span>Статистика</div>
-            <div class="report-card" data-report="underage"><span class="icon">🧒</span>Несовершеннолетние</div>
-            <div class="report-card" data-report="employment"><span class="icon">💼</span>Трудоустройство</div>
-            <div class="report-card" data-report="target_training"><span class="icon">🎯</span>Целевая подготовка</div>
-            <div class="report-card" data-report="avg_grade_school"><span class="icon">🏫</span>Ср.балл со школы</div>
-            <div class="report-card" data-report="avg_grade_college"><span class="icon">📊</span>Ср.балл в колледже</div>
-        </div>
+        <div class="report-selector" id="reportSelector"></div>
 
         <div class="filters-panel" id="filtersPanel"></div>
 
@@ -441,69 +453,153 @@
     </div>
 </div>
 
-<script src="/js/components.js"></script>
-
 <script>
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = window.supabase.createClient(
-        'https://selbolepupendprhixas.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
-    );
+// ============================================================
+// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient ИЗ СЕССИИ
+// ============================================================
+
+// Получаем клиент из сессии
+const sb = window.Session ? window.Session.supabase() : null;
+
+if (!sb) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = sb;
 }
+
 console.log('✅ Supabase готов к использованию');
 
-const sb = window.supabaseClient;
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
 
 let currentUser = null;
+let currentEmployee = null;
+let dormRole = null;
+let isDormEmployee = false;
+let isEducator = false;
+let isHead = false;
+let isGuard = false;
 let currentReport = 'students';
 let reportData = [];
 let reportColumns = [];
 let chartInstance = null;
 let allGroups = [];
 let allGraduationYears = [];
+let availableReports = [];
 
 const COLLEGE_NAME = 'Учреждение образования "Витебский государственный аграрно-технический колледж"';
 const REGIONS = ['Брестская','Витебская','Гомельская','Гродненская','Минская','Могилёвская'];
 const SETTLEMENT_TYPES = ['г.', 'гп', 'аг.', 'д.', 'пгт'];
 
-const REPORTS = {
-    students: { label: 'Список студентов', icon: '👨‍🎓', columns: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон','Гражданство','Пол','Статус'], filters: ['status','group','type','citizenship','gender'] },
-    groups: { label: 'Группы', icon: '📚', columns: ['№ п/п','Название','Тип','Дата начала','Дата окончания','Студентов','Куратор'], filters: ['type'] },
-    graduates: { label: 'Выпускники', icon: '🎓', columns: ['№ п/п','ФИО','Группа','Тип','Год выпуска','Телефон'], filters: ['type','graduation_year'] },
-    expelled: { label: 'Отчисленные', icon: '❌', columns: ['№ п/п','ФИО','Группа','Дата отчисления','Приказ','Статья','Телефон'], filters: ['group','type'] },
-    academic: { label: 'Академ. отпуск', icon: '📚', columns: ['№ п/п','ФИО','Группа','Дата начала','Приказ','Причина','Телефон'], filters: ['group','type'] },
-    citizenship: { label: 'По гражданству', icon: '🌍', columns: ['№ п/п','ФИО','Группа','Гражданство','Телефон'], filters: ['status','group','type','citizenship'] },
-    address: { label: 'По адресам', icon: '📍', columns: ['№ п/п','ФИО','Группа','Тип адреса','Область','Район','Нас. пункт','Тип нас. пункта','Адрес'], filters: ['status','group','type','region','district','settlement_type','city','address_type'] },
-    accounting: { label: 'По учёту', icon: '📋', columns: ['№ п/п','ФИО','Группа','Вид учёта','Дата постановки','Дата снятия','Статус учёта'], filters: ['status','group','type','accounting_type'] },
-    age: { label: 'По возрасту', icon: '📅', columns: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон'], filters: ['status','group','type'] },
-    gender: { label: 'По полу', icon: '🧑‍🤝‍🧑', columns: ['№ п/п','ФИО','Группа','Пол'], filters: ['status','group','type','gender'] },
-    by_groups: { label: 'По группам', icon: '📁', columns: ['№ п/п','Группа','Студент','Статус'], filters: ['type','group'] },
-    statistics: { label: 'Статистика', icon: '📊', columns: ['№ п/п','Показатель','Значение','Примечание'], filters: [] },
-    underage: { label: 'Несовершеннолетние', icon: '🧒', columns: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон'], filters: ['status','group','type'] },
-    employment: { label: 'Трудоустройство', icon: '💼', columns: ['№ п/п','ФИО','Группа','Наименование организации','Телефон'], filters: ['group','type'] },
-    target_training: { label: 'Целевая подготовка', icon: '🎯', columns: ['№ п/п','ФИО','Группа','Заказчик','№ договора','Срок отработки','Телефон'], filters: ['status','group','type'] },
-    avg_grade_school: { label: 'Ср.балл со школы', icon: '🏫', columns: ['№ п/п','ФИО','Группа','Школа','Ср.балл аттестата','Год выпуска'], filters: ['group','type'] },
-    avg_grade_college: { label: 'Ср.балл в колледже', icon: '📊', columns: ['№ п/п','Категория','Наименование','Курс','Средний балл','Студентов','Примечание'], filters: ['type','course','group'] }
+// ===== ВСЕ ОТЧЁТЫ С МЕТКАМИ =====
+const ALL_REPORTS = {
+    // Общие отчёты (доступны всем)
+    general: [
+        { id: 'students', label: 'Список студентов', icon: '👨‍🎓', filters: ['status','group','type','citizenship','gender'] },
+        { id: 'groups', label: 'Группы', icon: '📚', filters: ['type'] },
+        { id: 'by_groups', label: 'По группам', icon: '📁', filters: ['type','group'] },
+        { id: 'statistics', label: 'Статистика', icon: '📊', filters: [] }
+    ],
+    // Полные отчёты (для преподавателей и администраторов)
+    full: [
+        { id: 'graduates', label: 'Выпускники', icon: '🎓', filters: ['type','graduation_year'] },
+        { id: 'expelled', label: 'Отчисленные', icon: '❌', filters: ['group','type'] },
+        { id: 'academic', label: 'Академ. отпуск', icon: '📚', filters: ['group','type'] },
+        { id: 'employment', label: 'Трудоустройство', icon: '💼', filters: ['group','type'] }
+    ],
+    // Отчёты общежития
+    dorm: [
+        { id: 'dorm_residents', label: 'Проживающие', icon: '🏠', filters: ['group','status'] },
+        { id: 'dorm_by_floor', label: 'По этажам', icon: '📊', filters: [] },
+        { id: 'dorm_by_block', label: 'По блокам', icon: '📋', filters: [] },
+        { id: 'dorm_by_room', label: 'По комнатам', icon: '🛏️', filters: [] },
+        { id: 'dorm_statistics', label: 'Статистика общаги', icon: '📈', filters: [] }
+    ]
 };
 
-function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-        document.getElementById('pdfDirectorName').value = currentUser.full_name || currentUser.name || '__________________';
-    } catch (e) {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+// ===== КОЛОНКИ ДЛЯ ОТЧЁТОВ =====
+const REPORT_COLUMNS = {
+    students: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон','Гражданство','Пол','Статус'],
+    groups: ['№ п/п','Название','Тип','Дата начала','Дата окончания','Студентов','Куратор'],
+    graduates: ['№ п/п','ФИО','Группа','Тип','Год выпуска','Телефон'],
+    expelled: ['№ п/п','ФИО','Группа','Дата отчисления','Приказ','Статья','Телефон'],
+    academic: ['№ п/п','ФИО','Группа','Дата начала','Приказ','Причина','Телефон'],
+    citizenship: ['№ п/п','ФИО','Группа','Гражданство','Телефон'],
+    address: ['№ п/п','ФИО','Группа','Тип адреса','Область','Район','Нас. пункт','Тип нас. пункта','Адрес'],
+    accounting: ['№ п/п','ФИО','Группа','Вид учёта','Дата постановки','Дата снятия','Статус учёта'],
+    age: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон'],
+    gender: ['№ п/п','ФИО','Группа','Пол'],
+    by_groups: ['№ п/п','Группа','Студент','Статус'],
+    statistics: ['№ п/п','Показатель','Значение','Примечание'],
+    underage: ['№ п/п','ФИО','Группа','Дата рождения','Возраст','Телефон'],
+    employment: ['№ п/п','ФИО','Группа','Наименование организации','Телефон'],
+    target_training: ['№ п/п','ФИО','Группа','Заказчик','№ договора','Срок отработки','Телефон'],
+    avg_grade_school: ['№ п/п','ФИО','Группа','Школа','Ср.балл аттестата','Год выпуска'],
+    avg_grade_college: ['№ п/п','Категория','Наименование','Курс','Средний балл','Студентов','Примечание'],
+    // Отчёты общежития
+    dorm_residents: ['№ п/п','ФИО','Группа','Тип','Статус','Телефон','Блок','Комната','Пол'],
+    dorm_by_floor: ['№ п/п','Этаж','Всего','Мужчин','Женщин','Блоки'],
+    dorm_by_block: ['№ п/п','Блок','Всего','Мужчин','Женщин','Студенты'],
+    dorm_by_room: ['№ п/п','Тип комнаты','Всего','Студенты'],
+    dorm_statistics: ['№ п/п','Показатель','Значение']
+};
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
+// ============================================================
+
+async function loadUserAndRights() {
+    const user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        try {
+            currentUser = JSON.parse(savedUser);
+        } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return false;
+        }
+    } else {
+        currentUser = user;
     }
+    
+    document.getElementById('userNameDisplay').textContent = currentUser.full_name || currentUser.name || currentUser.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+    document.getElementById('pdfDirectorName').value = currentUser.full_name || currentUser.name || '__________________';
+
+    // Получаем информацию о сотруднике
+    const { data: employee, error } = await window.supabase
+        .from('employees')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (!error && employee) {
+        currentEmployee = employee;
+        dormRole = employee.dorm_role || null;
+        isDormEmployee = !!employee.dorm_role;
+        isEducator = employee.dorm_role === 'educator';
+        isHead = employee.dorm_role === 'head';
+        isGuard = employee.dorm_role === 'guard';
+    }
+
+    return true;
 }
 
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    if (window.Session) { window.Session.logout(); } 
+    else { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
 };
 
 function showToast(message, type = 'success') {
@@ -517,95 +613,103 @@ function showToast(message, type = 'success') {
 }
 window.showToast = showToast;
 
-function formatDateForReport(dateStr) {
-    if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-}
+// ============================================================
+// ОПРЕДЕЛЕНИЕ ДОСТУПНЫХ ОТЧЁТОВ
+// ============================================================
 
-function calcAge(birthDate) {
-    if (!birthDate) return '—';
-    const birth = new Date(birthDate);
-    const today = new Date();
-    let age = today.getFullYear() - birth.getFullYear();
-    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
-    return age;
-}
+function getAvailableReports() {
+    let reports = [];
 
-function getStatusText(status) {
-    if (status === 'active') return 'Активен';
-    if (status === 'expelled') return 'Отчислен';
-    if (status === 'academic') return 'Академ. отпуск';
-    if (status === 'graduated') return 'Выпущен';
-    return status || '—';
-}
+    // Общие отчёты доступны всем
+    reports = [...ALL_REPORTS.general];
 
-function getTypeLabel(type) {
-    return type === 'sso' ? 'ССО' : 'ПТО';
-}
-
-function getCourseFromGroupName(groupName) {
-    if (!groupName) return '—';
-    const match = groupName.match(/^(\d+)/);
-    if (match) {
-        const num = parseInt(match[1]);
-        if (num >= 1 && num <= 4) return num + ' курс';
-        return '—';
+    // Если НЕ работник общежития или воспитатель - добавляем полные отчёты
+    if (!isDormEmployee || isEducator) {
+        reports = [...reports, ...ALL_REPORTS.full];
     }
-    return '—';
-}
 
-function getCourseNumberFromGroupName(groupName) {
-    if (!groupName) return 0;
-    const match = groupName.match(/^(\d+)/);
-    if (match) {
-        const num = parseInt(match[1]);
-        if (num >= 1 && num <= 4) return num;
-        return 0;
+    // Если работник общежития - добавляем отчёты общежития
+    if (isDormEmployee) {
+        reports = [...reports, ...ALL_REPORTS.dorm];
     }
-    return 0;
+
+    // Для заведующей и вахтера - только отчёты общежития
+    if (isHead || isGuard) {
+        reports = ALL_REPORTS.dorm;
+    }
+
+    return reports;
 }
 
-async function loadGraduationYears() {
-    try {
-        const { data, error } = await sb
-            .from('graduates')
-            .select('graduation_year')
-            .not('graduation_year', 'is', null)
-            .order('graduation_year', { ascending: false });
-        
-        if (error) throw error;
-        
-        const years = new Set();
-        data.forEach(item => {
-            if (item.graduation_year) {
-                years.add(String(item.graduation_year));
-            }
+// ============================================================
+// РЕНДЕРИНГ СПИСКА ОТЧЁТОВ
+// ============================================================
+
+function renderReportSelector() {
+    const container = document.getElementById('reportSelector');
+    const reports = getAvailableReports();
+    availableReports = reports;
+
+    if (reports.length === 0) {
+        container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);">Нет доступных отчётов</div>';
+        return;
+    }
+
+    // Определяем, какие отчёты относятся к общежитию
+    const dormReportIds = ALL_REPORTS.dorm.map(r => r.id);
+
+    let html = '';
+    reports.forEach(report => {
+        const isDorm = dormReportIds.includes(report.id);
+        const active = report.id === currentReport ? 'active' : '';
+        const dormClass = isDorm ? 'dorm-report' : '';
+        html += `
+            <div class="report-card ${active} ${dormClass}" data-report="${report.id}">
+                <span class="icon">${report.icon}</span>
+                ${report.label}
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Обработчики кликов
+    container.querySelectorAll('.report-card').forEach(card => {
+        card.addEventListener('click', function() {
+            container.querySelectorAll('.report-card').forEach(c => c.classList.remove('active'));
+            this.classList.add('active');
+            currentReport = this.dataset.report;
+            renderFilters(currentReport);
+            generateReport();
         });
-        allGraduationYears = Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-        
-        const gradYearSelect = document.getElementById('filterGradYear');
-        if (gradYearSelect) {
-            const currentValue = gradYearSelect.value;
-            gradYearSelect.innerHTML = '<option value="all">Все годы</option>';
-            allGraduationYears.forEach(year => {
-                gradYearSelect.innerHTML += `<option value="${year}">${year}</option>`;
-            });
-            gradYearSelect.value = currentValue;
-        }
-    } catch (error) {
-        console.error('❌ Ошибка загрузки годов выпуска:', error);
-    }
+    });
+}
+
+// ============================================================
+// ФИЛЬТРЫ
+// ============================================================
+
+function getReportFilters(reportId) {
+    // Находим отчёт в доступных
+    const report = availableReports.find(r => r.id === reportId);
+    if (!report) return [];
+    return report.filters || [];
 }
 
 async function renderFilters(reportKey) {
     const panel = document.getElementById('filtersPanel');
-    const report = REPORTS[reportKey];
-    if (!report) return;
+    const filters = getReportFilters(reportKey);
+    
+    if (filters.length === 0) {
+        panel.innerHTML = '';
+        return;
+    }
+
     let html = '';
     const filterOrder = ['status','group','type','course','citizenship','gender','region','district','settlement_type','city','address_type','accounting_type','graduation_year'];
 
     filterOrder.forEach(filterKey => {
-        if (!report.filters.includes(filterKey)) return;
+        if (!filters.includes(filterKey)) return;
         switch (filterKey) {
             case 'status':
                 html += `<div class="filter-group"><label>Статус</label><select id="filterStatus"><option value="all">Все</option><option value="active">Активен</option><option value="expelled">Отчислен</option><option value="academic">Акад. отпуск</option></select></div>`;
@@ -676,7 +780,7 @@ async function renderFilters(reportKey) {
 
 async function loadGroupsFilter() {
     try {
-        const { data, error } = await sb.from('groups').select('id, name, type, is_archived').order('name');
+        const { data, error } = await window.supabase.from('groups').select('id, name, type, is_archived').order('name');
         if (error) throw error;
         allGroups = data || [];
     } catch (error) { console.error('❌ Ошибка загрузки групп:', error); }
@@ -699,23 +803,20 @@ async function updateGroupFilter() {
     if (typeFilter !== 'all') filteredGroups = filteredGroups.filter(g => g.type === typeFilter);
     if (courseFilter !== 'all') {
         const courseNum = parseInt(courseFilter);
-        filteredGroups = filteredGroups.filter(g => getCourseNumberFromGroupName(g.name) === courseNum);
+        filteredGroups = filteredGroups.filter(g => {
+            const match = g.name.match(/^(\d+)/);
+            if (match) {
+                const num = parseInt(match[1]);
+                return num === courseNum;
+            }
+            return false;
+        });
     }
     const currentValue = select.value;
     select.innerHTML = '<option value="all">Все группы</option>';
     filteredGroups.forEach(g => select.innerHTML += `<option value="${g.id}">${g.name}</option>`);
     select.value = currentValue;
 }
-
-document.querySelectorAll('.report-card').forEach(card => {
-    card.addEventListener('click', function() {
-        document.querySelectorAll('.report-card').forEach(c => c.classList.remove('active'));
-        this.classList.add('active');
-        currentReport = this.dataset.report;
-        renderFilters(currentReport);
-        generateReport();
-    });
-});
 
 function getFilterValues() {
     const getVal = (id) => document.getElementById(id)?.value || 'all';
@@ -736,6 +837,10 @@ function getFilterValues() {
     };
 }
 
+// ============================================================
+// РЕНДЕРИНГ ТАБЛИЦЫ
+// ============================================================
+
 function renderTable(data, columns) {
     const thead = document.getElementById('reportThead');
     const tbody = document.getElementById('reportTbody');
@@ -752,7 +857,6 @@ function renderTable(data, columns) {
         columns.forEach(c => {
             let val = row[c] || '—';
             if (c === '№ п/п') val = i + 1;
-            // Обрезаем длинные значения для отображения
             if (typeof val === 'string' && val.length > 50) {
                 val = val.substring(0, 47) + '...';
             }
@@ -764,8 +868,40 @@ function renderTable(data, columns) {
     document.getElementById('totalRecords').textContent = data.length;
 }
 
+// ============================================================
+// ФУНКЦИИ ПОЛУЧЕНИЯ ДАННЫХ ДЛЯ ОТЧЁТОВ
+// ============================================================
+
+function formatDateForReport(dateStr) {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function calcAge(birthDate) {
+    if (!birthDate) return '—';
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+    return age;
+}
+
+function getStatusText(status) {
+    if (status === 'active') return 'Активен';
+    if (status === 'expelled') return 'Отчислен';
+    if (status === 'academic') return 'Акад. отпуск';
+    if (status === 'graduated') return 'Выпущен';
+    return status || '—';
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+// ===== ОТЧЁТЫ =====
+
 async function getStudentsReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
@@ -774,7 +910,9 @@ async function getStudentsReport(f) {
     const { data, error } = await q;
     if (error) throw error;
     const filtered = data.filter(s => s.status !== 'graduated');
-    return filtered.map(s => ({ 
+    // Для работников общежития - только проживающие
+    const finalData = isDormEmployee ? filtered.filter(s => s.lives_in_dorm === true) : filtered;
+    return finalData.map(s => ({ 
         'ФИО': s.full_name, 
         'Группа': s.groups?.name || '—', 
         'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—', 
@@ -787,34 +925,51 @@ async function getStudentsReport(f) {
 }
 
 async function getGroupsReport(f) {
-    let q = sb.from('groups').select(`*`);
+    let q = window.supabase.from('groups').select(`*`);
     if (f.type !== 'all') q = q.eq('type', f.type);
     const { data, error } = await q;
     if (error) throw error;
     const result = [];
     for (const g of data) {
-        const { count } = await sb.from('students').select('*', { count: 'exact', head: true }).eq('group_id', g.id);
+        const { count } = await window.supabase.from('students').select('*', { count: 'exact', head: true }).eq('group_id', g.id);
         result.push({ 'Название': g.name, 'Тип': getTypeLabel(g.type), 'Дата начала': g.date_start || '—', 'Дата окончания': g.date_end || '—', 'Студентов': count || 0, 'Куратор': g.curator||'—' });
     }
     return result;
 }
 
 async function getGraduatesReport(f) {
-    let q = sb.from('graduates').select('*');
+    // Для заведующей и вахтера доступ запрещён
+    if (isHead || isGuard) {
+        return [];
+    }
+    let q = window.supabase.from('graduates').select('*');
     if (f.type !== 'all') q = q.eq('type', f.type);
     if (f.graduation_year !== 'all') q = q.eq('graduation_year', f.graduation_year);
     const { data, error } = await q;
     if (error) throw error;
-    return data.map(g => ({ 'ФИО': g.full_name, 'Группа': g.group_name||'—', 'Тип': getTypeLabel(g.type), 'Год выпуска': g.graduation_year||'—', 'Телефон': g.phone||'—' }));
+    let filtered = data;
+    // Для воспитателя - только проживавшие в общежитии
+    if (isEducator) {
+        const { data: dormStudents } = await window.supabase
+            .from('students')
+            .select('id')
+            .eq('lives_in_dorm', true);
+        if (dormStudents) {
+            const dormIds = dormStudents.map(s => s.id);
+            filtered = filtered.filter(g => dormIds.includes(g.student_id));
+        }
+    }
+    return filtered.map(g => ({ 'ФИО': g.full_name, 'Группа': g.group_name||'—', 'Тип': getTypeLabel(g.type), 'Год выпуска': g.graduation_year||'—', 'Телефон': g.phone||'—' }));
 }
 
 async function getExpelledReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => s.status === 'expelled');
+    let filtered = data.filter(s => s.status === 'expelled');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     return filtered.map(s => ({
         'ФИО': s.full_name,
         'Группа': s.groups?.name || '—',
@@ -826,12 +981,13 @@ async function getExpelledReport(f) {
 }
 
 async function getAcademicReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => s.status === 'academic');
+    let filtered = data.filter(s => s.status === 'academic');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     return filtered.map(s => ({
         'ФИО': s.full_name,
         'Группа': s.groups?.name || '—',
@@ -843,25 +999,27 @@ async function getAcademicReport(f) {
 }
 
 async function getCitizenshipReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     if (f.citizenship !== 'all') q = q.eq('citizenship', f.citizenship);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => s.status !== 'graduated');
+    let filtered = data.filter(s => s.status !== 'graduated');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Гражданство': s.citizenship||'—', 'Телефон': s.phone||'—' }));
 }
 
 async function getAddressReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
     let filtered = data.filter(s => s.status !== 'graduated');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     if (f.region !== 'all') filtered = filtered.filter(s => s.address_region === f.region);
     if (f.district !== 'all') filtered = filtered.filter(s => s.address_district === f.district);
     if (f.settlement_type !== 'all') filtered = filtered.filter(s => s.address_settlement_type === f.settlement_type);
@@ -879,13 +1037,14 @@ async function getAddressReport(f) {
 }
 
 async function getAccountingReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
     let filtered = data.filter(s => s.status !== 'graduated');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     if (f.accounting_type !== 'all') filtered = filtered.filter(s => s.accounting_type && s.accounting_type.includes(f.accounting_type));
     const result = [];
     filtered.forEach(s => {
@@ -903,30 +1062,32 @@ async function getAccountingReport(f) {
 }
 
 async function getAgeReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => s.status !== 'graduated');
+    let filtered = data.filter(s => s.status !== 'graduated');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—', 'Возраст': s.birth_date ? calcAge(s.birth_date) : '—', 'Телефон': s.phone||'—' }));
 }
 
 async function getGenderReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     if (f.gender !== 'all') q = q.eq('gender', f.gender);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => s.status !== 'graduated');
+    let filtered = data.filter(s => s.status !== 'graduated');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Пол': s.gender||'—' }));
 }
 
 async function getByGroupsReport(f) {
-    let q = sb.from('groups').select(`id, name, type, students:students(id, full_name, status)`);
+    let q = window.supabase.from('groups').select(`id, name, type, students:students(id, full_name, status, lives_in_dorm)`);
     if (f.type !== 'all') q = q.eq('type', f.type);
     const { data, error } = await q;
     if (error) throw error;
@@ -937,8 +1098,11 @@ async function getByGroupsReport(f) {
     }
     filteredGroups.forEach(g => {
         const students = g.students || [];
-        students.forEach(s => {
-            if (s.status === 'graduated') return;
+        let filteredStudents = students.filter(s => s.status !== 'graduated');
+        if (isDormEmployee) {
+            filteredStudents = filteredStudents.filter(s => s.lives_in_dorm === true);
+        }
+        filteredStudents.forEach(s => {
             result.push({ 'Группа': g.name, 'Студент': s.full_name, 'Статус': getStatusText(s.status) });
         });
     });
@@ -946,30 +1110,35 @@ async function getByGroupsReport(f) {
 }
 
 async function getStatisticsReport(f) {
+    let studentsQuery = window.supabase.from('students').select('*', { count: 'exact' });
+    if (isDormEmployee) {
+        studentsQuery = studentsQuery.eq('lives_in_dorm', true);
+    }
     const [students, groups, graduates] = await Promise.all([
-        sb.from('students').select('*', { count: 'exact' }),
-        sb.from('groups').select('*', { count: 'exact' }),
-        sb.from('graduates').select('*', { count: 'exact' })
+        studentsQuery,
+        window.supabase.from('groups').select('*', { count: 'exact' }),
+        window.supabase.from('graduates').select('*', { count: 'exact' })
     ]);
-    const { data: genderData } = await sb.from('students').select('gender').not('gender', 'is', null);
-    const maleCount = genderData?.filter(g => g.gender === 'Мужской').length || 0;
-    const femaleCount = genderData?.filter(g => g.gender === 'Женский').length || 0;
-    const { data: ageData } = await sb.from('students').select('birth_date').not('birth_date', 'is', null);
+    const { data: genderData } = await window.supabase.from('students').select('gender').not('gender', 'is', null);
+    let maleCount = 0, femaleCount = 0;
+    if (genderData) {
+        const filtered = isDormEmployee ? genderData.filter(s => s.lives_in_dorm === true) : genderData;
+        maleCount = filtered?.filter(g => g.gender === 'Мужской').length || 0;
+        femaleCount = filtered?.filter(g => g.gender === 'Женский').length || 0;
+    }
+    const { data: ageData } = await window.supabase.from('students').select('birth_date').not('birth_date', 'is', null);
     let under18 = 0, age18_20 = 0, age21_25 = 0, age25plus = 0;
     ageData?.forEach(s => {
+        if (isDormEmployee && !s.lives_in_dorm) return;
         const age = calcAge(s.birth_date);
         if (age < 18) under18++;
         else if (age >= 18 && age <= 20) age18_20++;
         else if (age >= 21 && age <= 25) age21_25++;
         else if (age > 25) age25plus++;
     });
-    const { data: accountingData } = await sb.from('students').select('accounting_type').not('accounting_type', 'is', null);
-    const accountingCount = {};
-    accountingData?.forEach(s => { if (s.accounting_type) s.accounting_type.forEach(type => accountingCount[type] = (accountingCount[type] || 0) + 1); });
     const stats = [
         { 'Показатель': 'Всего студентов', 'Значение': students.count || 0, 'Примечание': '' },
         { 'Показатель': 'Всего групп', 'Значение': groups.count || 0, 'Примечание': '' },
-        { 'Показатель': 'Всего выпускников', 'Значение': graduates.count || 0, 'Примечание': '' },
         { 'Показатель': 'Мужской пол', 'Значение': maleCount, 'Примечание': '' },
         { 'Показатель': 'Женский пол', 'Значение': femaleCount, 'Примечание': '' },
         { 'Показатель': 'До 18 лет', 'Значение': under18, 'Примечание': '' },
@@ -977,32 +1146,47 @@ async function getStatisticsReport(f) {
         { 'Показатель': '21-25 лет', 'Значение': age21_25, 'Примечание': '' },
         { 'Показатель': 'Старше 25 лет', 'Значение': age25plus, 'Примечание': '' }
     ];
-    Object.keys(accountingCount).forEach((type) => stats.push({ 'Показатель': `Учёт: ${type}`, 'Значение': accountingCount[type], 'Примечание': '' }));
+    if (!isDormEmployee || isEducator) {
+        stats.push({ 'Показатель': 'Всего выпускников', 'Значение': graduates.count || 0, 'Примечание': '' });
+    }
+    if (isDormEmployee) {
+        const { data: dormStudents } = await window.supabase
+            .from('students')
+            .select('lives_in_dorm')
+            .eq('lives_in_dorm', true);
+        stats.push({ 'Показатель': 'Проживает в общаге', 'Значение': dormStudents?.length || 0, 'Примечание': '' });
+    }
     return stats;
 }
 
 async function getUnderageReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => { 
+    let filtered = data.filter(s => { 
         if (!s.birth_date) return false; 
         if (s.status === 'graduated') return false;
+        if (isDormEmployee && !s.lives_in_dorm) return false;
         return calcAge(s.birth_date) < 18; 
     });
     return filtered.map(s => ({ 'ФИО': s.full_name, 'Группа': s.groups?.name||'—', 'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—', 'Возраст': s.birth_date ? calcAge(s.birth_date) : '—', 'Телефон': s.phone||'—' }));
 }
 
 async function getEmploymentReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name)`);
+    // Для работников общежития (кроме воспитателя) доступ запрещён
+    if (isHead || isGuard) {
+        return [];
+    }
+    let q = window.supabase.from('students').select(`*, groups!inner (name)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => s.status === 'active');
+    let filtered = data.filter(s => s.status === 'active');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     return filtered.map(s => ({ 
         'ФИО': s.full_name, 
         'Группа': s.groups?.name || '—',
@@ -1012,13 +1196,14 @@ async function getEmploymentReport(f) {
 }
 
 async function getTargetTrainingReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.status !== 'all') q = q.eq('status', f.status);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
-    const filtered = data.filter(s => s.target_training === true && s.status !== 'graduated');
+    let filtered = data.filter(s => s.target_training === true && s.status !== 'graduated');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
     return filtered.map(s => ({ 
         'ФИО': s.full_name, 
         'Группа': s.groups?.name || '—',
@@ -1030,20 +1215,20 @@ async function getTargetTrainingReport(f) {
 }
 
 async function getAvgGradeSchoolReport(f) {
-    let q = sb.from('students').select(`*, groups!inner (name, type)`);
+    let q = window.supabase.from('students').select(`*, groups!inner (name, type)`);
     if (f.group !== 'all') q = q.eq('group_id', f.group);
     if (f.type !== 'all') q = q.eq('groups.type', f.type);
     const { data, error } = await q;
     if (error) throw error;
-    return data
-        .filter(s => s.avg_grade !== null && s.avg_grade !== undefined && s.status !== 'graduated')
-        .map(s => ({
-            'ФИО': s.full_name,
-            'Группа': s.groups?.name || '—',
-            'Школа': s.school || '—',
-            'Ср.балл аттестата': s.avg_grade || '—',
-            'Год выпуска': s.school_year || '—'
-        }));
+    let filtered = data.filter(s => s.avg_grade !== null && s.avg_grade !== undefined && s.status !== 'graduated');
+    if (isDormEmployee) filtered = filtered.filter(s => s.lives_in_dorm === true);
+    return filtered.map(s => ({
+        'ФИО': s.full_name,
+        'Группа': s.groups?.name || '—',
+        'Школа': s.school || '—',
+        'Ср.балл аттестата': s.avg_grade || '—',
+        'Год выпуска': s.school_year || '—'
+    }));
 }
 
 async function getAvgGradeCollegeReport(f) {
@@ -1052,7 +1237,7 @@ async function getAvgGradeCollegeReport(f) {
     const courseFilter = f.course;
     const groupFilter = f.group;
 
-    let q = sb.from('groups').select(`id, name, type, date_start`);
+    let q = window.supabase.from('groups').select(`id, name, type, date_start`);
     if (typeFilter !== 'all') q = q.eq('type', typeFilter);
     const { data: groups, error: groupsError } = await q;
     if (groupsError) throw groupsError;
@@ -1060,13 +1245,23 @@ async function getAvgGradeCollegeReport(f) {
     let filteredGroups = groups || [];
     if (courseFilter !== 'all') {
         const courseNum = parseInt(courseFilter);
-        filteredGroups = filteredGroups.filter(g => getCourseNumberFromGroupName(g.name) === courseNum);
+        filteredGroups = filteredGroups.filter(g => {
+            const match = g.name.match(/^(\d+)/);
+            if (match) {
+                const num = parseInt(match[1]);
+                return num === courseNum;
+            }
+            return false;
+        });
     }
     if (groupFilter !== 'all') {
         filteredGroups = filteredGroups.filter(g => g.id === groupFilter);
     }
 
-    let studentsQuery = sb.from('students').select('*, groups!inner (name, type)').not('status', 'eq', 'graduated');
+    let studentsQuery = window.supabase.from('students').select('*, groups!inner (name, type)').not('status', 'eq', 'graduated');
+    if (isDormEmployee) {
+        studentsQuery = studentsQuery.eq('lives_in_dorm', true);
+    }
     
     let allStudentsData = [];
     if (groupFilter !== 'all') {
@@ -1118,7 +1313,10 @@ async function getAvgGradeCollegeReport(f) {
             result.push({
                 'Категория': 'По группе',
                 'Наименование': group?.name || 'Группа',
-                'Курс': getCourseFromGroupName(group?.name || ''),
+                'Курс': group ? (() => {
+                    const match = group.name.match(/^(\d+)/);
+                    return match ? match[1] + ' курс' : '—';
+                })() : '—',
                 'Средний балл': avg.toFixed(2),
                 'Студентов': grades.length,
                 'Примечание': group ? getTypeLabel(group.type) : ''
@@ -1126,87 +1324,313 @@ async function getAvgGradeCollegeReport(f) {
         }
     }
 
-    if (groupFilter === 'all' && courseFilter === 'all') {
-        const courseMap = {};
-        allStudentsData.forEach(s => {
-            const course = getCourseFromGroupName(s.groups?.name || '');
-            if (!courseMap[course]) courseMap[course] = [];
-            if (s.avg_grade !== null && s.avg_grade !== undefined) {
-                courseMap[course].push(parseFloat(s.avg_grade));
-            }
-        });
-        const courses = Object.keys(courseMap).filter(c => c !== '—');
-        for (const course of courses) {
-            const grades = courseMap[course];
-            if (grades.length === 0) continue;
-            const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
-            const type = allStudentsData.find(s => s.groups?.type)?.groups?.type || '';
-            result.push({
-                'Категория': 'По курсу',
-                'Наименование': `${getTypeLabel(type)} (${course})`,
-                'Курс': course,
-                'Средний балл': avg.toFixed(2),
-                'Студентов': grades.length,
-                'Примечание': ''
-            });
-        }
-    }
-
-    if (groupFilter === 'all' && courseFilter === 'all') {
-        const typeMap = {};
-        allStudentsData.forEach(s => {
-            const type = s.groups?.type || '';
-            if (!typeMap[type]) typeMap[type] = [];
-            if (s.avg_grade !== null && s.avg_grade !== undefined) {
-                typeMap[type].push(parseFloat(s.avg_grade));
-            }
-        });
-        const types = Object.keys(typeMap);
-        for (const type of types) {
-            const grades = typeMap[type];
-            if (grades.length === 0) continue;
-            const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
-            result.push({
-                'Категория': 'По типу',
-                'Наименование': getTypeLabel(type),
-                'Курс': '—',
-                'Средний балл': avg.toFixed(2),
-                'Студентов': grades.length,
-                'Примечание': ''
-            });
-        }
-    }
-
-    if (groupFilter !== 'all') {
-        const group = filteredGroups.find(g => g.id === groupFilter);
-        const students = allStudentsData.filter(s => s.group_id === groupFilter && s.avg_grade !== null && s.avg_grade !== undefined);
-        if (students.length > 0) {
-            const avg = students.reduce((sum, s) => sum + parseFloat(s.avg_grade), 0) / students.length;
-            result.push({
-                'Категория': 'По группе (детально)',
-                'Наименование': `${group?.name || 'Группа'} - средний`,
-                'Курс': getCourseFromGroupName(group?.name || ''),
-                'Средний балл': avg.toFixed(2),
-                'Студентов': students.length,
-                'Примечание': ''
-            });
-            students.sort((a, b) => a.full_name.localeCompare(b.full_name));
-            students.forEach(s => {
-                result.push({
-                    'Категория': 'Студент',
-                    'Наименование': s.full_name,
-                    'Курс': '—',
-                    'Средний балл': parseFloat(s.avg_grade).toFixed(2),
-                    'Студентов': 1,
-                    'Примечание': ''
-                });
-            });
-        }
-    }
-
-    const order = { 'По колледжу': 1, 'По типу': 2, 'По группе': 3, 'По курсу': 4, 'По группе (детально)': 5, 'Студент': 6 };
-    return result.sort((a, b) => (order[a['Категория']] || 9) - (order[b['Категория']] || 9));
+    return result;
 }
+
+// ===== ОТЧЁТЫ ОБЩЕЖИТИЯ =====
+
+async function getDormResidentsReport(f) {
+    let q = window.supabase.from('students').select(`
+        *,
+        groups:group_id (
+            id,
+            name,
+            type
+        )
+    `)
+    .eq('lives_in_dorm', true)
+    .neq('status', 'graduated');
+
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.status !== 'all') q = q.eq('status', f.status);
+
+    const { data, error } = await q
+        .order('dorm_block', { ascending: true })
+        .order('full_name', { ascending: true });
+
+    if (error) throw error;
+
+    // Для заведующей и вахтера скрываем чувствительные данные
+    let result = data.map(s => {
+        const base = {
+            'ФИО': s.full_name,
+            'Группа': s.groups?.name || '—',
+            'Тип': getTypeLabel(s.groups?.type),
+            'Статус': getStatusText(s.status),
+            'Телефон': s.phone || '—',
+            'Блок': s.dorm_block || '—',
+            'Комната': s.dorm_room_type === 'M' ? 'Маленькая (M)' : s.dorm_room_type === 'B' ? 'Большая (B)' : '—',
+            'Пол': s.gender || '—'
+        };
+        return base;
+    });
+
+    return result;
+}
+
+async function getDormByFloorReport(f) {
+    const floorStructure = {
+        '2': [1, 2, 3, 4, 5, 6, 7, 8, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+        '3': [32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 44, 45, 49]
+    };
+
+    const result = [];
+    let index = 0;
+
+    for (const [floor, blocks] of Object.entries(floorStructure)) {
+        const { data } = await window.supabase
+            .from('students')
+            .select('*')
+            .eq('lives_in_dorm', true)
+            .in('dorm_block', blocks)
+            .neq('status', 'graduated');
+
+        const students = data || [];
+        const total = students.length;
+        const male = students.filter(s => s.gender === 'Мужской').length;
+        const female = students.filter(s => s.gender === 'Женский').length;
+
+        // Список блоков на этаже с количеством
+        const byBlock = {};
+        students.forEach(s => {
+            if (s.dorm_block) {
+                byBlock[s.dorm_block] = (byBlock[s.dorm_block] || 0) + 1;
+            }
+        });
+        const blockList = Object.entries(byBlock)
+            .sort((a, b) => parseInt(a[0]) - parseInt(b[0]))
+            .map(([block, count]) => `Блок ${block}: ${count} чел.`)
+            .join('; ');
+
+        index++;
+        result.push({
+            '№ п/п': index,
+            'Этаж': `${floor}-й этаж`,
+            'Всего': total,
+            'Мужчин': male,
+            'Женщин': female,
+            'Блоки': blockList || '—'
+        });
+    }
+
+    return result;
+}
+
+async function getDormByBlockReport(f) {
+    const { data, error } = await window.supabase
+        .from('students')
+        .select('*')
+        .eq('lives_in_dorm', true)
+        .neq('status', 'graduated')
+        .order('dorm_block', { ascending: true })
+        .order('full_name', { ascending: true });
+
+    if (error) throw error;
+
+    const byBlock = {};
+    data.forEach(s => {
+        const block = s.dorm_block || 'Без блока';
+        if (!byBlock[block]) byBlock[block] = [];
+        byBlock[block].push(s);
+    });
+
+    let index = 0;
+    const result = Object.entries(byBlock)
+        .sort((a, b) => {
+            if (a[0] === 'Без блока') return 1;
+            if (b[0] === 'Без блока') return -1;
+            return parseInt(a[0]) - parseInt(b[0]);
+        })
+        .map(([block, students]) => {
+            index++;
+            const studentList = students.map(s => s.full_name).join(', ');
+            return {
+                '№ п/п': index,
+                'Блок': block,
+                'Всего': students.length,
+                'Мужчин': students.filter(s => s.gender === 'Мужской').length,
+                'Женщин': students.filter(s => s.gender === 'Женский').length,
+                'Студенты': studentList.length > 100 ? studentList.substring(0, 97) + '...' : studentList
+            };
+        });
+
+    return result;
+}
+
+async function getDormByRoomReport(f) {
+    const { data, error } = await window.supabase
+        .from('students')
+        .select('*')
+        .eq('lives_in_dorm', true)
+        .neq('status', 'graduated')
+        .order('dorm_room_type', { ascending: true })
+        .order('full_name', { ascending: true });
+
+    if (error) throw error;
+
+    const byRoom = { M: [], B: [] };
+    data.forEach(s => {
+        const type = s.dorm_room_type || 'Не указан';
+        if (!byRoom[type]) byRoom[type] = [];
+        byRoom[type].push(s);
+    });
+
+    let index = 0;
+    const result = Object.entries(byRoom)
+        .filter(([type]) => type !== 'Не указан')
+        .map(([type, students]) => {
+            index++;
+            const label = type === 'M' ? 'Маленькая (M)' : type === 'B' ? 'Большая (B)' : type;
+            const studentList = students.map(s => `${s.full_name} (блок ${s.dorm_block || '—'})`).join('; ');
+            return {
+                '№ п/п': index,
+                'Тип комнаты': label,
+                'Всего': students.length,
+                'Студенты': studentList.length > 150 ? studentList.substring(0, 147) + '...' : studentList
+            };
+        });
+
+    // Добавляем "Не указан", если есть
+    if (byRoom['Не указан'] && byRoom['Не указан'].length > 0) {
+        result.push({
+            '№ п/п': result.length + 1,
+            'Тип комнаты': 'Не указан',
+            'Всего': byRoom['Не указан'].length,
+            'Студенты': byRoom['Не указан'].map(s => s.full_name).join('; ')
+        });
+    }
+
+    return result;
+}
+
+async function getDormStatisticsReport(f) {
+    // Общее количество проживающих
+    const { count: total, error: totalError } = await window.supabase
+        .from('students')
+        .select('*', { count: 'exact', head: true })
+        .eq('lives_in_dorm', true)
+        .neq('status', 'graduated');
+
+    if (totalError) throw totalError;
+
+    // По полу
+    const { data: genderData } = await window.supabase
+        .from('students')
+        .select('gender')
+        .eq('lives_in_dorm', true)
+        .neq('status', 'graduated');
+
+    const male = genderData?.filter(s => s.gender === 'Мужской').length || 0;
+    const female = genderData?.filter(s => s.gender === 'Женский').length || 0;
+
+    // По типам комнат
+    const { data: roomData } = await window.supabase
+        .from('students')
+        .select('dorm_room_type')
+        .eq('lives_in_dorm', true)
+        .neq('status', 'graduated');
+
+    const roomM = roomData?.filter(s => s.dorm_room_type === 'M').length || 0;
+    const roomB = roomData?.filter(s => s.dorm_room_type === 'B').length || 0;
+
+    // По этажам
+    const floor2 = [1, 2, 3, 4, 5, 6, 7, 8, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+    const floor3 = [32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 44, 45, 49];
+
+    const { data: blockData } = await window.supabase
+        .from('students')
+        .select('dorm_block')
+        .eq('lives_in_dorm', true)
+        .neq('status', 'graduated');
+
+    let floor2Count = 0, floor3Count = 0;
+    blockData?.forEach(s => {
+        if (floor2.includes(s.dorm_block)) floor2Count++;
+        if (floor3.includes(s.dorm_block)) floor3Count++;
+    });
+
+    // По статусам
+    const { data: statusData } = await window.supabase
+        .from('students')
+        .select('status')
+        .eq('lives_in_dorm', true);
+
+    const active = statusData?.filter(s => s.status === 'active').length || 0;
+    const expelled = statusData?.filter(s => s.status === 'expelled').length || 0;
+    const academic = statusData?.filter(s => s.status === 'academic').length || 0;
+
+    let index = 0;
+    const result = [
+        { '№ п/п': ++index, 'Показатель': 'Всего проживает', 'Значение': total || 0 },
+        { '№ п/п': ++index, 'Показатель': 'Мужской пол', 'Значение': male },
+        { '№ п/п': ++index, 'Показатель': 'Женский пол', 'Значение': female },
+        { '№ п/п': ++index, 'Показатель': 'Комнаты M (маленькие)', 'Значение': roomM },
+        { '№ п/п': ++index, 'Показатель': 'Комнаты B (большие)', 'Значение': roomB },
+        { '№ п/п': ++index, 'Показатель': '2-й этаж', 'Значение': floor2Count },
+        { '№ п/п': ++index, 'Показатель': '3-й этаж', 'Значение': floor3Count },
+        { '№ п/п': ++index, 'Показатель': 'Активных студентов', 'Значение': active },
+        { '№ п/п': ++index, 'Показатель': 'Отчисленных', 'Значение': expelled },
+        { '№ п/п': ++index, 'Показатель': 'Академ. отпуск', 'Значение': academic }
+    ];
+
+    return result;
+}
+
+// ============================================================
+// ГЕНЕРАЦИЯ ОТЧЁТА
+// ============================================================
+
+async function generateReport() {
+    const tbody = document.getElementById('reportTbody');
+    const thead = document.getElementById('reportThead');
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div></td></tr>`;
+    try {
+        const filters = getFilterValues();
+        let data = [], columns = [];
+
+        // Выбираем функцию в зависимости от отчёта
+        switch (currentReport) {
+            case 'students': data = await getStudentsReport(filters); columns = REPORT_COLUMNS.students; break;
+            case 'groups': data = await getGroupsReport(filters); columns = REPORT_COLUMNS.groups; break;
+            case 'graduates': data = await getGraduatesReport(filters); columns = REPORT_COLUMNS.graduates; break;
+            case 'expelled': data = await getExpelledReport(filters); columns = REPORT_COLUMNS.expelled; break;
+            case 'academic': data = await getAcademicReport(filters); columns = REPORT_COLUMNS.academic; break;
+            case 'citizenship': data = await getCitizenshipReport(filters); columns = REPORT_COLUMNS.citizenship; break;
+            case 'address': data = await getAddressReport(filters); columns = REPORT_COLUMNS.address; break;
+            case 'accounting': data = await getAccountingReport(filters); columns = REPORT_COLUMNS.accounting; break;
+            case 'age': data = await getAgeReport(filters); columns = REPORT_COLUMNS.age; break;
+            case 'gender': data = await getGenderReport(filters); columns = REPORT_COLUMNS.gender; break;
+            case 'by_groups': data = await getByGroupsReport(filters); columns = REPORT_COLUMNS.by_groups; break;
+            case 'statistics': data = await getStatisticsReport(filters); columns = REPORT_COLUMNS.statistics; break;
+            case 'underage': data = await getUnderageReport(filters); columns = REPORT_COLUMNS.underage; break;
+            case 'employment': data = await getEmploymentReport(filters); columns = REPORT_COLUMNS.employment; break;
+            case 'target_training': data = await getTargetTrainingReport(filters); columns = REPORT_COLUMNS.target_training; break;
+            case 'avg_grade_school': data = await getAvgGradeSchoolReport(filters); columns = REPORT_COLUMNS.avg_grade_school; break;
+            case 'avg_grade_college': data = await getAvgGradeCollegeReport(filters); columns = REPORT_COLUMNS.avg_grade_college; break;
+            // Отчёты общежития
+            case 'dorm_residents': data = await getDormResidentsReport(filters); columns = REPORT_COLUMNS.dorm_residents; break;
+            case 'dorm_by_floor': data = await getDormByFloorReport(filters); columns = REPORT_COLUMNS.dorm_by_floor; break;
+            case 'dorm_by_block': data = await getDormByBlockReport(filters); columns = REPORT_COLUMNS.dorm_by_block; break;
+            case 'dorm_by_room': data = await getDormByRoomReport(filters); columns = REPORT_COLUMNS.dorm_by_room; break;
+            case 'dorm_statistics': data = await getDormStatisticsReport(filters); columns = REPORT_COLUMNS.dorm_statistics; break;
+            default: data = []; columns = ['Нет данных'];
+        }
+
+        reportData = data;
+        reportColumns = columns;
+        renderTable(data, columns);
+        document.getElementById('reportDate').textContent = new Date().toLocaleDateString('ru-RU');
+        renderChart(data, currentReport);
+    } catch (error) {
+        console.error('❌ Ошибка:', error);
+        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="icon">❌</span><p>${error.message}</p></div></td></tr>`;
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// ДИАГРАММЫ
+// ============================================================
 
 function renderChart(data, reportKey) {
     const container = document.getElementById('chartContainer');
@@ -1216,7 +1640,7 @@ function renderChart(data, reportKey) {
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
     container.style.display = 'none';
     
-    const showCharts = ['avg_grade_school', 'avg_grade_college', 'statistics', 'expelled', 'academic'];
+    const showCharts = ['avg_grade_school', 'avg_grade_college', 'statistics', 'expelled', 'academic', 'dorm_residents', 'dorm_by_floor', 'dorm_by_block', 'dorm_by_room', 'dorm_statistics'];
     if (!showCharts.includes(reportKey)) return;
     if (!data || data.length === 0) { container.style.display = 'none'; return; }
 
@@ -1285,6 +1709,55 @@ function renderChart(data, reportKey) {
         chartLabel = 'Количество в академ. отпуске';
         title.textContent = '📚 Распределение студентов в академ. отпуске по группам';
         note.textContent = `* Всего в академ. отпуске: ${data.length}`;
+    } else if (reportKey === 'dorm_residents') {
+        const floorMap = {};
+        data.forEach(item => {
+            const block = item['Блок'] || '—';
+            if (!floorMap[block]) floorMap[block] = 0;
+            floorMap[block]++;
+        });
+        const sorted = Object.entries(floorMap).sort((a, b) => {
+            if (a[0] === '—') return 1;
+            if (b[0] === '—') return -1;
+            return parseInt(a[0]) - parseInt(b[0]);
+        });
+        labels = sorted.map(([name]) => `Блок ${name}`);
+        values = sorted.map(([, count]) => count);
+        chartType = 'doughnut';
+        chartLabel = 'Количество проживающих';
+        title.textContent = '🏠 Распределение проживающих по блокам';
+        note.textContent = `* Всего проживающих: ${data.length}`;
+    } else if (reportKey === 'dorm_by_floor') {
+        labels = data.map(item => item['Этаж']);
+        values = data.map(item => item['Всего']);
+        chartType = 'bar';
+        chartLabel = 'Количество проживающих';
+        title.textContent = '📊 Распределение проживающих по этажам';
+        note.textContent = `* Всего проживающих: ${values.reduce((a, b) => a + b, 0)}`;
+    } else if (reportKey === 'dorm_by_block') {
+        const display = data.slice(0, 15);
+        labels = display.map(item => `Блок ${item['Блок']}`);
+        values = display.map(item => item['Всего']);
+        chartType = 'bar';
+        chartLabel = 'Количество проживающих';
+        title.textContent = '📊 Распределение проживающих по блокам';
+        note.textContent = `* Отображены ${display.length} блоков из ${data.length}`;
+    } else if (reportKey === 'dorm_by_room') {
+        labels = data.map(item => item['Тип комнаты']);
+        values = data.map(item => item['Всего']);
+        chartType = 'doughnut';
+        chartLabel = 'Количество проживающих';
+        title.textContent = '🛏️ Распределение по типам комнат';
+        note.textContent = `* Всего проживающих: ${values.reduce((a, b) => a + b, 0)}`;
+    } else if (reportKey === 'dorm_statistics') {
+        const numeric = data.filter(item => !isNaN(item['Значение']) && item['Значение'] > 0);
+        if (numeric.length === 0) { container.style.display = 'none'; return; }
+        labels = numeric.map(item => item['Показатель']);
+        values = numeric.map(item => item['Значение']);
+        chartType = 'doughnut';
+        chartLabel = 'Значение';
+        title.textContent = '📈 Статистика общежития';
+        note.textContent = '* Данные отображаются в виде круговой диаграммы';
     }
 
     if (labels.length === 0) { container.style.display = 'none'; return; }
@@ -1335,51 +1808,16 @@ function renderChart(data, reportKey) {
     });
 }
 
-async function generateReport() {
-    const tbody = document.getElementById('reportTbody');
-    const thead = document.getElementById('reportThead');
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div></td></tr>`;
-    try {
-        const filters = getFilterValues();
-        let data = [], columns = [];
-        switch (currentReport) {
-            case 'students': data = await getStudentsReport(filters); columns = REPORTS.students.columns; break;
-            case 'groups': data = await getGroupsReport(filters); columns = REPORTS.groups.columns; break;
-            case 'graduates': data = await getGraduatesReport(filters); columns = REPORTS.graduates.columns; break;
-            case 'expelled': data = await getExpelledReport(filters); columns = REPORTS.expelled.columns; break;
-            case 'academic': data = await getAcademicReport(filters); columns = REPORTS.academic.columns; break;
-            case 'citizenship': data = await getCitizenshipReport(filters); columns = REPORTS.citizenship.columns; break;
-            case 'address': data = await getAddressReport(filters); columns = REPORTS.address.columns; break;
-            case 'accounting': data = await getAccountingReport(filters); columns = REPORTS.accounting.columns; break;
-            case 'age': data = await getAgeReport(filters); columns = REPORTS.age.columns; break;
-            case 'gender': data = await getGenderReport(filters); columns = REPORTS.gender.columns; break;
-            case 'by_groups': data = await getByGroupsReport(filters); columns = REPORTS.by_groups.columns; break;
-            case 'statistics': data = await getStatisticsReport(filters); columns = REPORTS.statistics.columns; break;
-            case 'underage': data = await getUnderageReport(filters); columns = REPORTS.underage.columns; break;
-            case 'employment': data = await getEmploymentReport(filters); columns = REPORTS.employment.columns; break;
-            case 'target_training': data = await getTargetTrainingReport(filters); columns = REPORTS.target_training.columns; break;
-            case 'avg_grade_school': data = await getAvgGradeSchoolReport(filters); columns = REPORTS.avg_grade_school.columns; break;
-            case 'avg_grade_college': data = await getAvgGradeCollegeReport(filters); columns = REPORTS.avg_grade_college.columns; break;
-            default: data = []; columns = ['Нет данных'];
-        }
-        reportData = data;
-        reportColumns = columns;
-        renderTable(data, columns);
-        document.getElementById('reportDate').textContent = new Date().toLocaleDateString('ru-RU');
-        renderChart(data, currentReport);
-    } catch (error) {
-        console.error('❌ Ошибка:', error);
-        tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><span class="icon">❌</span><p>${error.message}</p></div></td></tr>`;
-        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
-    }
-}
+// ============================================================
+// PDF
+// ============================================================
 
 function updatePdfPreview() {
     const preview = document.getElementById('pdfPreview');
     const title = document.getElementById('pdfTitle').value || 'ОТЧЁТ';
     const subtitle = document.getElementById('pdfSubtitle').value || '';
     const dateStr = new Date().toLocaleDateString('ru-RU');
-    const reportName = REPORTS[currentReport]?.label || currentReport;
+    const reportName = availableReports.find(r => r.id === currentReport)?.label || currentReport;
     const directorPosition = document.getElementById('pdfDirectorPosition').value || 'Директор';
     const directorName = document.getElementById('pdfDirectorName').value || '__________________';
     
@@ -1438,7 +1876,7 @@ document.getElementById('exportPDFBtn').addEventListener('click', function() {
         showToast('❌ Нет данных для экспорта', 'error');
         return;
     }
-    const reportName = REPORTS[currentReport]?.label || currentReport;
+    const reportName = availableReports.find(r => r.id === currentReport)?.label || currentReport;
     document.getElementById('pdfTitle').value = 'ОТЧЁТ';
     document.getElementById('pdfSubtitle').value = reportName;
     updatePdfPreview();
@@ -1453,12 +1891,10 @@ function generatePDF() {
     const title = document.getElementById('pdfTitle').value || 'ОТЧЁТ';
     const subtitle = document.getElementById('pdfSubtitle').value || '';
     const dateStr = new Date().toLocaleDateString('ru-RU');
-    const reportName = REPORTS[currentReport]?.label || currentReport;
+    const reportName = availableReports.find(r => r.id === currentReport)?.label || currentReport;
     const directorPosition = document.getElementById('pdfDirectorPosition').value || 'Директор';
     const directorName = document.getElementById('pdfDirectorName').value || '__________________';
-    const fontSize = 14;
     
-    // Строим таблицу для PDF с правильным переносом
     let tableHtml = `<table class="pdf-table"><thead><tr>`;
     reportColumns.forEach(c => {
         tableHtml += `<th>${c}</th>`;
@@ -1518,20 +1954,9 @@ function generatePDF() {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const modalBody = document.querySelector('.modal-body');
-    if (modalBody) {
-        modalBody.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && document.getElementById('pdfModal').classList.contains('active')) {
-                e.preventDefault();
-                const generateBtn = document.getElementById('pdfGenerateBtn');
-                if (generateBtn && !generateBtn.disabled) {
-                    generateBtn.click();
-                }
-            }
-        });
-    }
-});
+// ============================================================
+// МОБИЛЬНОЕ МЕНЮ
+// ============================================================
 
 document.getElementById('menuToggle').onclick = () => {
     document.getElementById('sidebar').classList.toggle('open');
@@ -1550,10 +1975,57 @@ window.onresize = () => {
     }
 };
 
-loadUser();
-loadGraduationYears();
-renderFilters('students');
-generateReport();
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+
+async function loadGraduationYears() {
+    try {
+        const { data, error } = await window.supabase
+            .from('graduates')
+            .select('graduation_year')
+            .not('graduation_year', 'is', null)
+            .order('graduation_year', { ascending: false });
+        
+        if (error) throw error;
+        
+        const years = new Set();
+        data.forEach(item => {
+            if (item.graduation_year) {
+                years.add(String(item.graduation_year));
+            }
+        });
+        allGraduationYears = Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+    } catch (error) {
+        console.error('❌ Ошибка загрузки годов выпуска:', error);
+    }
+}
+
+async function init() {
+    // Проверяем сессию
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+    }
+    
+    const userLoaded = await loadUserAndRights();
+    if (!userLoaded) return;
+    
+    // Для заведующей и вахтера показываем только отчёты общежития
+    // Они уже отфильтрованы в getAvailableReports()
+    
+    await loadGraduationYears();
+    renderReportSelector();
+    await renderFilters('students');
+    await generateReport();
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 
 </body>

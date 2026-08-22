@@ -14,8 +14,10 @@
     <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
     <link rel="stylesheet" href="/css/components.css">
     
-    <!-- ===== SUPABASE ===== -->
+    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="/js/session.js"></script>
+    <script src="/js/session-init.js"></script>
     
     <!-- ===== XLSX ДЛЯ ЭКСПОРТА ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -43,11 +45,50 @@
         .badge-sso { background: #D6EAF8; color: #1A5276; }
         .badge-pto { background: #FDEBD0; color: #7E5109; }
 
+        /* ===== БЭЙДЖ ДЛЯ ПРОЖИВАНИЯ ===== */
+        .dorm-badge-small {
+            display: inline-block;
+            padding: 1px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .dorm-badge-yes-small {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .dorm-badge-no-small {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        /* ===== ДОСТУП ЗАПРЕЩЁН ===== */
+        .access-denied {
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .access-denied .icon {
+            font-size: 80px;
+            display: block;
+            margin-bottom: 20px;
+        }
+        .access-denied h2 {
+            font-size: 28px;
+            color: var(--danger);
+            margin-bottom: 12px;
+        }
+        .access-denied p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        .access-denied .btn {
+            margin-top: 20px;
+        }
+
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
         .empty-state .icon { font-size: 64px; display: block; margin-bottom: 16px; }
         .empty-state h3 { font-size: 20px; color: var(--text-primary); margin-bottom: 8px; }
 
-        /* ===== КАРТОЧКИ ГРУПП ===== */
         .type-section { margin-bottom: 32px; }
         .type-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
         .type-header .icon { font-size: 28px; }
@@ -97,6 +138,11 @@
         .group-card .group-students {
             font-size: 14px;
             font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .group-card .group-dorm-info {
+            font-size: 12px;
             color: var(--text-secondary);
             margin-bottom: 4px;
         }
@@ -196,7 +242,7 @@
 </aside>
 
 <!-- ===== MAIN CONTENT ===== -->
-<main class="main-content">
+<main class="main-content" id="mainContent">
     <button class="btn btn-secondary btn-sm" id="menuToggle" style="margin-bottom:16px;display:none;">☰ Меню</button>
 
     <div class="page-container">
@@ -214,7 +260,7 @@
             </div>
         </div>
 
-        <!-- СТАТИСТИКА - только Выпускники и Групп выпущено -->
+        <!-- ===== СТАТИСТИКА ===== -->
         <div class="stats-row" id="statsRow">
             <div class="stat-box" data-filter="graduated">
                 <div class="number" id="graduatedCount">0</div>
@@ -224,9 +270,14 @@
                 <div class="number" id="groupsCount" style="color: var(--primary-light);">0</div>
                 <div class="label">📁 Групп выпущено</div>
             </div>
+            <!-- Для работников общежития показываем только проживающих -->
+            <div class="stat-box" id="dormGraduatesStat" style="border-color: var(--primary-light); display: none;">
+                <div class="number" id="dormGraduatesCount" style="color: var(--primary-light);">0</div>
+                <div class="label">🏠 Выпускников из общаги</div>
+            </div>
         </div>
 
-        <!-- ФИЛЬТРЫ -->
+        <!-- ===== ФИЛЬТРЫ ===== -->
         <div class="filters-bar">
             <select id="typeFilter">
                 <option value="all">Все типы</option>
@@ -240,6 +291,7 @@
             <button class="btn btn-secondary" id="clearFiltersBtn">Сбросить</button>
         </div>
 
+        <!-- ===== КОНТЕЙНЕР ГРУПП ===== -->
         <div id="groupsContainer">
             <div class="empty-state"><span class="icon">⏳</span><h3>Загрузка...</h3></div>
         </div>
@@ -247,21 +299,27 @@
     </div>
 </main>
 
-<script src="/js/components.js"></script>
-
 <script>
 // ============================================================
-// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient
+// ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient ИЗ СЕССИИ
 // ============================================================
 
-if (typeof window.supabaseClient === 'undefined') {
-    window.supabaseClient = window.supabase.createClient(
-        'https://selbolepupendprhixas.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
-    );
+// Получаем клиент из сессии
+const sb = window.Session ? window.Session.supabase() : null;
+
+if (!sb) {
+    console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+    if (typeof window.supabaseClient === 'undefined') {
+        window.supabaseClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+    }
+    window.supabase = window.supabaseClient;
+} else {
+    window.supabase = sb;
 }
 
-const sb = window.supabaseClient;
 console.log('✅ Supabase готов к использованию');
 
 // ============================================================
@@ -269,6 +327,12 @@ console.log('✅ Supabase готов к использованию');
 // ============================================================
 
 let currentUser = null;
+let currentEmployee = null;
+let dormRole = null;
+let isDormEmployee = false;
+let isEducator = false;
+let isHead = false;
+let isGuard = false;
 let hasEditRights = false;
 let allGroupsData = [];
 
@@ -294,28 +358,71 @@ function showToast(message, type = 'success') {
 }
 
 // ============================================================
-// ПОЛЬЗОВАТЕЛЬ
+// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
 // ============================================================
 
-function loadUser() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (!savedUser) { window.location.href = '/index.html'; return; }
-    try {
-        currentUser = JSON.parse(savedUser);
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
-
-        hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
-    } catch (e) {
-        localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+async function loadUserAndRights() {
+    const user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        try {
+            currentUser = JSON.parse(savedUser);
+        } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return false;
+        }
+    } else {
+        currentUser = user;
     }
+    
+    document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.full_name || currentUser.login;
+    const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+    document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+
+    hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
+
+    // Получаем информацию о сотруднике
+    const { data: employee, error } = await window.supabase
+        .from('employees')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (!error && employee) {
+        currentEmployee = employee;
+        dormRole = employee.dorm_role || null;
+        isDormEmployee = !!employee.dorm_role;
+        isEducator = employee.dorm_role === 'educator';
+        isHead = employee.dorm_role === 'head';
+        isGuard = employee.dorm_role === 'guard';
+    }
+
+    // Проверяем доступ для заведующей и вахтера
+    if (isHead || isGuard) {
+        // Показываем страницу с запретом доступа
+        const mainContent = document.getElementById('mainContent');
+        mainContent.innerHTML = `
+            <div class="page-container">
+                <div class="access-denied">
+                    <span class="icon">🚫</span>
+                    <h2>Доступ запрещён</h2>
+                    <p>Заведующая и вахтер не могут просматривать выпускников</p>
+                    <a href="/dashboard.html" class="btn btn-primary">← Вернуться на главную</a>
+                </div>
+            </div>
+        `;
+        return false;
+    }
+
+    return true;
 }
 
 document.getElementById('logoutBtn').onclick = () => {
-    localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    if (window.Session) { window.Session.logout(); } 
+    else { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
 };
 
 // ============================================================
@@ -344,6 +451,25 @@ function getStatusLabel(status) {
 }
 
 // ============================================================
+// ПОЛУЧЕНИЕ СПИСКА СТУДЕНТОВ, ПРОЖИВАВШИХ В ОБЩЕЖИТИИ
+// ============================================================
+
+async function getDormStudentIds() {
+    try {
+        const { data, error } = await window.supabase
+            .from('students')
+            .select('id')
+            .eq('lives_in_dorm', true);
+
+        if (error) throw error;
+        return data.map(s => s.id);
+    } catch (error) {
+        console.error('❌ Ошибка получения студентов общежития:', error);
+        return [];
+    }
+}
+
+// ============================================================
 // ЗАГРУЗКА ГРУПП
 // ============================================================
 
@@ -354,8 +480,14 @@ async function loadGroups() {
     const search = document.getElementById('searchInput').value.toLowerCase().trim();
 
     try {
+        // Получаем ID студентов, проживавших в общежитии (для воспитателя)
+        let dormStudentIds = [];
+        if (isEducator) {
+            dormStudentIds = await getDormStudentIds();
+        }
+
         // 1. Получаем все группы (включая архивные и активные)
-        const { data: groups, error: groupsError } = await sb
+        const { data: groups, error: groupsError } = await window.supabase
             .from('groups')
             .select('*')
             .order('date_start', { ascending: false });
@@ -363,21 +495,21 @@ async function loadGroups() {
         if (groupsError) throw groupsError;
 
         // 2. Получаем выпускников из graduates
-        const { data: graduates, error: gradError } = await sb
+        const { data: graduates, error: gradError } = await window.supabase
             .from('graduates')
             .select('*');
 
         if (gradError) throw gradError;
 
         // 3. Получаем отчисленных из expelled_students
-        const { data: expelled, error: expelledError } = await sb
+        const { data: expelled, error: expelledError } = await window.supabase
             .from('expelled_students')
             .select('*');
 
         if (expelledError) throw expelledError;
 
         // 4. Получаем студентов в академ. отпуске из academic_leave_students
-        const { data: academic, error: academicError } = await sb
+        const { data: academic, error: academicError } = await window.supabase
             .from('academic_leave_students')
             .select('*');
 
@@ -386,14 +518,22 @@ async function loadGroups() {
         // Создаём карту студентов по группам
         const studentsByGroup = {};
 
+        // Функция для фильтрации студентов для воспитателя
+        function filterForEducator(student) {
+            if (!isEducator) return true;
+            return dormStudentIds.includes(student.student_id);
+        }
+
         // Добавляем выпускников
         if (graduates) {
             graduates.forEach(g => {
+                if (!filterForEducator(g)) return;
                 const groupName = g.group_name || 'Без группы';
                 if (!studentsByGroup[groupName]) studentsByGroup[groupName] = [];
                 studentsByGroup[groupName].push({
                     ...g,
-                    status: 'graduated'
+                    status: 'graduated',
+                    lived_in_dorm: dormStudentIds.includes(g.student_id)
                 });
             });
         }
@@ -401,11 +541,13 @@ async function loadGroups() {
         // Добавляем отчисленных
         if (expelled) {
             expelled.forEach(g => {
+                if (!filterForEducator(g)) return;
                 const groupName = g.group_name || 'Без группы';
                 if (!studentsByGroup[groupName]) studentsByGroup[groupName] = [];
                 studentsByGroup[groupName].push({
                     ...g,
-                    status: 'expelled'
+                    status: 'expelled',
+                    lived_in_dorm: dormStudentIds.includes(g.student_id)
                 });
             });
         }
@@ -413,16 +555,18 @@ async function loadGroups() {
         // Добавляем академ. отпуск
         if (academic) {
             academic.forEach(g => {
+                if (!filterForEducator(g)) return;
                 const groupName = g.group_name || 'Без группы';
                 if (!studentsByGroup[groupName]) studentsByGroup[groupName] = [];
                 studentsByGroup[groupName].push({
                     ...g,
-                    status: 'academic'
+                    status: 'academic',
+                    lived_in_dorm: dormStudentIds.includes(g.student_id)
                 });
             });
         }
 
-        // Формируем данные по группам (показываем только те, где есть студенты)
+        // Формируем данные по группам
         let groupsWithStudents = groups
             .filter(group => {
                 return studentsByGroup[group.name] && studentsByGroup[group.name].length > 0;
@@ -435,10 +579,13 @@ async function loadGroups() {
                 let graduated = 0;
                 let expelledCount = 0;
                 let academicCount = 0;
+                let dormGraduates = 0;
                 
                 studentsList.forEach(s => {
-                    if (s.status === 'graduated') graduated++;
-                    else if (s.status === 'expelled') expelledCount++;
+                    if (s.status === 'graduated') {
+                        graduated++;
+                        if (s.lived_in_dorm) dormGraduates++;
+                    } else if (s.status === 'expelled') expelledCount++;
                     else if (s.status === 'academic') academicCount++;
                 });
                 
@@ -449,11 +596,12 @@ async function loadGroups() {
                     studentCount: studentsList.length,
                     graduated: graduated,
                     expelled: expelledCount,
-                    academic: academicCount
+                    academic: academicCount,
+                    dormGraduates: dormGraduates
                 };
             });
 
-        // Сортируем группы по году (от большего к меньшему)
+        // Сортируем группы по году
         groupsWithStudents.sort((a, b) => {
             const yearA = parseInt(a.year) || 0;
             const yearB = parseInt(b.year) || 0;
@@ -503,7 +651,6 @@ async function loadGroups() {
             yearMap[year].push(g);
         });
 
-        // Сортируем годы от большего к меньшему
         const sortedYears = Object.keys(yearMap).sort((a, b) => {
             if (a === '—') return 1;
             if (b === '—') return -1;
@@ -515,11 +662,9 @@ async function loadGroups() {
         sortedYears.forEach(year => {
             const yearGroups = yearMap[year];
             
-            // Разделяем на ССО и ПТО
             const ssoGroups = yearGroups.filter(g => g.type === 'sso');
             const ptoGroups = yearGroups.filter(g => g.type === 'pto');
             
-            // Сортируем группы по алфавиту внутри типа
             ssoGroups.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
             ptoGroups.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
             
@@ -533,12 +678,10 @@ async function loadGroups() {
                     <div class="year-groups hidden">
             `;
             
-            // Сначала ССО
             if (ssoGroups.length > 0) {
                 html += renderGroupsByType(ssoGroups, 'ССО', '🎓');
             }
             
-            // Потом ПТО
             if (ptoGroups.length > 0) {
                 html += renderGroupsByType(ptoGroups, 'ПТО', '🔧');
             }
@@ -585,7 +728,6 @@ function renderGroupsByType(groups, title, icon) {
         const specialty = g.specialty ? (Array.isArray(g.specialty) ? g.specialty.join(', ') : g.specialty) : '—';
         const period = g.date_start && g.date_end ? `${formatDate(g.date_start)} — ${formatDate(g.date_end)}` : '';
 
-        // Статистика по статусам
         const statusCounts = {
             graduated: g.graduated || 0,
             expelled: g.expelled || 0,
@@ -603,6 +745,16 @@ function renderGroupsByType(groups, title, icon) {
             statusBadges += `<span style="color:var(--primary-light);font-weight:500;">📚 ${statusCounts.academic}</span> `;
         }
 
+        // Информация о проживании в общежитии (для воспитателя)
+        let dormInfoHtml = '';
+        if (isEducator && g.dormGraduates > 0) {
+            dormInfoHtml = `
+                <div class="group-dorm-info">
+                    🏠 Проживали в общаге: <strong>${g.dormGraduates}</strong> чел.
+                </div>
+            `;
+        }
+
         html += `
             <div class="group-card">
                 <div class="group-name">${g.name}</div>
@@ -611,6 +763,7 @@ function renderGroupsByType(groups, title, icon) {
                     ${period ? ` • ${period}` : ''}
                 </div>
                 <div class="group-students">👨‍🎓 ${g.studentCount} студентов (${statusBadges})</div>
+                ${dormInfoHtml}
                 <div class="group-specialty"><strong>Специальность:</strong> ${specialty}</div>
                 <div class="group-footer">
                     <span class="status-tag">📦 В архиве</span>
@@ -633,13 +786,25 @@ function renderGroupsByType(groups, title, icon) {
 
 function updateStats(groups) {
     let graduated = 0;
+    let dormGraduates = 0;
 
     groups.forEach(g => {
         graduated += g.graduated || 0;
+        dormGraduates += g.dormGraduates || 0;
     });
 
     document.getElementById('graduatedCount').textContent = graduated;
     document.getElementById('groupsCount').textContent = groups.length;
+
+    // Показываем статистику по проживающим только для воспитателя
+    const dormStatEl = document.getElementById('dormGraduatesStat');
+    const dormCountEl = document.getElementById('dormGraduatesCount');
+    if (isEducator) {
+        dormStatEl.style.display = 'block';
+        dormCountEl.textContent = dormGraduates;
+    } else {
+        dormStatEl.style.display = 'none';
+    }
 }
 
 // ============================================================
@@ -692,7 +857,8 @@ document.getElementById('exportBtn').onclick = function() {
                 'ФИО': s.full_name,
                 'Статус': getStatusLabel(s.status || 'graduated'),
                 'Телефон': s.phone || '—',
-                'Средний балл': s.avg_grade || '—'
+                'Средний балл': s.avg_grade || '—',
+                'Проживал в общаге': s.lived_in_dorm ? 'Да' : 'Нет'
             });
         });
     });
@@ -706,7 +872,7 @@ document.getElementById('exportBtn').onclick = function() {
     const ws = XLSX.utils.json_to_sheet(allStudents);
     
     ws['!cols'] = [
-        { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 12 }
+        { wch: 15 }, { wch: 10 }, { wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 14 }
     ];
 
     XLSX.utils.book_append_sheet(wb, ws, 'Архив студентов');
@@ -755,8 +921,25 @@ window.onresize = () => {
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 
-loadUser();
-loadGroups();
+async function init() {
+    // Проверяем сессию
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+    }
+    
+    const userLoaded = await loadUserAndRights();
+    if (!userLoaded) return;
+    
+    loadGroups();
+}
+
+// Запускаем
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 
 window.addEventListener('pageshow', function() {
     loadGroups();

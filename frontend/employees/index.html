@@ -80,52 +80,52 @@
         .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
         .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
 
-        .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
-        .category-card { background: var(--bg-card); padding: 20px; border-radius: var(--border-radius-lg); text-align: center; box-shadow: var(--shadow); border: 2px solid var(--border); transition: var(--transition); cursor: pointer; }
+        .categories-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 28px; }
+        .category-card { background: var(--bg-card); padding: 14px 10px; border-radius: var(--border-radius-lg); text-align: center; box-shadow: var(--shadow); border: 2px solid var(--border); transition: var(--transition); cursor: pointer; }
         .category-card:hover { transform: translateY(-4px); }
         .category-card.active { border-color: var(--primary); background: var(--bg-active); }
-        .category-card .icon { font-size: 28px; display: block; margin-bottom: 6px; }
-        .category-card .label { font-weight: 600; font-size: 14px; }
-        .category-card .count { font-size: 13px; color: var(--text-muted); }
+        .category-card .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+        .category-card .label { font-weight: 600; font-size: 12px; }
+        .category-card .count { font-size: 11px; color: var(--text-muted); }
 
         .search-bar { display: flex; gap: 12px; margin-bottom: 20px; }
         .search-bar input { flex: 1; padding: 10px 16px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; background: rgba(255,255,255,0.95); }
         .search-bar input:focus { outline: none; border-color: var(--primary-light); }
 
         .table-container { overflow-x: auto; border-radius: var(--border-radius-lg); border: 1px solid var(--border); background: var(--bg-card); }
-        .table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .table thead { background: var(--bg-main); }
-        .table th { padding: 12px 16px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); font-size: 13px; }
-        .table td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .table th { padding: 8px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); font-size: 11px; }
+        .table td { padding: 6px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 12px; }
         .table tbody tr:hover { background: var(--bg-hover); }
         .table tbody tr.my-profile { background: var(--my-profile-bg); border-left: 3px solid var(--primary); }
-        .table-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+        .table-actions { display: flex; gap: 4px; flex-wrap: wrap; }
 
         .empty-state { text-align: center; padding: 40px; color: var(--text-muted); }
         .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
 
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; }
         .modal-overlay.active { display: flex; }
-        .modal { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 32px; max-width: 750px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
-        .modal-title { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .modal { background: var(--bg-card); border-radius: var(--border-radius-xl); padding: 28px; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); animation: slideUp 0.3s ease; border: 1px solid var(--border); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 2px solid var(--border); margin-bottom: 18px; }
+        .modal-title { font-size: 18px; font-weight: 700; color: var(--primary); }
         .modal-close { background: none; border: none; font-size: 28px; cursor: pointer; color: var(--text-muted); }
         .modal-close:hover { color: var(--danger); transform: rotate(90deg); }
-        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 16px; border-top: 2px solid var(--border); }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding-top: 14px; border-top: 2px solid var(--border); }
 
-        .form-group { margin-bottom: 18px; }
-        .form-label { display: block; font-weight: 600; font-size: 14px; color: var(--text-secondary); margin-bottom: 6px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { display: block; font-weight: 600; font-size: 13px; color: var(--text-secondary); margin-bottom: 4px; }
         .form-label .required { color: var(--danger); margin-left: 2px; }
-        .form-control { width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; background: var(--bg-card); height: 48px; box-sizing: border-box; }
+        .form-control { width: 100%; padding: 8px 12px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 13px; background: var(--bg-card); height: 40px; box-sizing: border-box; }
         .form-control:focus { outline: none; border-color: var(--primary-light); }
-        .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-        select[multiple] { height: auto; min-height: 120px; }
+        .form-hint { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+        select[multiple] { height: auto; min-height: 100px; }
 
-        .group-tag { display: inline-block; background: #DBEAFE; color: #1A5276; padding: 2px 10px; border-radius: 12px; font-size: 12px; margin: 2px 4px 2px 0; }
+        .group-tag { display: inline-block; background: #DBEAFE; color: #1A5276; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px 3px 2px 0; }
         .group-tag.archived { background: #F3F4F6; color: #9CA3AF; text-decoration: line-through; }
         .login-loader { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease infinite; vertical-align: middle; margin-right: 8px; }
         
-        .badge-role { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+        .badge-role { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-left: 4px; }
         .badge-super_admin { background: #FEE2E2; color: #991B1B; border: 1px solid #EF4444; }
         .badge-admin { background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B; }
         .badge-teacher { background: #D1FAE5; color: #065F46; border: 1px solid #10B981; }
@@ -134,7 +134,7 @@
         
         .badge-self { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 600; background: var(--primary); color: white; margin-left: 6px; }
 
-        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 16px 24px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); }
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 14px 20px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); font-size: 14px; }
         .toast-success { background: var(--success); }
         .toast-error { background: var(--danger); }
         .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
@@ -149,7 +149,6 @@
         .lock-overlay .btn-copy:hover { background: #4B5563; }
         .lock-overlay .btn-logout-red { background: #EF4444; color: white; border: none; padding: 12px 40px; border-radius: 8px; font-size: 18px; font-weight: 700; cursor: pointer; transition: 0.3s; box-shadow: 0 0 30px rgba(239, 68, 68, 0.3); }
         .lock-overlay .btn-logout-red:hover { transform: scale(1.05); }
-        .lock-overlay .register-link { color: #93C5FD; text-decoration: underline; font-weight: 600; }
         .lock-overlay .steps { color: #D1D5DB; font-size: 14px; margin-top: 12px; }
         .lock-overlay .steps span { display: inline-block; background: #374151; padding: 2px 10px; border-radius: 4px; margin: 2px 4px; font-weight: 600; color: #FEF3C7; }
 
@@ -159,11 +158,18 @@
             .sidebar { transform: translateX(-100%); width: 280px; }
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-left: 0; padding: 16px; }
-            .categories-grid { grid-template-columns: repeat(2, 1fr); }
+            .categories-grid { grid-template-columns: repeat(3, 1fr); }
             .modal { padding: 20px; }
             .toast-notification { left: 20px; right: 20px; top: 80px; }
             .lock-overlay .invite-code { font-size: 24px; padding: 12px 20px; }
             .lock-overlay h2 { font-size: 22px; }
+        }
+        @media (max-width: 480px) {
+            .categories-grid { grid-template-columns: repeat(2, 1fr); }
+            .category-card { padding: 10px 6px; }
+            .category-card .icon { font-size: 18px; }
+            .category-card .label { font-size: 11px; }
+            .table td, .table th { padding: 4px 6px; font-size: 10px; }
         }
     </style>
 </head>
@@ -249,7 +255,7 @@
     </div>
 </main>
 
-<!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ТОЛЬКО ФИО + ДОЛЖНОСТЬ + ТЕЛЕФОН) -->
+<!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ -->
 <div class="modal-overlay profile-edit-modal" id="profileEditModal">
     <div class="modal" style="max-width:500px;">
         <div class="modal-header">
@@ -336,10 +342,9 @@ if (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) {
     console.log('✅ bcryptjs успешно загружен');
 }
 
-const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
 var employees = [];
 var groups = [];
 var archivedGroupIds = [];
@@ -348,6 +353,7 @@ var editingId = null;
 var currentCategory = 'all';
 var canManageEmployees = false;
 var canResetPassword = false;
+var sbClient = null;
 
 // ============================================================
 // ID УСТРОЙСТВА
@@ -401,7 +407,8 @@ document.getElementById('lockLogoutBtn').onclick = function() {
 // ============================================================
 async function invalidateUserSession(userId) {
     try {
-        var result = await supabaseClient
+        if (!sbClient) return false;
+        var result = await sbClient
             .from('users')
             .update({ active_session_id: null })
             .eq('id', userId);
@@ -431,12 +438,34 @@ function showToast(message, type) {
 // ИНИЦИАЛИЗАЦИЯ
 // ============================================================
 async function init() {
+    if (typeof window.Session !== 'undefined') {
+        await window.Session.check();
+    }
+    
+    if (window.Session && typeof window.Session.supabase === 'function') {
+        sbClient = window.Session.supabase();
+        console.log('✅ Клиент получен из сессии');
+    }
+    
+    if (!sbClient && window.supabaseClient) {
+        sbClient = window.supabaseClient;
+        console.log('✅ Клиент получен из глобального');
+    }
+    
+    if (!sbClient) {
+        sbClient = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+        console.log('✅ Клиент создан локально');
+    }
+
     var savedUser = localStorage.getItem('currentUser');
     if (!savedUser) { window.location.href = '/index.html'; return; }
     
     try {
         var localUser = JSON.parse(savedUser);
-        var userResult = await supabaseClient
+        var userResult = await sbClient
             .from('users')
             .select('id, login, role, employee_id, active_session_id, invite_code')
             .eq('id', localUser.id)
@@ -507,20 +536,23 @@ if (window.innerWidth <= 768) document.getElementById('menuToggle').style.displa
 // ЗАГРУЗКА ДАННЫХ
 // ============================================================
 async function loadGroups() {
-    var result = await supabaseClient.from('groups').select('id, name, type, is_archived').order('name');
+    if (!sbClient) { console.error('❌ Клиент не инициализирован'); return; }
+    var result = await sbClient.from('groups').select('id, name, type, is_archived').order('name');
     if (result.error) { console.error('Ошибка загрузки групп:', result.error); return; }
     groups = result.data || [];
     archivedGroupIds = groups.filter(function(g) { return g.is_archived === true; }).map(function(g) { return g.id; });
 }
 
 async function loadEmployees() {
-    var result = await supabaseClient
+    if (!sbClient) { console.error('❌ Клиент не инициализирован'); return; }
+    var result = await sbClient
         .from('employees')
         .select('*, users!inner(invite_code, invite_used, role, login, id)')
         .eq('is_hidden', false)
         .order('full_name');
 
     if (result.error) {
+        console.error('❌ Ошибка загрузки сотрудников:', result.error);
         document.getElementById('employeesTableBody').innerHTML = '<tr><td colspan="8"><div class="empty-state"><span class="icon">❌</span><p>Ошибка: ' + result.error.message + '</p></div></td></tr>';
         return;
     }
@@ -558,7 +590,8 @@ function renderEmployees() {
     }
     if (search) {
         filtered = filtered.filter(function(e) {
-            return e.full_name.toLowerCase().includes(search) || (e.position && e.position.toLowerCase().includes(search));
+            return e.full_name.toLowerCase().includes(search) || 
+                   (e.position && e.position.toLowerCase().includes(search));
         });
     }
 
@@ -568,6 +601,7 @@ function renderEmployees() {
     }
 
     var catLabels = { 'teachers': 'Преподаватель', 'masters': 'Мастер ПО', 'administration': 'Администрация', 'other': 'Другие' };
+    
     var isSelf = function(empId) {
         return currentUser && currentUser.employee_id === empId;
     };
@@ -672,7 +706,7 @@ function updateCounts() {
 }
 
 // ============================================================
-// МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ (ТОЛЬКО ФИО + ДОЛЖНОСТЬ + ТЕЛЕФОН)
+// МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ СЕБЯ
 // ============================================================
 function openProfileEditModal() {
     var alert = document.getElementById('profileEditAlert');
@@ -684,6 +718,7 @@ function openProfileEditModal() {
     document.getElementById('profilePhone').value = myEmp?.phone || '';
     
     document.getElementById('profileEditModal').classList.add('active');
+    setTimeout(function() { document.getElementById('profileFullName').focus(); }, 200);
 }
 
 function closeProfileEditModal() {
@@ -696,9 +731,6 @@ document.getElementById('profileEditModal').addEventListener('click', function(e
     if (e.target === this) closeProfileEditModal();
 });
 
-// ============================================================
-// СОХРАНЕНИЕ ПРОФИЛЯ (ТОЛЬКО ФИО + ДОЛЖНОСТЬ + ТЕЛЕФОН)
-// ============================================================
 document.getElementById('profileEditSaveBtn').onclick = async function() {
     var alert = document.getElementById('profileEditAlert');
     alert.style.display = 'none';
@@ -720,7 +752,7 @@ document.getElementById('profileEditSaveBtn').onclick = async function() {
 
     try {
         if (currentUser.employee_id) {
-            var empResult = await supabaseClient
+            var empResult = await sbClient
                 .from('employees')
                 .update({ full_name: fullName, position: position || null, phone: phone || null })
                 .eq('id', currentUser.employee_id);
@@ -755,100 +787,6 @@ document.getElementById('profileEditSaveBtn').onclick = async function() {
         btn.disabled = false;
     }
 };
-
-// ============================================================
-// МОДАЛЬНОЕ ОКНО СБРОСА
-// ============================================================
-function openResetModal() {
-    document.getElementById('resetModal').classList.add('active');
-}
-
-function closeResetModal() {
-    document.getElementById('resetModal').classList.remove('active');
-}
-
-document.getElementById('resetCloseBtn').onclick = closeResetModal;
-document.getElementById('resetCancelBtn').onclick = closeResetModal;
-document.getElementById('resetModal').addEventListener('click', function(e) {
-    if (e.target === this) closeResetModal();
-});
-
-document.getElementById('resetConfirmBtn').onclick = async function() {
-    var btn = this;
-    var orig = btn.innerHTML;
-    btn.innerHTML = '⏳ ...';
-    btn.disabled = true;
-    
-    try {
-        var part1 = Math.floor(1000 + Math.random() * 9000).toString();
-        var part2 = Math.floor(1000 + Math.random() * 9000).toString();
-        var newInviteCode = part1 + '-' + part2;
-        
-        var result = await supabaseClient
-            .from('users')
-            .update({
-                login: null,
-                password_hash: null,
-                invite_code: newInviteCode,
-                invite_used: false,
-                invite_status: 'pending',
-                active_session_id: null
-            })
-            .eq('id', currentUser.id);
-        
-        if (result.error) throw result.error;
-        
-        closeResetModal();
-        showLockScreen(newInviteCode);
-        showToast('✅ Доступ сброшен! Используйте новый код для регистрации', 'success');
-        
-    } catch(e) {
-        console.error('Ошибка сброса:', e);
-        showToast('❌ Ошибка: ' + e.message, 'error');
-    } finally {
-        btn.innerHTML = orig;
-        btn.disabled = false;
-    }
-};
-
-// ============================================================
-// ПРОСМОТР КАРТОЧКИ
-// ============================================================
-function viewEmployee(id) {
-    var e = employees.find(function(x) { return x.id === id; });
-    if (!e) return;
-    var catLabels = { 'teachers': 'Преподаватель', 'masters': 'Мастер ПО', 'administration': 'Администрация', 'other': 'Другие' };
-    var roleLabel = 'Наблюдатель';
-    if (e.user_role === 'super_admin') roleLabel = 'Супер-Админ';
-    else if (e.user_role === 'admin') roleLabel = 'Админ';
-    else if (e.user_role === 'teacher') roleLabel = 'Преподаватель';
-    else if (e.user_role === 'master') roleLabel = 'Мастер ПО';
-    
-    var groupsHtml = '—';
-    if (e.groups && e.groups.length) {
-        var names = e.groups.map(function(gid) {
-            var g = groups.find(function(gr) { return gr.id === gid; });
-            return g ? g.name : gid;
-        });
-        groupsHtml = names.map(function(n) { return '<span class="group-tag">' + n + '</span>'; }).join(' ');
-    }
-
-    document.getElementById('modalTitle').textContent = '👤 Карточка сотрудника';
-    document.getElementById('modalBody').innerHTML =
-        '<div style="padding:8px 0;">' +
-        '<div style="font-size:22px;font-weight:700;color:var(--primary);">' + e.full_name + '</div>' +
-        '<div style="color:var(--text-secondary);margin:4px 0 12px;">' +
-        (e.position || '—') + ' · ' + (catLabels[e.category] || e.category) +
-        ' <span class="badge-role ' + (e.user_role === 'super_admin' ? 'badge-super_admin' : e.user_role === 'admin' ? 'badge-admin' : e.user_role === 'teacher' ? 'badge-teacher' : e.user_role === 'master' ? 'badge-master' : 'badge-viewer') + '">' + roleLabel + '</span>' +
-        '</div><hr style="margin:12px 0;border-color:var(--border);">' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">' +
-        '<div><strong>📱 Телефон:</strong> ' + (e.phone || '—') + '</div>' +
-        '<div><strong>🔑 Логин:</strong> ' + (e.user_login || '—') + '</div>' +
-        '<div style="grid-column:1/-1;"><strong>📚 Группы:</strong> ' + groupsHtml + '</div>' +
-        '</div></div>';
-    document.getElementById('modalSaveBtn').style.display = 'none';
-    document.getElementById('employeeModal').classList.add('active');
-}
 
 // ============================================================
 // МОДАЛЬНОЕ ОКНО ДЛЯ АДМИНОВ
@@ -901,12 +839,23 @@ function showModalForm(data) {
         '<div class="form-group"><label class="form-label">ФИО <span class="required">*</span></label><input type="text" class="form-control" id="empFullName" value="' + fullNameValue + '" placeholder="Введите ФИО"></div>' +
         '<div class="form-group"><label class="form-label">Должность</label><input type="text" class="form-control" id="empPosition" value="' + positionValue + '" placeholder="Введите должность"></div>' +
         '<div class="form-group"><label class="form-label">Категория <span class="required">*</span></label><select class="form-control" id="empCategory">' + catOpts + '</select></div>' +
-        (canManageEmployees ? '<div class="form-group"><label class="form-label">Права доступа</label><select class="form-control" id="empRole">' + roleOpts + '</select><div class="form-hint">⚠️ Вы не можете изменить свою роль</div></div>' : '') +
+        (canManageEmployees ? 
+            '<div class="form-group"><label class="form-label">Права доступа</label><select class="form-control" id="empRole">' + roleOpts + '</select><div class="form-hint">⚠️ Вы не можете изменить свою роль</div></div>' : '') +
         '<div class="form-group" id="groupSelectContainer" style="display:none;"><label class="form-label">Закреплённые группы</label><select class="form-control" id="empGroups" multiple></select><div class="form-hint" id="groupHint">Выберите группы для курирования</div></div>' +
         '<div class="form-group"><label class="form-label">Телефон</label><input type="text" class="form-control" id="empPhone" value="' + phoneValue + '" placeholder="+375 XX XXX-XX-XX"></div>' +
         (!isEdit ? '<div style="background:#DBEAFE;padding:12px;border-radius:8px;margin-top:12px;font-size:13px;color:#1A5276;font-weight:600;">ℹ️ После сохранения будет создан пригласительный код</div>' : '');
 
     document.getElementById('employeeModal').classList.add('active');
+
+    document.getElementById('employeeModal').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var saveBtn = document.getElementById('modalSaveBtn');
+            if (saveBtn && !saveBtn.disabled) {
+                saveBtn.click();
+            }
+        }
+    });
 
     var updateGroupSelect = function() {
         var cat = document.getElementById('empCategory').value;
@@ -933,6 +882,8 @@ function showModalForm(data) {
 
     document.getElementById('empCategory').addEventListener('change', updateGroupSelect);
     updateGroupSelect();
+
+    setTimeout(function() { document.getElementById('empFullName').focus(); }, 300);
 }
 
 // ============================================================
@@ -959,29 +910,50 @@ document.getElementById('modalSaveBtn').onclick = async function() {
     }
 
     var btn = this;
+    var orig = btn.innerHTML;
     btn.innerHTML = '<span class="login-loader"></span> Сохранение...';
     btn.disabled = true;
 
     try {
-        var empData = { full_name: full_name, position: position || null, category: category, phone: phone || null, groups: selectedGroups };
+        var empData = { 
+            full_name: full_name, 
+            position: position || null, 
+            category: category, 
+            phone: phone || null, 
+            groups: selectedGroups
+        };
         
         if (editingId) {
-            var updateResult = await supabaseClient.from('employees').update(empData).eq('id', editingId);
+            var updateResult = await sbClient.from('employees').update(empData).eq('id', editingId);
             if (updateResult.error) throw updateResult.error;
             if (currentUser.employee_id !== editingId) {
-                await supabaseClient.from('users').update({ role: role }).eq('employee_id', editingId);
+                await sbClient.from('users').update({ role: role }).eq('employee_id', editingId);
             }
             showToast('✅ Сотрудник обновлён!', 'success');
         } else {
-            var insertResult = await supabaseClient.from('employees').insert([{ ...empData, status: 'active' }]).select().single();
-            if (insertResult.error) throw insertResult.error;
+            var insertResult = await sbClient.from('employees').insert([{ ...empData, status: 'active' }]).select().single();
+            if (insertResult.error) {
+                console.error('❌ Ошибка INSERT:', insertResult);
+                throw insertResult.error;
+            }
             if (insertResult.data) {
-                await supabaseClient.from('users').update({ role: role }).eq('employee_id', insertResult.data.id);
+                await sbClient.from('users').update({ role: role }).eq('employee_id', insertResult.data.id);
             }
             showToast('✅ Сотрудник добавлен!', 'success');
         }
 
         closeModal();
+        
+        document.getElementById('searchInput').value = '';
+        currentCategory = 'all';
+        
+        document.querySelectorAll('.category-card').forEach(function(card) {
+            card.classList.remove('active');
+            if (card.dataset.category === 'all') {
+                card.classList.add('active');
+            }
+        });
+        
         await loadEmployees();
     } catch (error) {
         console.error('Ошибка сохранения:', error);
@@ -993,7 +965,7 @@ document.getElementById('modalSaveBtn').onclick = async function() {
 };
 
 // ============================================================
-// УДАЛЕНИЕ И СБРОС (ДЛЯ АДМИНОВ)
+// УДАЛЕНИЕ И СБРОС
 // ============================================================
 function closeModal() { document.getElementById('employeeModal').classList.remove('active'); editingId = null; }
 document.getElementById('modalCloseBtn').onclick = closeModal;
@@ -1002,7 +974,10 @@ document.getElementById('employeeModal').addEventListener('click', function(e) {
 
 document.getElementById('addEmployeeBtn').onclick = function() { openModal(null); };
 document.getElementById('searchInput').addEventListener('input', renderEmployees);
-document.getElementById('clearSearchBtn').onclick = function() { document.getElementById('searchInput').value = ''; renderEmployees(); };
+document.getElementById('clearSearchBtn').onclick = function() { 
+    document.getElementById('searchInput').value = ''; 
+    renderEmployees(); 
+};
 
 document.querySelectorAll('.category-card').forEach(function(c) {
     c.addEventListener('click', function() {
@@ -1013,6 +988,49 @@ document.querySelectorAll('.category-card').forEach(function(c) {
     });
 });
 
+// ============================================================
+// ПРОСМОТР КАРТОЧКИ
+// ============================================================
+function viewEmployee(id) {
+    var e = employees.find(function(x) { return x.id === id; });
+    if (!e) return;
+    var catLabels = { 'teachers': 'Преподаватель', 'masters': 'Мастер ПО', 'administration': 'Администрация', 'other': 'Другие' };
+    var roleLabel = 'Наблюдатель';
+    var roleBadgeClass = 'badge-viewer';
+    if (e.user_role === 'super_admin') { roleBadgeClass = 'badge-super_admin'; roleLabel = 'Супер-Админ'; }
+    else if (e.user_role === 'admin') { roleBadgeClass = 'badge-admin'; roleLabel = 'Админ'; }
+    else if (e.user_role === 'teacher') { roleBadgeClass = 'badge-teacher'; roleLabel = 'Преподаватель'; }
+    else if (e.user_role === 'master') { roleBadgeClass = 'badge-master'; roleLabel = 'Мастер ПО'; }
+    
+    var groupsHtml = '—';
+    if (e.groups && e.groups.length) {
+        var names = e.groups.map(function(gid) {
+            var g = groups.find(function(gr) { return gr.id === gid; });
+            return g ? g.name : gid;
+        });
+        groupsHtml = names.map(function(n) { return '<span class="group-tag">' + n + '</span>'; }).join(' ');
+    }
+
+    document.getElementById('modalTitle').textContent = '👤 Карточка сотрудника';
+    document.getElementById('modalBody').innerHTML =
+        '<div style="padding:8px 0;">' +
+        '<div style="font-size:22px;font-weight:700;color:var(--primary);">' + e.full_name + '</div>' +
+        '<div style="color:var(--text-secondary);margin:4px 0 12px;">' +
+        (e.position || '—') + ' · ' + (catLabels[e.category] || e.category) +
+        ' <span class="badge-role ' + roleBadgeClass + '">' + roleLabel + '</span>' +
+        '</div><hr style="margin:12px 0;border-color:var(--border);">' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;">' +
+        '<div><strong>📱 Телефон:</strong> ' + (e.phone || '—') + '</div>' +
+        '<div><strong>🔑 Логин:</strong> ' + (e.user_login || '—') + '</div>' +
+        '<div style="grid-column:1/-1;"><strong>📚 Группы:</strong> ' + groupsHtml + '</div>' +
+        '</div></div>';
+    document.getElementById('modalSaveBtn').style.display = 'none';
+    document.getElementById('employeeModal').classList.add('active');
+}
+
+// ============================================================
+// УДАЛЕНИЕ (ТОЛЬКО АДМИНИСТРАТОРЫ)
+// ============================================================
 async function deleteEmployee(id) {
     if (!canManageEmployees || currentUser.employee_id === id) {
         showToast('❌ Недостаточно прав', 'error');
@@ -1021,21 +1039,24 @@ async function deleteEmployee(id) {
     if (!confirm('Удалить сотрудника и его учётную запись?')) return;
     
     try {
-        var userResult = await supabaseClient.from('users').select('id').eq('employee_id', id).single();
+        var userResult = await sbClient.from('users').select('id').eq('employee_id', id).single();
         if (userResult.data) {
             await invalidateUserSession(userResult.data.id);
+            await sbClient.from('users').delete().eq('employee_id', id);
         }
-        await supabaseClient.from('users').delete().eq('employee_id', id);
-        var deleteResult = await supabaseClient.from('employees').delete().eq('id', id);
+        var deleteResult = await sbClient.from('employees').delete().eq('id', id);
         if (deleteResult.error) throw deleteResult.error;
         await loadEmployees();
-        showToast('✅ Сотрудник удалён', 'success');
+        showToast('✅ Сотрудник и учётная запись удалены', 'success');
     } catch (e) {
         console.error('Ошибка удаления:', e);
         showToast('❌ Ошибка: ' + e.message, 'error');
     }
 }
 
+// ============================================================
+// СБРОС ДОСТУПА (ТОЛЬКО СУПЕР-АДМИН)
+// ============================================================
 async function resetCredentials(id) {
     if (!canResetPassword || currentUser.employee_id === id) {
         showToast('❌ Недостаточно прав', 'error');
@@ -1050,9 +1071,9 @@ async function resetCredentials(id) {
         var part2 = Math.floor(1000 + Math.random() * 9000).toString();
         var newInviteCode = part1 + '-' + part2;
         
-        var userResult = await supabaseClient.from('users').select('id').eq('employee_id', id).single();
+        var userResult = await sbClient.from('users').select('id').eq('employee_id', id).single();
         if (userResult.data) {
-            await supabaseClient
+            await sbClient
                 .from('users')
                 .update({
                     login: null,
@@ -1073,6 +1094,61 @@ async function resetCredentials(id) {
 }
 
 // ============================================================
+// МОДАЛЬНОЕ ОКНО СБРОСА ДЛЯ СЕБЯ
+// ============================================================
+function openResetModal() {
+    document.getElementById('resetModal').classList.add('active');
+}
+
+function closeResetModal() {
+    document.getElementById('resetModal').classList.remove('active');
+}
+
+document.getElementById('resetCloseBtn').onclick = closeResetModal;
+document.getElementById('resetCancelBtn').onclick = closeResetModal;
+document.getElementById('resetModal').addEventListener('click', function(e) {
+    if (e.target === this) closeResetModal();
+});
+
+document.getElementById('resetConfirmBtn').onclick = async function() {
+    var btn = this;
+    var orig = btn.innerHTML;
+    btn.innerHTML = '⏳ ...';
+    btn.disabled = true;
+    
+    try {
+        var part1 = Math.floor(1000 + Math.random() * 9000).toString();
+        var part2 = Math.floor(1000 + Math.random() * 9000).toString();
+        var newInviteCode = part1 + '-' + part2;
+        
+        var result = await sbClient
+            .from('users')
+            .update({
+                login: null,
+                password_hash: null,
+                invite_code: newInviteCode,
+                invite_used: false,
+                invite_status: 'pending',
+                active_session_id: null
+            })
+            .eq('id', currentUser.id);
+        
+        if (result.error) throw result.error;
+        
+        closeResetModal();
+        showLockScreen(newInviteCode);
+        showToast('✅ Доступ сброшен! Используйте новый код для регистрации', 'success');
+        
+    } catch(e) {
+        console.error('Ошибка сброса:', e);
+        showToast('❌ Ошибка: ' + e.message, 'error');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
+};
+
+// ============================================================
 // ПРОВЕРКА СЕССИИ
 // ============================================================
 async function checkSessionOnLoad() {
@@ -1081,7 +1157,7 @@ async function checkSessionOnLoad() {
     
     try {
         var user = JSON.parse(savedUser);
-        var result = await supabaseClient
+        var result = await sbClient
             .from('users')
             .select('active_session_id, invite_code, login')
             .eq('id', user.id)

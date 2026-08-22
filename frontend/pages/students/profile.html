@@ -3,17 +3,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Карточка учащегося | vgatk_bd</title>
+    <title>Карточка студента | vgatk_bd</title>
 
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon" />
     <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/css/components.css" />
-    
-    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/session.js"></script>
-    <script src="/js/session-init.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
     <!-- ===== html2pdf ДЛЯ PDF ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
     </script>
@@ -76,6 +72,44 @@
         .target-card { background: #F0FDF4; padding: 12px 16px; border-radius: var(--border-radius-lg); border: 1px solid #86EFAC; margin-top: 4px; }
         .target-card .target-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
         .target-card .target-row strong { color: var(--text-secondary); font-weight: 600; }
+
+        /* ===== БЛОК ПРОЖИВАНИЯ (как целевое обучение) ===== */
+        .dorm-block {
+            display: none;
+            background: #F0F9FF;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            border: 2px solid #BAE6FD;
+            margin-top: 12px;
+        }
+        .dorm-block.show {
+            display: block;
+        }
+        .dorm-block .dorm-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .dorm-block .dorm-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .dorm-block .dorm-row .dorm-item {
+            flex: 1;
+            min-width: 150px;
+        }
+        .dorm-block .dorm-row .dorm-item strong {
+            color: var(--text-secondary);
+            font-weight: 600;
+            display: block;
+            font-size: 12px;
+        }
+        .dorm-block .dorm-row .dorm-item span {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
 
         .accounting-display { display: flex; flex-direction: column; gap: 6px; width: 100%; }
         .accounting-display .accounting-line { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 6px 12px; background: #F8FAFC; border-radius: var(--border-radius); border-left: 3px solid var(--warning); transition: var(--transition); font-size: 14px; }
@@ -294,6 +328,19 @@
             color: #555;
             padding-left: 110px;
         }
+        .pdf-content .pdf-dorm-row {
+            padding: 2px 0;
+            font-size: 11pt;
+            display: flex;
+        }
+        .pdf-content .pdf-dorm-row .pdf-dorm-label {
+            font-weight: 600;
+            min-width: 110px;
+            display: inline-block;
+        }
+        .pdf-content .pdf-dorm-row .pdf-dorm-value {
+            flex: 1;
+        }
 
         @media (max-width: 768px) {
             .page-container { padding: 0; }
@@ -310,6 +357,7 @@
             .grade-section .grade-row { flex-direction: column; gap: 4px; align-items: flex-start; }
             .profile-card .name { font-size: 20px; }
             .address-section .address-line { flex-direction: column; gap: 2px; }
+            .dorm-block .dorm-row { flex-direction: column; gap: 8px; }
         }
         @media (max-width: 480px) {
             .header-actions .btn { font-size: 11px; padding: 6px 10px; }
@@ -358,7 +406,7 @@
 
             <div class="page-header">
                 <div>
-                    <h1 class="page-title">👨‍🎓 Карточка учащегося <small id="studentSubtitle">загрузка...</small></h1>
+                    <h1 class="page-title">👨‍🎓 Карточка студента <small id="studentSubtitle">загрузка...</small></h1>
                 </div>
                 <div class="header-actions" id="headerActions">
                     <button class="btn btn-secondary" id="backBtn">← Назад</button>
@@ -411,81 +459,115 @@
         </div>
     </div>
 
+    <script src="/js/components.js">
+    </script>
+
     <script>
-    // ============================================================
-    // ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient ИЗ СЕССИИ
-    // ============================================================
-    
-    // Получаем клиент из сессии
-    const sb = window.Session ? window.Session.supabase() : null;
-    
-    if (!sb) {
-        console.warn('⚠️ Supabase клиент не доступен, создаём локально');
+        // ============================================================
+        // ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ supabaseClient
+        // ============================================================
         if (typeof window.supabaseClient === 'undefined') {
             window.supabaseClient = window.supabase.createClient(
                 'https://selbolepupendprhixas.supabase.co',
                 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
             );
         }
-        window.supabase = window.supabaseClient;
-    } else {
-        window.supabase = sb;
-    }
 
-    console.log('✅ Supabase готов к использованию');
+        const sb = window.supabaseClient;
+        console.log('✅ Supabase готов к использованию');
 
-    // ============================================================
-    // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
-    // ============================================================
+        // ============================================================
+        // СТРУКТУРА ОБЩЕЖИТИЯ
+        // ============================================================
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const studentId = urlParams.get('id');
+        const FLOOR_STRUCTURE = {
+            '2': {
+                label: '2-й этаж',
+                blocks: [1, 2, 3, 4, 5, 6, 7, 8, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
+            },
+            '3': {
+                label: '3-й этаж',
+                blocks: [32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 44, 45, 49]
+            }
+        };
 
-    let currentUser = null;
-    let hasEditRights = false;
-    let currentAction = null;
-    let currentStudent = null;
-    let currentParents = [];
-    let currentSiblings = [];
+        function getAllBlocks() {
+            const all = [];
+            for (const data of Object.values(FLOOR_STRUCTURE)) {
+                all.push(...data.blocks);
+            }
+            return all.sort((a, b) => a - b);
+        }
 
-    // ============================================================
-    // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-    // ============================================================
+        function getFloorByBlock(blockNumber) {
+            for (const [floor, data] of Object.entries(FLOOR_STRUCTURE)) {
+                if (data.blocks.includes(parseInt(blockNumber))) {
+                    return parseInt(floor);
+                }
+            }
+            return null;
+        }
 
-    function getMaxCourse(type) {
-        return type === 'sso' ? 4 : 3;
-    }
+        function getFloorLabel(blockNumber) {
+            const floor = getFloorByBlock(blockNumber);
+            return floor ? FLOOR_STRUCTURE[floor].label : '—';
+        }
 
-    // ============================================================
-    // TOAST УВЕДОМЛЕНИЯ
-    // ============================================================
+        function getRoomTypeLabel(type) {
+            if (type === 'M') return 'Маленькая (M)';
+            if (type === 'B') return 'Большая (B)';
+            return '—';
+        }
 
-    function showToast(message, type = 'success') {
-        const existing = document.querySelector('.toast-notification');
-        if (existing) existing.remove();
+        // ============================================================
+        // ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+        // ============================================================
 
-        const toast = document.createElement('div');
-        toast.className = `toast-notification toast-${type}`;
-        toast.innerHTML = `
-            <span class="toast-close" onclick="this.parentElement.remove()">×</span>
-            ${message}
-        `;
-        document.body.appendChild(toast);
+        const urlParams = new URLSearchParams(window.location.search);
+        const studentId = urlParams.get('id');
 
-        setTimeout(() => {
-            if (toast.parentElement) toast.remove();
-        }, 5000);
-    }
+        let currentUser = null;
+        let hasEditRights = false;
+        let currentAction = null;
+        let currentStudent = null;
+        let currentParents = [];
+        let currentSiblings = [];
+        let currentGroup = null; // Для хранения данных группы
 
-    // ============================================================
-    // ПОЛЬЗОВАТЕЛЬ И ПРАВА
-    // ============================================================
+        // ============================================================
+        // ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+        // ============================================================
 
-    function loadUser() {
-        const user = window.Session ? window.Session.getUser() : null;
-        
-        if (!user) {
-            // Если сессия не инициализирована, пробуем через localStorage
+        function getMaxCourse(type) {
+            return type === 'sso' ? 4 : 3;
+        }
+
+        // ============================================================
+        // TOAST УВЕДОМЛЕНИЯ
+        // ============================================================
+
+        function showToast(message, type = 'success') {
+            const existing = document.querySelector('.toast-notification');
+            if (existing) existing.remove();
+
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.innerHTML = `
+                <span class="toast-close" onclick="this.parentElement.remove()">×</span>
+                ${message}
+            `;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                if (toast.parentElement) toast.remove();
+            }, 5000);
+        }
+
+        // ============================================================
+        // ПОЛЬЗОВАТЕЛЬ И ПРАВА
+        // ============================================================
+
+        function loadUser() {
             const savedUser = localStorage.getItem('currentUser');
             if (!savedUser) {
                 window.location.href = '/index.html';
@@ -493,1435 +575,1614 @@
             }
             try {
                 currentUser = JSON.parse(savedUser);
+                document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+                const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель',
+                    'viewer': 'Наблюдатель' };
+                document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+
+                hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
+
+                document.getElementById('editStudentBtn').style.display = hasEditRights ? 'inline-flex' : 'none';
+
             } catch (e) {
                 localStorage.removeItem('currentUser');
                 window.location.href = '/index.html';
-                return;
             }
-        } else {
-            currentUser = user;
         }
-        
-        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.full_name || currentUser.login;
-        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
-        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
 
-        hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
-
-        document.getElementById('editStudentBtn').style.display = hasEditRights ? 'inline-flex' : 'none';
-    }
-
-    document.getElementById('logoutBtn').onclick = () => {
-        if (window.Session) {
-            window.Session.logout();
-        } else {
+        document.getElementById('logoutBtn').onclick = () => {
             localStorage.removeItem('currentUser');
             window.location.href = '/index.html';
+        };
+
+        // ============================================================
+        // ФУНКЦИИ
+        // ============================================================
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
-    };
 
-    // ============================================================
-    // ФУНКЦИИ
-    // ============================================================
+        function calculateAge(birthDate) {
+            if (!birthDate) return '—';
+            const birth = new Date(birthDate);
+            const today = new Date();
+            let age = today.getFullYear() - birth.getFullYear();
+            const m = today.getMonth() - birth.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+            return age;
+        }
 
-    function formatDate(dateStr) {
-        if (!dateStr) return '—';
-        const d = new Date(dateStr);
-        return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
+        function getStatusBadge(status) {
+            if (status === 'active') return 'status-active';
+            if (status === 'expelled') return 'status-inactive';
+            if (status === 'academic') return 'status-academic';
+            return 'status-graduated';
+        }
 
-    function calculateAge(birthDate) {
-        if (!birthDate) return '—';
-        const birth = new Date(birthDate);
-        const today = new Date();
-        let age = today.getFullYear() - birth.getFullYear();
-        const m = today.getMonth() - birth.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-        return age;
-    }
+        function getStatusText(status) {
+            if (status === 'active') return '✅ Активен';
+            if (status === 'expelled') return '❌ Отчислен';
+            if (status === 'academic') return '📚 Академ. отпуск';
+            return '🎓 Выпущен';
+        }
 
-    function getStatusBadge(status) {
-        if (status === 'active') return 'status-active';
-        if (status === 'expelled') return 'status-inactive';
-        if (status === 'academic') return 'status-academic';
-        return 'status-graduated';
-    }
+        function getGenderBadge(gender) {
+            if (gender === 'Мужской') return `<span class="gender-badge gender-male">👨 Мужской</span>`;
+            if (gender === 'Женский') return `<span class="gender-badge gender-female">👩 Женский</span>`;
+            return '';
+        }
 
-    function getStatusText(status) {
-        if (status === 'active') return '✅ Активен';
-        if (status === 'expelled') return '❌ Отчислен';
-        if (status === 'academic') return '📚 Академ. отпуск';
-        return '🎓 Выпущен';
-    }
+        function formatGrade(value) {
+            if (value === null || value === undefined || value === '') return '—';
+            const num = parseFloat(value);
+            if (isNaN(num)) return '—';
+            return num.toFixed(1).replace('.', ',');
+        }
 
-    function getGenderBadge(gender) {
-        if (gender === 'Мужской') return `<span class="gender-badge gender-male">👨 Мужской</span>`;
-        if (gender === 'Женский') return `<span class="gender-badge gender-female">👩 Женский</span>`;
-        return '';
-    }
+        // ============================================================
+        // ПОЛУЧЕНИЕ АДРЕСОВ ИЗ JSONB
+        // ============================================================
 
-    function formatGrade(value) {
-        if (value === null || value === undefined || value === '') return '—';
-        const num = parseFloat(value);
-        if (isNaN(num)) return '—';
-        return num.toFixed(1).replace('.', ',');
-    }
-
-    // ============================================================
-    // ПОЛУЧЕНИЕ АДРЕСОВ ИЗ JSONB
-    // ============================================================
-
-    function getAddresses(student) {
-        if (!student) return [];
-        try {
-            if (student.addresses && typeof student.addresses === 'object') {
-                return student.addresses;
+        function getAddresses(student) {
+            if (!student) return [];
+            try {
+                if (student.addresses && typeof student.addresses === 'object') {
+                    return student.addresses;
+                }
+                if (student.addresses && typeof student.addresses === 'string') {
+                    return JSON.parse(student.addresses);
+                }
+            } catch (e) {
+                console.error('Ошибка парсинга адресов:', e);
             }
-            if (student.addresses && typeof student.addresses === 'string') {
-                return JSON.parse(student.addresses);
+            return [];
+        }
+
+        // ============================================================
+        // ОТОБРАЖЕНИЕ СРЕДНЕГО БАЛЛА ПО КУРСАМ
+        // ============================================================
+
+        function renderGrades(student) {
+            if (!student) return '';
+
+            const type = student.type || '';
+            const maxCourse = getMaxCourse(type);
+
+            let html = `
+                <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
+                    <span class="label" style="width:100%;">📊 Средний балл по курсам</span>
+                    <span class="value" style="width:100%;">
+            `;
+
+            const courses = [
+                { num: 1, label: '1 курс' },
+                { num: 2, label: '2 курс' },
+                { num: 3, label: '3 курс' }
+            ];
+
+            if (type === 'sso') {
+                courses.push({ num: 4, label: '4 курс' });
             }
-        } catch (e) {
-            console.error('Ошибка парсинга адресов:', e);
-        }
-        return [];
-    }
 
-    // ============================================================
-    // ОТОБРАЖЕНИЕ СРЕДНЕГО БАЛЛА ПО КУРСАМ
-    // ============================================================
+            courses.forEach(course => {
+                const semester1 = student[`grade_${course.num}_sem1`];
+                const semester2 = student[`grade_${course.num}_sem2`];
+                const year = student[`grade_${course.num}_year`];
 
-    function renderGrades(student) {
-        if (!student) return '';
-
-        const type = student.type || '';
-        const maxCourse = getMaxCourse(type);
-
-        let html = `
-            <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
-                <span class="label" style="width:100%;">📊 Средний балл по курсам</span>
-                <span class="value" style="width:100%;">
-        `;
-
-        const courses = [
-            { num: 1, label: '1 курс' },
-            { num: 2, label: '2 курс' },
-            { num: 3, label: '3 курс' }
-        ];
-
-        if (type === 'sso') {
-            courses.push({ num: 4, label: '4 курс' });
-        }
-
-        courses.forEach(course => {
-            const semester1 = student[`grade_${course.num}_sem1`];
-            const semester2 = student[`grade_${course.num}_sem2`];
-            const year = student[`grade_${course.num}_year`];
-
-            let gradeHtml = `
-                <div class="grade-section">
-                    <div class="grade-title">📘 ${course.label}</div>
-                    <div class="grade-row">
-                        <span class="grade-label">1-ое полугодие:</span>
-                        <span class="grade-value">${formatGrade(semester1)}</span>
+                let gradeHtml = `
+                    <div class="grade-section">
+                        <div class="grade-title">📘 ${course.label}</div>
+                        <div class="grade-row">
+                            <span class="grade-label">1-ое полугодие:</span>
+                            <span class="grade-value">${formatGrade(semester1)}</span>
+                        </div>
+                        <div class="grade-row">
+                            <span class="grade-label">2-ое полугодие:</span>
+                            <span class="grade-value">${formatGrade(semester2)}</span>
+                        </div>
+                        <div class="grade-row">
+                            <span class="grade-label">За год:</span>
+                            <span class="grade-value"><strong>${formatGrade(year)}</strong></span>
+                        </div>
                     </div>
-                    <div class="grade-row">
-                        <span class="grade-label">2-ое полугодие:</span>
-                        <span class="grade-value">${formatGrade(semester2)}</span>
-                    </div>
-                    <div class="grade-row">
-                        <span class="grade-label">За год:</span>
-                        <span class="grade-value"><strong>${formatGrade(year)}</strong></span>
-                    </div>
+                `;
+
+                html += gradeHtml;
+            });
+
+            html += `
+                    </span>
                 </div>
             `;
 
-            html += gradeHtml;
-        });
-
-        html += `
-                </span>
-            </div>
-        `;
-
-        return html;
-    }
-
-    // ============================================================
-    // МОДАЛЬНЫЕ ОКНА
-    // ============================================================
-
-    function openModal(title, html, action, saveCallback) {
-        currentAction = action;
-        document.getElementById('modalTitle').textContent = title;
-        document.getElementById('modalBody').innerHTML = html;
-        document.getElementById('actionModal').classList.add('active');
-
-        document.getElementById('modalSaveBtn').onclick = saveCallback;
-
-        const modalElement = document.getElementById('actionModal');
-        const handler = function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const saveBtn = document.getElementById('modalSaveBtn');
-                if (saveBtn && !saveBtn.disabled) {
-                    saveBtn.click();
-                }
-            }
-        };
-        modalElement.addEventListener('keydown', handler);
-
-        const closeHandler = function() {
-            modalElement.removeEventListener('keydown', handler);
-        };
-        document.getElementById('modalCloseBtn').addEventListener('click', closeHandler, { once: true });
-        document.getElementById('modalCancelBtn').addEventListener('click', closeHandler, { once: true });
-    }
-
-    function closeModal() {
-        document.getElementById('actionModal').classList.remove('active');
-        currentAction = null;
-    }
-
-    document.getElementById('modalCloseBtn').onclick = closeModal;
-    document.getElementById('modalCancelBtn').onclick = closeModal;
-    document.getElementById('actionModal').addEventListener('click', function(e) {
-        if (e.target === this) closeModal();
-    });
-
-    // ============================================================
-    // ОТЧИСЛЕНИЕ
-    // ============================================================
-
-    document.getElementById('expelStudentBtn').onclick = async () => {
-        if (!hasEditRights) {
-            showToast('❌ У вас нет прав на это действие', 'error');
-            return;
+            return html;
         }
 
-        const { data: student, error } = await window.supabase
-            .from('students')
-            .select('*, groups!inner(name, type)')
-            .eq('id', studentId)
-            .single();
+        // ============================================================
+        // МОДАЛЬНЫЕ ОКНА
+        // ============================================================
 
-        if (error || !student) {
-            showToast('❌ Учащийся не найден', 'error');
-            return;
-        }
+        function openModal(title, html, action, saveCallback) {
+            currentAction = action;
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalBody').innerHTML = html;
+            document.getElementById('actionModal').classList.add('active');
 
-        if (student.status !== 'active') {
-            showToast('❌ Учащийся не активен', 'error');
-            return;
-        }
+            document.getElementById('modalSaveBtn').onclick = saveCallback;
 
-        const genderWord = student.gender === 'Женский' ? 'учащуюся' : 'учащегося';
-
-        const html = `
-            <p style="margin-bottom:16px;">Отчисление ${genderWord}: <strong>${student.full_name}</strong></p>
-            <div class="form-group">
-                <label class="form-label">Дата отчисления <span class="required">*</span></label>
-                <input type="date" class="form-control" id="expelDate">
-            </div>
-            <div class="form-group">
-                <label class="form-label">№ приказа <span class="required">*</span></label>
-                <input type="text" class="form-control" id="expelOrder" placeholder="№ приказа">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Статья отчисления <span class="required">*</span></label>
-                <input type="text" class="form-control" id="expelArticle" placeholder="Статья по Кодексу об образовании">
-            </div>
-        `;
-
-        openModal('📄 Отчисление учащегося', html, 'expel', async function() {
-            const date = document.getElementById('expelDate').value;
-            const order = document.getElementById('expelOrder').value.trim();
-            const article = document.getElementById('expelArticle').value.trim();
-
-            if (!date) { showToast('❌ Укажите дату отчисления', 'error'); return; }
-            if (!order) { showToast('❌ Введите номер приказа', 'error'); return; }
-            if (!article) { showToast('❌ Введите статью отчисления', 'error'); return; }
-
-            try {
-                const { data: fullStudent } = await window.supabase
-                    .from('students')
-                    .select('*')
-                    .eq('id', studentId)
-                    .single();
-
-                if (!fullStudent) {
-                    showToast('❌ Учащийся не найден', 'error');
-                    return;
-                }
-
-                const { data: group } = await window.supabase
-                    .from('groups')
-                    .select('name, type')
-                    .eq('id', fullStudent.group_id)
-                    .single();
-
-                const expelledData = {
-                    student_id: studentId,
-                    full_name: fullStudent.full_name,
-                    group_id: fullStudent.group_id,
-                    group_name: group?.name || null,
-                    type: group?.type || null,
-                    birth_date: fullStudent.birth_date || null,
-                    phone: fullStudent.phone || null,
-                    citizenship: fullStudent.citizenship || null,
-                    school: fullStudent.school || null,
-                    school_year: fullStudent.school_year || null,
-                    school_class: fullStudent.school_class || null,
-                    avg_grade: fullStudent.avg_grade || null,
-                    gender: fullStudent.gender || null,
-                    address_reg: fullStudent.address_reg || null,
-                    address_live: fullStudent.address_live || null,
-                    address_region: fullStudent.address_region || null,
-                    address_district: fullStudent.address_district || null,
-                    address_locality: fullStudent.address_locality || null,
-                    accounting_type: fullStudent.accounting_type || [],
-                    target_training: fullStudent.target_training || false,
-                    target_customer: fullStudent.target_customer || null,
-                    target_contract: fullStudent.target_contract || null,
-                    target_years: fullStudent.target_years || null,
-                    addresses: fullStudent.addresses || [],
-                    expulsion_date: date,
-                    expulsion_order: order,
-                    expulsion_article: article,
-                    expelled_by: currentUser.id,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-
-                const maxCourse = getMaxCourse(group?.type || 'pto');
-                for (let course = 1; course <= maxCourse; course++) {
-                    expelledData[`grade_${course}_sem1`] = fullStudent[`grade_${course}_sem1`] || null;
-                    expelledData[`grade_${course}_sem2`] = fullStudent[`grade_${course}_sem2`] || null;
-                    expelledData[`grade_${course}_year`] = fullStudent[`grade_${course}_year`] || null;
-                }
-
-                const { error: expelledError } = await window.supabase
-                    .from('expelled_students')
-                    .insert([expelledData]);
-
-                if (expelledError) {
-                    if (expelledError.code === '42501') {
-                        showToast(
-                            '❌ Ошибка RLS: нет прав на запись в таблицу expelled_students. Обратитесь к администратору.',
-                            'error');
-                    } else {
-                        throw expelledError;
+            const modalElement = document.getElementById('actionModal');
+            const handler = function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const saveBtn = document.getElementById('modalSaveBtn');
+                    if (saveBtn && !saveBtn.disabled) {
+                        saveBtn.click();
                     }
-                    return;
                 }
+            };
+            modalElement.addEventListener('keydown', handler);
 
-                await window.supabase.from('students').delete().eq('id', studentId);
+            const closeHandler = function() {
+                modalElement.removeEventListener('keydown', handler);
+            };
+            document.getElementById('modalCloseBtn').addEventListener('click', closeHandler, { once: true });
+            document.getElementById('modalCancelBtn').addEventListener('click', closeHandler, { once: true });
+        }
 
-                closeModal();
-                showToast(`✅ Учащийся ${fullStudent.full_name} отчислен и перемещён в архив`, 'success');
-                window.location.href = `/students/group.html?id=${fullStudent.group_id}`;
+        function closeModal() {
+            document.getElementById('actionModal').classList.remove('active');
+            currentAction = null;
+        }
 
-            } catch (error) {
-                console.error('❌ Ошибка отчисления:', error);
-                showToast('❌ Ошибка: ' + error.message, 'error');
-            }
+        document.getElementById('modalCloseBtn').onclick = closeModal;
+        document.getElementById('modalCancelBtn').onclick = closeModal;
+        document.getElementById('actionModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
         });
-    };
 
-    // ============================================================
-    // АКАДЕМИЧЕСКИЙ ОТПУСК
-    // ============================================================
+        // ============================================================
+        // ОТЧИСЛЕНИЕ
+        // ============================================================
 
-    document.getElementById('academicLeaveBtn').onclick = async () => {
-        if (!hasEditRights) {
-            showToast('❌ У вас нет прав на это действие', 'error');
-            return;
-        }
-
-        const { data: student, error } = await window.supabase
-            .from('students')
-            .select('*, groups!inner(name, type)')
-            .eq('id', studentId)
-            .single();
-
-        if (error || !student) {
-            showToast('❌ Учащийся не найден', 'error');
-            return;
-        }
-
-        if (student.status !== 'active') {
-            showToast('❌ Учащийся не активен', 'error');
-            return;
-        }
-
-        const genderWord = student.gender === 'Женский' ? 'учащуюся' : 'учащегося';
-
-        const html = `
-            <p style="margin-bottom:16px;">Академический отпуск для ${genderWord}: <strong>${student.full_name}</strong></p>
-            <div class="form-group">
-                <label class="form-label">Дата начала отпуска <span class="required">*</span></label>
-                <input type="date" class="form-control" id="academicDate">
-            </div>
-            <div class="form-group">
-                <label class="form-label">№ приказа <span class="required">*</span></label>
-                <input type="text" class="form-control" id="academicOrder" placeholder="№ приказа">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Причина <span class="required">*</span></label>
-                <input type="text" class="form-control" id="academicReason" placeholder="Причина академического отпуска">
-            </div>
-        `;
-
-        openModal('📚 Академический отпуск', html, 'academic', async function() {
-            const date = document.getElementById('academicDate').value;
-            const order = document.getElementById('academicOrder').value.trim();
-            const reason = document.getElementById('academicReason').value.trim();
-
-            if (!date) { showToast('❌ Укажите дату начала отпуска', 'error'); return; }
-            if (!order) { showToast('❌ Введите номер приказа', 'error'); return; }
-            if (!reason) { showToast('❌ Введите причину', 'error'); return; }
-
-            try {
-                const { data: fullStudent } = await window.supabase
-                    .from('students')
-                    .select('*')
-                    .eq('id', studentId)
-                    .single();
-
-                if (!fullStudent) {
-                    showToast('❌ Учащийся не найден', 'error');
-                    return;
-                }
-
-                const { data: group } = await window.supabase
-                    .from('groups')
-                    .select('name, type')
-                    .eq('id', fullStudent.group_id)
-                    .single();
-
-                const academicData = {
-                    student_id: studentId,
-                    full_name: fullStudent.full_name,
-                    group_id: fullStudent.group_id,
-                    group_name: group?.name || null,
-                    type: group?.type || null,
-                    birth_date: fullStudent.birth_date || null,
-                    phone: fullStudent.phone || null,
-                    citizenship: fullStudent.citizenship || null,
-                    school: fullStudent.school || null,
-                    school_year: fullStudent.school_year || null,
-                    school_class: fullStudent.school_class || null,
-                    avg_grade: fullStudent.avg_grade || null,
-                    gender: fullStudent.gender || null,
-                    address_reg: fullStudent.address_reg || null,
-                    address_live: fullStudent.address_live || null,
-                    address_region: fullStudent.address_region || null,
-                    address_district: fullStudent.address_district || null,
-                    address_locality: fullStudent.address_locality || null,
-                    accounting_type: fullStudent.accounting_type || [],
-                    target_training: fullStudent.target_training || false,
-                    target_customer: fullStudent.target_customer || null,
-                    target_contract: fullStudent.target_contract || null,
-                    target_years: fullStudent.target_years || null,
-                    addresses: fullStudent.addresses || [],
-                    academic_leave_date: date,
-                    academic_leave_order: order,
-                    academic_leave_reason: reason,
-                    leave_by: currentUser.id,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-
-                const maxCourse = getMaxCourse(group?.type || 'pto');
-                for (let course = 1; course <= maxCourse; course++) {
-                    academicData[`grade_${course}_sem1`] = fullStudent[`grade_${course}_sem1`] || null;
-                    academicData[`grade_${course}_sem2`] = fullStudent[`grade_${course}_sem2`] || null;
-                    academicData[`grade_${course}_year`] = fullStudent[`grade_${course}_year`] || null;
-                }
-
-                const { error: academicError } = await window.supabase
-                    .from('academic_leave_students')
-                    .insert([academicData]);
-
-                if (academicError) {
-                    if (academicError.code === '42501') {
-                        showToast(
-                            '❌ Ошибка RLS: нет прав на запись в таблицу academic_leave_students. Обратитесь к администратору.',
-                            'error');
-                    } else {
-                        throw academicError;
-                    }
-                    return;
-                }
-
-                await window.supabase.from('students').delete().eq('id', studentId);
-
-                closeModal();
-                showToast(`✅ Учащийся ${fullStudent.full_name} отправлен в академический отпуск`, 'success');
-                window.location.href = `/students/group.html?id=${fullStudent.group_id}`;
-
-            } catch (error) {
-                console.error('❌ Ошибка отправки в академ. отпуск:', error);
-                showToast('❌ Ошибка: ' + error.message, 'error');
+        document.getElementById('expelStudentBtn').onclick = async () => {
+            if (!hasEditRights) {
+                showToast('❌ У вас нет прав на это действие', 'error');
+                return;
             }
-        });
-    };
 
-    // ============================================================
-    // ВОССТАНОВЛЕНИЕ
-    // ============================================================
-
-    document.getElementById('restoreStudentBtn').onclick = async () => {
-        if (!hasEditRights) {
-            showToast('❌ У вас нет прав на это действие', 'error');
-            return;
-        }
-
-        const { data: expelledStudent } = await window.supabase
-            .from('expelled_students')
-            .select('*')
-            .eq('student_id', studentId)
-            .single();
-
-        const { data: academicStudent } = await window.supabase
-            .from('academic_leave_students')
-            .select('*')
-            .eq('student_id', studentId)
-            .single();
-
-        if (!expelledStudent && !academicStudent) {
-            showToast('❌ Учащийся не найден в архиве отчисленных или академ. отпуска', 'error');
-            return;
-        }
-
-        const student = expelledStudent || academicStudent;
-        const restoreType = expelledStudent ? 'отчисления' : 'академического отпуска';
-        const title = expelledStudent ? '🔄 Восстановление после отчисления' :
-            '🔄 Восстановление после академического отпуска';
-
-        const { data: groups } = await window.supabase
-            .from('groups')
-            .select('id, name, type')
-            .eq('is_archived', false)
-            .order('name');
-
-        let groupOptions = '';
-        if (groups && groups.length > 0) {
-            groupOptions = groups.map(g =>
-                `<option value="${g.id}">${g.name} (${g.type === 'sso' ? 'ССО' : 'ПТО'})</option>`
-            ).join('');
-        }
-
-        const genderWord = student.gender === 'Женский' ? 'учащуюся' : 'учащегося';
-
-        const html = `
-            <p style="margin-bottom:16px;">Восстановление из <strong>${restoreType}</strong> для ${genderWord}: <strong>${student.full_name}</strong></p>
-            <div class="form-group">
-                <label class="form-label">Дата восстановления <span class="required">*</span></label>
-                <input type="date" class="form-control" id="restoreDate">
-            </div>
-            <div class="form-group">
-                <label class="form-label">№ приказа о восстановлении <span class="required">*</span></label>
-                <input type="text" class="form-control" id="restoreOrder" placeholder="№ приказа">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Группа <span class="required">*</span></label>
-                <select class="form-control" id="restoreGroup">
-                    <option value="">— Выберите группу —</option>
-                    ${groupOptions}
-                </select>
-            </div>
-        `;
-
-        openModal(title, html, 'restore', async function() {
-            const date = document.getElementById('restoreDate').value;
-            const order = document.getElementById('restoreOrder').value.trim();
-            const newGroupId = document.getElementById('restoreGroup').value;
-
-            if (!date) { showToast('❌ Укажите дату восстановления', 'error'); return; }
-            if (!order) { showToast('❌ Введите номер приказа', 'error'); return; }
-            if (!newGroupId) { showToast('❌ Выберите группу', 'error'); return; }
-
-            try {
-                const studentData = {
-                    full_name: student.full_name,
-                    group_id: newGroupId,
-                    birth_date: student.birth_date || null,
-                    phone: student.phone || null,
-                    citizenship: student.citizenship || null,
-                    school: student.school || null,
-                    school_year: student.school_year || null,
-                    school_class: student.school_class || null,
-                    avg_grade: student.avg_grade || null,
-                    gender: student.gender || null,
-                    address_reg: student.address_reg || null,
-                    address_live: student.address_live || null,
-                    address_region: student.address_region || null,
-                    address_district: student.address_district || null,
-                    address_locality: student.address_locality || null,
-                    accounting_type: student.accounting_type || [],
-                    addresses: student.addresses || [],
-                    target_training: student.target_training || false,
-                    target_customer: student.target_customer || null,
-                    target_contract: student.target_contract || null,
-                    target_years: student.target_years || null,
-                    status: 'active',
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
-                };
-
-                const maxCourse = getMaxCourse(student.type || 'pto');
-                for (let course = 1; course <= maxCourse; course++) {
-                    studentData[`grade_${course}_sem1`] = student[`grade_${course}_sem1`] || null;
-                    studentData[`grade_${course}_sem2`] = student[`grade_${course}_sem2`] || null;
-                    studentData[`grade_${course}_year`] = student[`grade_${course}_year`] || null;
-                }
-
-                const { data: newStudent, error: insertError } = await window.supabase
-                    .from('students')
-                    .insert([studentData])
-                    .select()
-                    .single();
-
-                if (insertError) throw insertError;
-
-                if (expelledStudent) {
-                    await window.supabase.from('expelled_students').delete().eq('student_id', studentId);
-                } else {
-                    await window.supabase.from('academic_leave_students').delete().eq('student_id', studentId);
-                }
-
-                closeModal();
-                showToast(`✅ Учащийся ${student.full_name} восстановлен в группу!`, 'success');
-                window.location.href = `/students/profile.html?id=${newStudent.id}`;
-
-            } catch (error) {
-                console.error('❌ Ошибка восстановления:', error);
-                showToast('❌ Ошибка: ' + error.message, 'error');
-            }
-        });
-    };
-
-    // ============================================================
-    // УДАЛЕНИЕ УЧАЩЕГОСЯ
-    // ============================================================
-
-    document.getElementById('deleteStudentBtn').onclick = async function() {
-        if (!hasEditRights) {
-            showToast('❌ У вас нет прав на это действие', 'error');
-            return;
-        }
-
-        const { data: student } = await window.supabase
-            .from('students')
-            .select('full_name, status, group_id')
-            .eq('id', studentId)
-            .single();
-
-        if (!student) { showToast('❌ Учащийся не найден', 'error'); return; }
-
-        if (student.status === 'graduated') {
-            showToast('❌ Нельзя удалить выпускника', 'error');
-            return;
-        }
-
-        if (!confirm(`🗑️ Удалить учащегося "${student.full_name}" полностью?`)) return;
-
-        try {
-            await window.supabase.from('student_parents').delete().eq('student_id', studentId);
-            await window.supabase.from('student_siblings').delete().eq('student_id', studentId);
-
-            const { error } = await window.supabase.from('students').delete().eq('id', studentId);
-            if (error) throw error;
-
-            showToast(`✅ Учащийся удалён`, 'success');
-            setTimeout(() => {
-                if (student.group_id) {
-                    window.location.href = `/students/group.html?id=${student.group_id}`;
-                } else {
-                    window.location.href = '/students/index.html';
-                }
-            }, 1500);
-
-        } catch (error) {
-            console.error('❌ Ошибка удаления:', error);
-            showToast('❌ Ошибка: ' + error.message, 'error');
-        }
-    };
-
-    // ============================================================
-    // ЗАГРУЗКА УЧАЩЕГОСЯ
-    // ============================================================
-
-    async function loadStudent() {
-        const profileCard = document.getElementById('profileCard');
-        const subtitle = document.getElementById('studentSubtitle');
-
-        if (!studentId) {
-            subtitle.textContent = 'ID не указан';
-            profileCard.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">❌</span>
-                    <h3>ID учащегося не указан</h3>
-                    <p style="color:var(--text-muted);">Перейдите из списка учащихся</p>
-                    <a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>
-                </div>
-            `;
-            return;
-        }
-
-        try {
-            const { data: student, error: studentError } = await window.supabase
+            const { data: student, error } = await sb
                 .from('students')
-                .select('*')
+                .select('*, groups!inner(name, type)')
                 .eq('id', studentId)
                 .single();
 
-            if (studentError) throw studentError;
+            if (error || !student) {
+                showToast('❌ Студент не найден', 'error');
+                return;
+            }
 
-            if (!student) {
-                subtitle.textContent = 'не найден';
+            if (student.status !== 'active') {
+                showToast('❌ Студент не активен', 'error');
+                return;
+            }
+
+            const html = `
+                <p style="margin-bottom:16px;">Отчисление студента: <strong>${student.full_name}</strong></p>
+                <div class="form-group">
+                    <label class="form-label">Дата отчисления <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="expelDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">№ приказа <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="expelOrder" placeholder="№ приказа">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Статья отчисления <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="expelArticle" placeholder="Статья по Кодексу об образовании">
+                </div>
+            `;
+
+            openModal('📄 Отчисление студента', html, 'expel', async function() {
+                const date = document.getElementById('expelDate').value;
+                const order = document.getElementById('expelOrder').value.trim();
+                const article = document.getElementById('expelArticle').value.trim();
+
+                if (!date) { showToast('❌ Укажите дату отчисления', 'error'); return; }
+                if (!order) { showToast('❌ Введите номер приказа', 'error'); return; }
+                if (!article) { showToast('❌ Введите статью отчисления', 'error'); return; }
+
+                try {
+                    const { data: fullStudent } = await sb
+                        .from('students')
+                        .select('*')
+                        .eq('id', studentId)
+                        .single();
+
+                    if (!fullStudent) {
+                        showToast('❌ Студент не найден', 'error');
+                        return;
+                    }
+
+                    const { data: group } = await sb
+                        .from('groups')
+                        .select('name, type')
+                        .eq('id', fullStudent.group_id)
+                        .single();
+
+                    const expelledData = {
+                        student_id: studentId,
+                        full_name: fullStudent.full_name,
+                        group_id: fullStudent.group_id,
+                        group_name: group?.name || null,
+                        type: group?.type || null,
+                        birth_date: fullStudent.birth_date || null,
+                        phone: fullStudent.phone || null,
+                        citizenship: fullStudent.citizenship || null,
+                        school: fullStudent.school || null,
+                        school_year: fullStudent.school_year || null,
+                        school_class: fullStudent.school_class || null,
+                        avg_grade: fullStudent.avg_grade || null,
+                        gender: fullStudent.gender || null,
+                        address_reg: fullStudent.address_reg || null,
+                        address_live: fullStudent.address_live || null,
+                        address_region: fullStudent.address_region || null,
+                        address_district: fullStudent.address_district || null,
+                        address_locality: fullStudent.address_locality || null,
+                        accounting_type: fullStudent.accounting_type || [],
+                        target_training: fullStudent.target_training || false,
+                        target_customer: fullStudent.target_customer || null,
+                        target_contract: fullStudent.target_contract || null,
+                        target_years: fullStudent.target_years || null,
+                        addresses: fullStudent.addresses || [],
+                        lives_in_dorm: fullStudent.lives_in_dorm || false,
+                        dorm_block: fullStudent.dorm_block || null,
+                        dorm_room_type: fullStudent.dorm_room_type || null,
+                        dorm_room_number: fullStudent.dorm_room_number || null,
+                        expulsion_date: date,
+                        expulsion_order: order,
+                        expulsion_article: article,
+                        expelled_by: currentUser.id,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const maxCourse = getMaxCourse(group?.type || 'pto');
+                    for (let course = 1; course <= maxCourse; course++) {
+                        expelledData[`grade_${course}_sem1`] = fullStudent[`grade_${course}_sem1`] || null;
+                        expelledData[`grade_${course}_sem2`] = fullStudent[`grade_${course}_sem2`] || null;
+                        expelledData[`grade_${course}_year`] = fullStudent[`grade_${course}_year`] || null;
+                    }
+
+                    const { error: expelledError } = await sb
+                        .from('expelled_students')
+                        .insert([expelledData]);
+
+                    if (expelledError) {
+                        if (expelledError.code === '42501') {
+                            showToast(
+                                '❌ Ошибка RLS: нет прав на запись в таблицу expelled_students. Обратитесь к администратору.',
+                                'error');
+                        } else {
+                            throw expelledError;
+                        }
+                        return;
+                    }
+
+                    await sb.from('students').delete().eq('id', studentId);
+
+                    closeModal();
+                    showToast(`✅ Студент ${fullStudent.full_name} отчислен и перемещён в архив`, 'success');
+                    window.location.href = `/students/group.html?id=${fullStudent.group_id}`;
+
+                } catch (error) {
+                    console.error('❌ Ошибка отчисления:', error);
+                    showToast('❌ Ошибка: ' + error.message, 'error');
+                }
+            });
+        };
+
+        // ============================================================
+        // АКАДЕМИЧЕСКИЙ ОТПУСК
+        // ============================================================
+
+        document.getElementById('academicLeaveBtn').onclick = async () => {
+            if (!hasEditRights) {
+                showToast('❌ У вас нет прав на это действие', 'error');
+                return;
+            }
+
+            const { data: student, error } = await sb
+                .from('students')
+                .select('*, groups!inner(name, type)')
+                .eq('id', studentId)
+                .single();
+
+            if (error || !student) {
+                showToast('❌ Студент не найден', 'error');
+                return;
+            }
+
+            if (student.status !== 'active') {
+                showToast('❌ Студент не активен', 'error');
+                return;
+            }
+
+            const html = `
+                <p style="margin-bottom:16px;">Академический отпуск для: <strong>${student.full_name}</strong></p>
+                <div class="form-group">
+                    <label class="form-label">Дата начала отпуска <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="academicDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">№ приказа <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="academicOrder" placeholder="№ приказа">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Причина <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="academicReason" placeholder="Причина академического отпуска">
+                </div>
+            `;
+
+            openModal('📚 Академический отпуск', html, 'academic', async function() {
+                const date = document.getElementById('academicDate').value;
+                const order = document.getElementById('academicOrder').value.trim();
+                const reason = document.getElementById('academicReason').value.trim();
+
+                if (!date) { showToast('❌ Укажите дату начала отпуска', 'error'); return; }
+                if (!order) { showToast('❌ Введите номер приказа', 'error'); return; }
+                if (!reason) { showToast('❌ Введите причину', 'error'); return; }
+
+                try {
+                    const { data: fullStudent } = await sb
+                        .from('students')
+                        .select('*')
+                        .eq('id', studentId)
+                        .single();
+
+                    if (!fullStudent) {
+                        showToast('❌ Студент не найден', 'error');
+                        return;
+                    }
+
+                    const { data: group } = await sb
+                        .from('groups')
+                        .select('name, type')
+                        .eq('id', fullStudent.group_id)
+                        .single();
+
+                    const academicData = {
+                        student_id: studentId,
+                        full_name: fullStudent.full_name,
+                        group_id: fullStudent.group_id,
+                        group_name: group?.name || null,
+                        type: group?.type || null,
+                        birth_date: fullStudent.birth_date || null,
+                        phone: fullStudent.phone || null,
+                        citizenship: fullStudent.citizenship || null,
+                        school: fullStudent.school || null,
+                        school_year: fullStudent.school_year || null,
+                        school_class: fullStudent.school_class || null,
+                        avg_grade: fullStudent.avg_grade || null,
+                        gender: fullStudent.gender || null,
+                        address_reg: fullStudent.address_reg || null,
+                        address_live: fullStudent.address_live || null,
+                        address_region: fullStudent.address_region || null,
+                        address_district: fullStudent.address_district || null,
+                        address_locality: fullStudent.address_locality || null,
+                        accounting_type: fullStudent.accounting_type || [],
+                        target_training: fullStudent.target_training || false,
+                        target_customer: fullStudent.target_customer || null,
+                        target_contract: fullStudent.target_contract || null,
+                        target_years: fullStudent.target_years || null,
+                        addresses: fullStudent.addresses || [],
+                        lives_in_dorm: fullStudent.lives_in_dorm || false,
+                        dorm_block: fullStudent.dorm_block || null,
+                        dorm_room_type: fullStudent.dorm_room_type || null,
+                        dorm_room_number: fullStudent.dorm_room_number || null,
+                        academic_leave_date: date,
+                        academic_leave_order: order,
+                        academic_leave_reason: reason,
+                        leave_by: currentUser.id,
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const maxCourse = getMaxCourse(group?.type || 'pto');
+                    for (let course = 1; course <= maxCourse; course++) {
+                        academicData[`grade_${course}_sem1`] = fullStudent[`grade_${course}_sem1`] || null;
+                        academicData[`grade_${course}_sem2`] = fullStudent[`grade_${course}_sem2`] || null;
+                        academicData[`grade_${course}_year`] = fullStudent[`grade_${course}_year`] || null;
+                    }
+
+                    const { error: academicError } = await sb
+                        .from('academic_leave_students')
+                        .insert([academicData]);
+
+                    if (academicError) {
+                        if (academicError.code === '42501') {
+                            showToast(
+                                '❌ Ошибка RLS: нет прав на запись в таблицу academic_leave_students. Обратитесь к администратору.',
+                                'error');
+                        } else {
+                            throw academicError;
+                        }
+                        return;
+                    }
+
+                    await sb.from('students').delete().eq('id', studentId);
+
+                    closeModal();
+                    showToast(`✅ Студент ${fullStudent.full_name} отправлен в академический отпуск`, 'success');
+                    window.location.href = `/students/group.html?id=${fullStudent.group_id}`;
+
+                } catch (error) {
+                    console.error('❌ Ошибка отправки в академ. отпуск:', error);
+                    showToast('❌ Ошибка: ' + error.message, 'error');
+                }
+            });
+        };
+
+        // ============================================================
+        // ВОССТАНОВЛЕНИЕ
+        // ============================================================
+
+        document.getElementById('restoreStudentBtn').onclick = async () => {
+            if (!hasEditRights) {
+                showToast('❌ У вас нет прав на это действие', 'error');
+                return;
+            }
+
+            const { data: expelledStudent } = await sb
+                .from('expelled_students')
+                .select('*')
+                .eq('student_id', studentId)
+                .single();
+
+            const { data: academicStudent } = await sb
+                .from('academic_leave_students')
+                .select('*')
+                .eq('student_id', studentId)
+                .single();
+
+            if (!expelledStudent && !academicStudent) {
+                showToast('❌ Студент не найден в архиве отчисленных или академ. отпуска', 'error');
+                return;
+            }
+
+            const student = expelledStudent || academicStudent;
+            const restoreType = expelledStudent ? 'отчисления' : 'академического отпуска';
+            const title = expelledStudent ? '🔄 Восстановление после отчисления' :
+                '🔄 Восстановление после академического отпуска';
+
+            const { data: groups } = await sb
+                .from('groups')
+                .select('id, name, type')
+                .eq('is_archived', false)
+                .order('name');
+
+            let groupOptions = '';
+            if (groups && groups.length > 0) {
+                groupOptions = groups.map(g =>
+                    `<option value="${g.id}">${g.name} (${g.type === 'sso' ? 'ССО' : 'ПТО'})</option>`
+                ).join('');
+            }
+
+            const html = `
+                <p style="margin-bottom:16px;">Восстановление из <strong>${restoreType}</strong> для: <strong>${student.full_name}</strong></p>
+                <div class="form-group">
+                    <label class="form-label">Дата восстановления <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="restoreDate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">№ приказа о восстановлении <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="restoreOrder" placeholder="№ приказа">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Группа <span class="required">*</span></label>
+                    <select class="form-control" id="restoreGroup">
+                        <option value="">— Выберите группу —</option>
+                        ${groupOptions}
+                    </select>
+                </div>
+            `;
+
+            openModal(title, html, 'restore', async function() {
+                const date = document.getElementById('restoreDate').value;
+                const order = document.getElementById('restoreOrder').value.trim();
+                const newGroupId = document.getElementById('restoreGroup').value;
+
+                if (!date) { showToast('❌ Укажите дату восстановления', 'error'); return; }
+                if (!order) { showToast('❌ Введите номер приказа', 'error'); return; }
+                if (!newGroupId) { showToast('❌ Выберите группу', 'error'); return; }
+
+                try {
+                    const studentData = {
+                        full_name: student.full_name,
+                        group_id: newGroupId,
+                        birth_date: student.birth_date || null,
+                        phone: student.phone || null,
+                        citizenship: student.citizenship || null,
+                        school: student.school || null,
+                        school_year: student.school_year || null,
+                        school_class: student.school_class || null,
+                        avg_grade: student.avg_grade || null,
+                        gender: student.gender || null,
+                        address_reg: student.address_reg || null,
+                        address_live: student.address_live || null,
+                        address_region: student.address_region || null,
+                        address_district: student.address_district || null,
+                        address_locality: student.address_locality || null,
+                        accounting_type: student.accounting_type || [],
+                        addresses: student.addresses || [],
+                        target_training: student.target_training || false,
+                        target_customer: student.target_customer || null,
+                        target_contract: student.target_contract || null,
+                        target_years: student.target_years || null,
+                        lives_in_dorm: student.lives_in_dorm || false,
+                        dorm_block: student.dorm_block || null,
+                        dorm_room_type: student.dorm_room_type || null,
+                        dorm_room_number: student.dorm_room_number || null,
+                        status: 'active',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const maxCourse = getMaxCourse(student.type || 'pto');
+                    for (let course = 1; course <= maxCourse; course++) {
+                        studentData[`grade_${course}_sem1`] = student[`grade_${course}_sem1`] || null;
+                        studentData[`grade_${course}_sem2`] = student[`grade_${course}_sem2`] || null;
+                        studentData[`grade_${course}_year`] = student[`grade_${course}_year`] || null;
+                    }
+
+                    const { data: newStudent, error: insertError } = await sb
+                        .from('students')
+                        .insert([studentData])
+                        .select()
+                        .single();
+
+                    if (insertError) throw insertError;
+
+                    if (expelledStudent) {
+                        await sb.from('expelled_students').delete().eq('student_id', studentId);
+                    } else {
+                        await sb.from('academic_leave_students').delete().eq('student_id', studentId);
+                    }
+
+                    closeModal();
+                    showToast(`✅ Студент ${student.full_name} восстановлен в группу!`, 'success');
+                    window.location.href = `/students/profile.html?id=${newStudent.id}`;
+
+                } catch (error) {
+                    console.error('❌ Ошибка восстановления:', error);
+                    showToast('❌ Ошибка: ' + error.message, 'error');
+                }
+            });
+        };
+
+        // ============================================================
+        // УДАЛЕНИЕ СТУДЕНТА
+        // ============================================================
+
+        document.getElementById('deleteStudentBtn').onclick = async function() {
+            if (!hasEditRights) {
+                showToast('❌ У вас нет прав на это действие', 'error');
+                return;
+            }
+
+            const { data: student } = await sb
+                .from('students')
+                .select('full_name, status, group_id')
+                .eq('id', studentId)
+                .single();
+
+            if (!student) { showToast('❌ Студент не найден', 'error'); return; }
+
+            if (student.status === 'graduated') {
+                showToast('❌ Нельзя удалить выпускника', 'error');
+                return;
+            }
+
+            if (!confirm(`🗑️ Удалить студента "${student.full_name}" полностью?`)) return;
+
+            try {
+                await sb.from('student_parents').delete().eq('student_id', studentId);
+                await sb.from('student_siblings').delete().eq('student_id', studentId);
+
+                const { error } = await sb.from('students').delete().eq('id', studentId);
+                if (error) throw error;
+
+                showToast(`✅ Студент удалён`, 'success');
+                setTimeout(() => {
+                    if (student.group_id) {
+                        window.location.href = `/students/group.html?id=${student.group_id}`;
+                    } else {
+                        window.location.href = '/students/index.html';
+                    }
+                }, 1500);
+
+            } catch (error) {
+                console.error('❌ Ошибка удаления:', error);
+                showToast('❌ Ошибка: ' + error.message, 'error');
+            }
+        };
+
+        // ============================================================
+        // РЕДАКТИРОВАНИЕ ПРОЖИВАНИЯ (в модальном окне)
+        // ============================================================
+
+        let saveTimeout = null;
+
+        function openDormEditModal() {
+            if (!hasEditRights || !currentStudent) {
+                showToast('❌ У вас нет прав на редактирование', 'error');
+                return;
+            }
+
+            const s = currentStudent;
+            const allBlocks = getAllBlocks();
+
+            let blockOptions = '<option value="">— Выберите блок —</option>';
+            for (const [floor, data] of Object.entries(FLOOR_STRUCTURE)) {
+                blockOptions += `<optgroup label="${data.label}">`;
+                data.blocks.forEach(block => {
+                    const selected = s.dorm_block && parseInt(s.dorm_block) === block ? 'selected' : '';
+                    blockOptions += `<option value="${block}" ${selected}>Блок ${block}</option>`;
+                });
+                blockOptions += `</optgroup>`;
+            }
+
+            const html = `
+                <div style="background:#F0F9FF;padding:16px;border-radius:8px;border:2px solid #BAE6FD;margin-bottom:16px;">
+                    <div style="font-weight:600;font-size:16px;color:var(--primary);margin-bottom:12px;">🏠 Проживание в общежитии</div>
+                    <div class="form-group">
+                        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;font-size:14px;">
+                            <input type="checkbox" id="editDormCheckbox" ${s.lives_in_dorm ? 'checked' : ''}>
+                            <span>Проживает в общежитии</span>
+                        </label>
+                    </div>
+                    <div id="editDormFields" style="${s.lives_in_dorm ? '' : 'display:none;'}">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Блок</label>
+                                <select class="form-control" id="editDormBlock">${blockOptions}</select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Тип комнаты</label>
+                                <select class="form-control" id="editDormRoomType">
+                                    <option value="">— Выберите тип —</option>
+                                    <option value="M" ${s.dorm_room_type === 'M' ? 'selected' : ''}>Маленькая (M)</option>
+                                    <option value="B" ${s.dorm_room_type === 'B' ? 'selected' : ''}>Большая (B)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Номер комнаты</label>
+                            <input type="number" class="form-control" id="editDormRoomNumber" value="${s.dorm_room_number || ''}" placeholder="Введите номер комнаты" min="1" max="999">
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">
+                    <strong>Текущие данные:</strong>
+                    ${s.lives_in_dorm ? `Блок ${s.dorm_block || '—'}, ${getRoomTypeLabel(s.dorm_room_type)}${s.dorm_room_number ? ', комн. ' + s.dorm_room_number : ''}` : 'Не проживает'}
+                </div>
+            `;
+
+            openModal('✏️ Редактировать проживание', html, 'editDorm', async function() {
+                const checkbox = document.getElementById('editDormCheckbox');
+                const blockSelect = document.getElementById('editDormBlock');
+                const roomTypeSelect = document.getElementById('editDormRoomType');
+                const roomNumberInput = document.getElementById('editDormRoomNumber');
+
+                const livesInDorm = checkbox.checked;
+                const dormBlock = livesInDorm ? (blockSelect.value || null) : null;
+                const dormRoomType = livesInDorm ? (roomTypeSelect.value || null) : null;
+                const dormRoomNumber = livesInDorm ? (roomNumberInput.value || null) : null;
+
+                if (livesInDorm && !dormBlock) {
+                    showToast('❌ Выберите блок для проживания', 'error');
+                    return;
+                }
+
+                if (livesInDorm && !dormRoomType) {
+                    showToast('❌ Выберите тип комнаты', 'error');
+                    return;
+                }
+
+                try {
+                    const updateData = {
+                        lives_in_dorm: livesInDorm,
+                        dorm_block: dormBlock,
+                        dorm_room_type: dormRoomType,
+                        dorm_room_number: dormRoomNumber ? parseInt(dormRoomNumber) : null,
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const { data, error } = await sb
+                        .from('students')
+                        .update(updateData)
+                        .eq('id', studentId)
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+
+                    currentStudent.lives_in_dorm = data.lives_in_dorm;
+                    currentStudent.dorm_block = data.dorm_block;
+                    currentStudent.dorm_room_type = data.dorm_room_type;
+                    currentStudent.dorm_room_number = data.dorm_room_number;
+
+                    closeModal();
+                    showToast('✅ Данные о проживании обновлены', 'success');
+                    await loadStudent();
+
+                } catch (error) {
+                    console.error('❌ Ошибка сохранения:', error);
+                    showToast('❌ Ошибка: ' + error.message, 'error');
+                }
+            });
+
+            // Обработчик чекбокса в модальном окне
+            setTimeout(() => {
+                const checkbox = document.getElementById('editDormCheckbox');
+                const fields = document.getElementById('editDormFields');
+                if (checkbox) {
+                    checkbox.onchange = function() {
+                        fields.style.display = this.checked ? 'block' : 'none';
+                    };
+                }
+            }, 100);
+        }
+
+        // ============================================================
+        // ЗАГРУЗКА СТУДЕНТА
+        // ============================================================
+
+        async function loadStudent() {
+            const profileCard = document.getElementById('profileCard');
+            const subtitle = document.getElementById('studentSubtitle');
+
+            if (!studentId) {
+                subtitle.textContent = 'ID не указан';
                 profileCard.innerHTML = `
                     <div class="empty-state">
                         <span class="icon">❌</span>
-                        <h3>Учащийся не найден</h3>
-                        <p style="color:var(--text-muted);">Учащийся с ID ${studentId} не существует</p>
+                        <h3>ID студента не указан</h3>
+                        <p style="color:var(--text-muted);">Перейдите из списка студентов</p>
                         <a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>
                     </div>
                 `;
                 return;
             }
 
-            currentStudent = student;
-
-            let groupType = '';
-            if (student.group_id) {
-                const { data: group } = await window.supabase
-                    .from('groups')
-                    .select('type')
-                    .eq('id', student.group_id)
+            try {
+                // Загружаем студента с данными группы
+                const { data: student, error: studentError } = await sb
+                    .from('students')
+                    .select('*, groups:group_id (id, name, type)')
+                    .eq('id', studentId)
                     .single();
-                if (group) {
-                    groupType = group.type;
-                }
-            }
-            student.type = groupType;
 
-            updateButtons(student.status);
+                if (studentError) throw studentError;
 
-            let groupName = '—';
-            let groupTypeDisplay = '';
-            if (student.group_id) {
-                const { data: group } = await window.supabase
-                    .from('groups')
-                    .select('name, type')
-                    .eq('id', student.group_id)
-                    .single();
-                if (group) {
-                    groupName = group.name;
-                    groupTypeDisplay = group.type;
-                }
-            }
-
-            subtitle.textContent = groupName !== '—' ? `группа ${groupName}` : 'без группы';
-
-            const statusClass = getStatusBadge(student.status);
-            const statusText = getStatusText(student.status);
-            const typeLabels = { 'sso': 'ССО', 'pto': 'ПТО' };
-            const typeBadges = { 'sso': 'badge-sso', 'pto': 'badge-pto' };
-            const genderBadge = getGenderBadge(student.gender);
-
-            // ===== УЧЁТ =====
-            let accountingLinesHtml = '';
-            const accountingData = student.accounting_data || [];
-
-            if (accountingData.length > 0) {
-                accountingLinesHtml = accountingData.map(item => {
-                    const startDate = item.start ? formatDate(item.start) : '—';
-                    const endDate = item.end ? formatDate(item.end) : null;
-                    const isActive = !item.end || item.end === '';
-
-                    let dateDisplay = `📅 ${startDate}`;
-                    if (endDate) {
-                        dateDisplay += ` - ${endDate}`;
-                    }
-
-                    const statusClass = isActive ? 'status-active-small' : 'status-inactive-small';
-                    const statusText = isActive ? 'Активен' : 'Снят';
-
-                    return `
-                        <div class="accounting-line">
-                            <span class="type">${item.type}</span>
-                            <span class="dates">${dateDisplay}</span>
-                            <span class="status-badge-small ${statusClass}">${statusText}</span>
+                if (!student) {
+                    subtitle.textContent = 'не найден';
+                    profileCard.innerHTML = `
+                        <div class="empty-state">
+                            <span class="icon">❌</span>
+                            <h3>Студент не найден</h3>
+                            <p style="color:var(--text-muted);">Студент с ID ${studentId} не существует</p>
+                            <a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>
                         </div>
                     `;
-                }).join('');
-            }
+                    return;
+                }
 
-            // ===== СТАТУСНЫЕ БЛОКИ =====
-            let statusBlocksHtml = '';
+                currentStudent = student;
+                currentGroup = student.groups || null;
 
-            if (student.expulsion_date) {
-                statusBlocksHtml += `
-                    <div class="status-block" style="border-left-color: var(--danger);">
-                        <div class="status-title" style="color: var(--danger-dark);">❌ Отчислен</div>
-                        <div class="status-details">
-                            <span><strong>Дата:</strong> ${formatDate(student.expulsion_date)}</span>
-                            <span><strong>Приказ:</strong> ${student.expulsion_order || '—'}</span>
-                            <span><strong>Статья:</strong> ${student.expulsion_article || '—'}</span>
-                            ${student.restoration_date ? `<span><strong>Восстановлен:</strong> ${formatDate(student.restoration_date)}</span>` : ''}
-                            ${student.restoration_order ? `<span><strong>Приказ о восстановлении:</strong> ${student.restoration_order}</span>` : ''}
+                // Получаем тип группы
+                let groupType = currentGroup?.type || '';
+                student.type = groupType;
+
+                updateButtons(student.status);
+
+                const groupName = currentGroup?.name || '—';
+                const groupTypeDisplay = currentGroup?.type || '';
+
+                subtitle.textContent = groupName !== '—' ? `группа ${groupName}` : 'без группы';
+
+                const statusClass = getStatusBadge(student.status);
+                const statusText = getStatusText(student.status);
+                const typeLabels = { 'sso': 'ССО', 'pto': 'ПТО' };
+                const typeBadges = { 'sso': 'badge-sso', 'pto': 'badge-pto' };
+                const genderBadge = getGenderBadge(student.gender);
+
+                // ===== УЧЁТ =====
+                let accountingLinesHtml = '';
+                const accountingData = student.accounting_data || [];
+
+                if (accountingData.length > 0) {
+                    accountingLinesHtml = accountingData.map(item => {
+                        const startDate = item.start ? formatDate(item.start) : '—';
+                        const endDate = item.end ? formatDate(item.end) : null;
+                        const isActive = !item.end || item.end === '';
+
+                        let dateDisplay = `📅 ${startDate}`;
+                        if (endDate) {
+                            dateDisplay += ` - ${endDate}`;
+                        }
+
+                        const statusClass = isActive ? 'status-active-small' : 'status-inactive-small';
+                        const statusText = isActive ? 'Активен' : 'Снят';
+
+                        return `
+                            <div class="accounting-line">
+                                <span class="type">${item.type}</span>
+                                <span class="dates">${dateDisplay}</span>
+                                <span class="status-badge-small ${statusClass}">${statusText}</span>
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                // ===== СТАТУСНЫЕ БЛОКИ =====
+                let statusBlocksHtml = '';
+
+                if (student.expulsion_date) {
+                    statusBlocksHtml += `
+                        <div class="status-block" style="border-left-color: var(--danger);">
+                            <div class="status-title" style="color: var(--danger-dark);">❌ Отчислен</div>
+                            <div class="status-details">
+                                <span><strong>Дата:</strong> ${formatDate(student.expulsion_date)}</span>
+                                <span><strong>Приказ:</strong> ${student.expulsion_order || '—'}</span>
+                                <span><strong>Статья:</strong> ${student.expulsion_article || '—'}</span>
+                                ${student.restoration_date ? `<span><strong>Восстановлен:</strong> ${formatDate(student.restoration_date)}</span>` : ''}
+                                ${student.restoration_order ? `<span><strong>Приказ о восстановлении:</strong> ${student.restoration_order}</span>` : ''}
+                            </div>
                         </div>
-                    </div>
-                `;
-            }
+                    `;
+                }
 
-            if (student.academic_leave_date) {
-                statusBlocksHtml += `
-                    <div class="status-block" style="border-left-color: var(--warning);">
-                        <div class="status-title" style="color: var(--warning-dark);">📚 Академический отпуск</div>
-                        <div class="status-details">
-                            <span><strong>Дата:</strong> ${formatDate(student.academic_leave_date)}</span>
-                            <span><strong>Приказ:</strong> ${student.academic_leave_order || '—'}</span>
-                            <span><strong>Причина:</strong> ${student.academic_leave_reason || '—'}</span>
-                            ${student.academic_restore_date ? `<span><strong>Восстановлен:</strong> ${formatDate(student.academic_restore_date)}</span>` : ''}
-                            ${student.academic_restore_order ? `<span><strong>Приказ о восстановлении:</strong> ${student.academic_restore_order}</span>` : ''}
+                if (student.academic_leave_date) {
+                    statusBlocksHtml += `
+                        <div class="status-block" style="border-left-color: var(--warning);">
+                            <div class="status-title" style="color: var(--warning-dark);">📚 Академический отпуск</div>
+                            <div class="status-details">
+                                <span><strong>Дата:</strong> ${formatDate(student.academic_leave_date)}</span>
+                                <span><strong>Приказ:</strong> ${student.academic_leave_order || '—'}</span>
+                                <span><strong>Причина:</strong> ${student.academic_leave_reason || '—'}</span>
+                                ${student.academic_restore_date ? `<span><strong>Восстановлен:</strong> ${formatDate(student.academic_restore_date)}</span>` : ''}
+                                ${student.academic_restore_order ? `<span><strong>Приказ о восстановлении:</strong> ${student.academic_restore_order}</span>` : ''}
+                            </div>
                         </div>
-                    </div>
-                `;
-            }
+                    `;
+                }
 
-            // ===== ЦЕЛЕВОЕ ОБУЧЕНИЕ =====
-            let targetHtml = '';
-            if (student.target_training) {
-                targetHtml = `
-                    <div class="item" style="grid-column:1/-1;">
-                        <span class="label">🎯 Целевое обучение</span>
-                        <span class="value">
-                            <div class="target-card">
-                                <div class="target-row">
-                                    <span><strong>Заказчик:</strong> ${student.target_customer || '—'}</span>
-                                    <span><strong>№ договора:</strong> ${student.target_contract || '—'}</span>
-                                    <span><strong>Срок отработки:</strong> ${student.target_years ? student.target_years + ' лет' : '—'}</span>
+                // ===== ЦЕЛЕВОЕ ОБУЧЕНИЕ =====
+                let targetHtml = '';
+                if (student.target_training) {
+                    targetHtml = `
+                        <div class="item" style="grid-column:1/-1;">
+                            <span class="label">🎯 Целевое обучение</span>
+                            <span class="value">
+                                <div class="target-card">
+                                    <div class="target-row">
+                                        <span><strong>Заказчик:</strong> ${student.target_customer || '—'}</span>
+                                        <span><strong>№ договора:</strong> ${student.target_contract || '—'}</span>
+                                        <span><strong>Срок отработки:</strong> ${student.target_years ? student.target_years + ' лет' : '—'}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </span>
-                    </div>
-                `;
-            }
+                            </span>
+                        </div>
+                    `;
+                }
 
-            // ===== АДРЕСА ИЗ JSONB =====
-            const addresses = getAddresses(student);
-            let addressHtml = '';
+                // ===== АДРЕСА ИЗ JSONB =====
+                const addresses = getAddresses(student);
+                let addressHtml = '';
 
-            if (addresses.length > 0) {
-                let addressLines = '';
+                if (addresses.length > 0) {
+                    let addressLines = '';
 
-                addresses.forEach(addr => {
-                    const typeLabel = addr.type === 'регистрации' ? '📌 Регистрация' :
-                        addr.type === 'проживания' ? '🏠 Проживание' :
-                        '📍 Другой адрес';
+                    addresses.forEach(addr => {
+                        const typeLabel = addr.type === 'регистрации' ? '📌 Регистрация' :
+                            addr.type === 'проживания' ? '🏠 Проживание' :
+                            '📍 Другой адрес';
 
-                    if (addr.full) {
-                        addressLines += `
-                            <div class="address-line">
-                                <span class="address-label">${typeLabel}:</span>
-                                <span class="address-value">${addr.full}</span>
-                            </div>
-                        `;
-                    } else {
-                        let parts = [];
-                        if (addr.locality) parts.push(addr.locality);
-                        if (addr.street) parts.push(addr.street);
-                        const fullAddr = parts.length > 0 ? parts.join(', ') : '—';
+                        if (addr.full) {
+                            addressLines += `
+                                <div class="address-line">
+                                    <span class="address-label">${typeLabel}:</span>
+                                    <span class="address-value">${addr.full}</span>
+                                </div>
+                            `;
+                        } else {
+                            let parts = [];
+                            if (addr.locality) parts.push(addr.locality);
+                            if (addr.street) parts.push(addr.street);
+                            const fullAddr = parts.length > 0 ? parts.join(', ') : '—';
 
-                        addressLines += `
-                            <div class="address-line">
-                                <span class="address-label">${typeLabel}:</span>
-                                <span class="address-value">${fullAddr}</span>
-                            </div>
-                        `;
-                    }
+                            addressLines += `
+                                <div class="address-line">
+                                    <span class="address-label">${typeLabel}:</span>
+                                    <span class="address-value">${fullAddr}</span>
+                                </div>
+                            `;
+                        }
 
-                    const geoParts = [];
-                    if (addr.region) geoParts.push(`🗺️ ${addr.region}`);
-                    if (addr.district) geoParts.push(`📌 ${addr.district}`);
-                    if (addr.locality) geoParts.push(`🏘️ ${addr.locality}`);
+                        const geoParts = [];
+                        if (addr.region) geoParts.push(`🗺️ ${addr.region}`);
+                        if (addr.district) geoParts.push(`📌 ${addr.district}`);
+                        if (addr.locality) geoParts.push(`🏘️ ${addr.locality}`);
 
-                    if (geoParts.length > 0) {
-                        addressLines += `
-                            <div class="address-detail">
-                                ${geoParts.map(p => `<span>${p}</span>`).join('')}
-                            </div>
-                        `;
-                    }
-                });
-
-                addressHtml = `
-                    <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
-                        <span class="label" style="width:100%;">📍 Адреса</span>
-                        <span class="value" style="width:100%;">
-                            <div class="address-section">
-                                ${addressLines}
-                            </div>
-                        </span>
-                    </div>
-                `;
-            } else {
-                const hasOldAddress = student.address_reg || student.address_live ||
-                    student.address_region || student.address_district ||
-                    student.address_locality || student.street_input ||
-                    student.living_with;
-
-                if (hasOldAddress) {
-                    let oldAddressLines = '';
-
-                    if (student.address_reg) {
-                        oldAddressLines += `
-                            <div class="address-line">
-                                <span class="address-label">📌 Регистрация:</span>
-                                <span class="address-value">${student.address_reg}</span>
-                            </div>
-                        `;
-                    }
-                    if (student.address_live) {
-                        oldAddressLines += `
-                            <div class="address-line">
-                                <span class="address-label">🏠 Проживание:</span>
-                                <span class="address-value">${student.address_live}</span>
-                            </div>
-                        `;
-                    }
-                    if (student.street_input) {
-                        oldAddressLines += `
-                            <div class="address-line">
-                                <span class="address-label">📍 Улица, дом:</span>
-                                <span class="address-value">${student.street_input}</span>
-                            </div>
-                        `;
-                    }
-
-                    const geoParts = [];
-                    if (student.address_region) geoParts.push(`🗺️ ${student.address_region}`);
-                    if (student.address_district) geoParts.push(`📌 ${student.address_district}`);
-                    if (student.address_locality) geoParts.push(`🏘️ ${student.address_locality}`);
-
-                    if (geoParts.length > 0) {
-                        oldAddressLines += `
-                            <div class="address-detail">
-                                ${geoParts.map(p => `<span>${p}</span>`).join('')}
-                            </div>
-                        `;
-                    }
-
-                    if (student.living_with) {
-                        oldAddressLines += `
-                            <div class="address-line" style="font-size:13px;color:var(--text-secondary);">
-                                <span class="address-label">👨‍👩‍👦 Проживает с:</span>
-                                <span class="address-value" style="font-weight:500;">${student.living_with}</span>
-                            </div>
-                        `;
-                    }
+                        if (geoParts.length > 0) {
+                            addressLines += `
+                                <div class="address-detail">
+                                    ${geoParts.map(p => `<span>${p}</span>`).join('')}
+                                </div>
+                            `;
+                        }
+                    });
 
                     addressHtml = `
                         <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
                             <span class="label" style="width:100%;">📍 Адреса</span>
                             <span class="value" style="width:100%;">
                                 <div class="address-section">
-                                    ${oldAddressLines}
+                                    ${addressLines}
+                                </div>
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    const hasOldAddress = student.address_reg || student.address_live ||
+                        student.address_region || student.address_district ||
+                        student.address_locality || student.street_input ||
+                        student.living_with;
+
+                    if (hasOldAddress) {
+                        let oldAddressLines = '';
+
+                        if (student.address_reg) {
+                            oldAddressLines += `
+                                <div class="address-line">
+                                    <span class="address-label">📌 Регистрация:</span>
+                                    <span class="address-value">${student.address_reg}</span>
+                                </div>
+                            `;
+                        }
+                        if (student.address_live) {
+                            oldAddressLines += `
+                                <div class="address-line">
+                                    <span class="address-label">🏠 Проживание:</span>
+                                    <span class="address-value">${student.address_live}</span>
+                                </div>
+                            `;
+                        }
+                        if (student.street_input) {
+                            oldAddressLines += `
+                                <div class="address-line">
+                                    <span class="address-label">📍 Улица, дом:</span>
+                                    <span class="address-value">${student.street_input}</span>
+                                </div>
+                            `;
+                        }
+
+                        const geoParts = [];
+                        if (student.address_region) geoParts.push(`🗺️ ${student.address_region}`);
+                        if (student.address_district) geoParts.push(`📌 ${student.address_district}`);
+                        if (student.address_locality) geoParts.push(`🏘️ ${student.address_locality}`);
+
+                        if (geoParts.length > 0) {
+                            oldAddressLines += `
+                                <div class="address-detail">
+                                    ${geoParts.map(p => `<span>${p}</span>`).join('')}
+                                </div>
+                            `;
+                        }
+
+                        if (student.living_with) {
+                            oldAddressLines += `
+                                <div class="address-line" style="font-size:13px;color:var(--text-secondary);">
+                                    <span class="address-label">👨‍👩‍👦 Проживает с:</span>
+                                    <span class="address-value" style="font-weight:500;">${student.living_with}</span>
+                                </div>
+                            `;
+                        }
+
+                        addressHtml = `
+                            <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
+                                <span class="label" style="width:100%;">📍 Адреса</span>
+                                <span class="value" style="width:100%;">
+                                    <div class="address-section">
+                                        ${oldAddressLines}
+                                    </div>
+                                </span>
+                            </div>
+                        `;
+                    }
+                }
+
+                let accountingDisplayHtml = '';
+                if (accountingLinesHtml) {
+                    accountingDisplayHtml = `
+                        <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
+                            <span class="label" style="width:100%;">📋 Учёт</span>
+                            <span class="value" style="width:100%;">
+                                <div class="accounting-display">
+                                    ${accountingLinesHtml}
                                 </div>
                             </span>
                         </div>
                     `;
                 }
-            }
 
-            let accountingDisplayHtml = '';
-            if (accountingLinesHtml) {
-                accountingDisplayHtml = `
-                    <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
-                        <span class="label" style="width:100%;">📋 Учёт</span>
-                        <span class="value" style="width:100%;">
-                            <div class="accounting-display">
-                                ${accountingLinesHtml}
-                            </div>
-                        </span>
-                    </div>
-                `;
-            }
+                const gradesHtml = renderGrades(student);
 
-            const gradesHtml = renderGrades(student);
-
-            profileCard.innerHTML = `
-                <span class="avatar">👨‍🎓</span>
-                <div class="name">
-                    ${student.full_name}
-                    ${genderBadge}
-                </div>
-                <div class="sub">
-                    ${groupName !== '—' ? `
-                        <span class="badge-type ${typeBadges[groupTypeDisplay] || ''}">${typeLabels[groupTypeDisplay] || ''}</span>
-                        ${groupName}
-                    ` : 'Без группы'}
-                    <span style="margin-left:12px;" class="status-badge ${statusClass}">${statusText}</span>
-                </div>
-                <hr class="profile-divider">
-                <div class="profile-info">
-                    <div class="item">
-                        <span class="label">📅 Дата рождения</span>
-                        <span class="value">${student.birth_date ? formatDate(student.birth_date) : '—'} ${student.birth_date ? `(${calculateAge(student.birth_date)} лет)` : ''}</span>
-                    </div>
-                    <div class="item">
-                        <span class="label">📱 Телефон</span>
-                        <span class="value">${student.phone || '—'}</span>
-                    </div>
-                    <div class="item">
-                        <span class="label">🌍 Гражданство</span>
-                        <span class="value">${student.citizenship || '—'}</span>
-                    </div>
-                    <div class="item">
-                        <span class="label">🏫 Школа</span>
-                        <span class="value">${student.school || '—'} ${student.school_year ? `(${student.school_year} г.)` : ''}</span>
-                    </div>
-                    <div class="item">
-                        <span class="label">📊 Средний балл аттестата</span>
-                        <span class="value">${formatGrade(student.avg_grade)}</span>
-                    </div>
-                    ${accountingDisplayHtml}
-                    ${statusBlocksHtml ? `
-                    <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
-                        <span class="label" style="width:100%;">📋 Статусные изменения</span>
-                        <span class="value" style="width:100%;">${statusBlocksHtml}</span>
-                    </div>
-                    ` : ''}
-                    ${addressHtml}
-                    ${targetHtml}
-                    ${gradesHtml}
-                    ${student.group_id ? `
-                    <div class="item" style="grid-column:1/-1;">
-                        <span class="label">📚 Группа</span>
-                        <span class="value">
-                            <a href="/students/group.html?id=${student.group_id}" style="color:var(--primary-light);font-weight:600;text-decoration:none;">${groupName}</a>
-                        </span>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-
-            await loadParents(student.id);
-            await loadSiblings(student.id);
-
-        } catch (error) {
-            console.error('❌ Ошибка загрузки учащегося:', error);
-            profileCard.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">❌</span>
-                    <h3>Ошибка загрузки</h3>
-                    <p style="color:var(--text-muted);">${error.message}</p>
-                    <a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>
-                </div>
-            `;
-        }
-    }
-
-    // ============================================================
-    // УПРАВЛЕНИЕ КНОПКАМИ
-    // ============================================================
-
-    function updateButtons(status) {
-        const isActive = status === 'active';
-        const isExpelled = status === 'expelled';
-        const isAcademic = status === 'academic';
-        const isGraduated = status === 'graduated';
-
-        document.getElementById('expelStudentBtn').style.display = (hasEditRights && isActive) ? 'inline-flex' : 'none';
-        document.getElementById('academicLeaveBtn').style.display = (hasEditRights && isActive) ? 'inline-flex' : 'none';
-        document.getElementById('restoreStudentBtn').style.display = (hasEditRights && (isExpelled || isAcademic)) ? 'inline-flex' : 'none';
-        document.getElementById('deleteStudentBtn').style.display = (hasEditRights && !isGraduated) ? 'inline-flex' : 'none';
-        document.getElementById('editStudentBtn').style.display = (hasEditRights && !isGraduated) ? 'inline-flex' : 'none';
-    }
-
-    // ============================================================
-    // ЗАГРУЗКА РОДИТЕЛЕЙ И БРАТЬЕВ/СЁСТЕР
-    // ============================================================
-
-    async function loadParents(studentId) {
-        const container = document.getElementById('parentsContainer');
-        const countEl = document.getElementById('parentsCount');
-
-        try {
-            const { data: links, error: linksError } = await window.supabase
-                .from('student_parents')
-                .select('parent_id')
-                .eq('student_id', studentId);
-
-            if (linksError) throw linksError;
-
-            if (!links || links.length === 0) {
-                countEl.textContent = '0';
-                currentParents = [];
-                container.innerHTML =
-                    `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
-                return;
-            }
-
-            const parentIds = links.map(l => l.parent_id);
-            const { data: parents, error: parentsError } = await window.supabase
-                .from('parents')
-                .select('*')
-                .in('id', parentIds);
-
-            if (parentsError) throw parentsError;
-
-            currentParents = parents || [];
-            countEl.textContent = parents.length;
-            if (parents.length === 0) {
-                container.innerHTML =
-                    `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
-                return;
-            }
-
-            container.innerHTML = parents.map(p => `
-                <div class="related-card">
-                    <div class="name">${p.full_name}</div>
-                    <div class="info">
-                        <span class="tag">${p.relation || 'Родитель'}</span>
-                        ${p.birth_date ? ` • ${formatDate(p.birth_date)} (${calculateAge(p.birth_date)} лет)` : ''}
-                        ${p.marital_status ? ` • ${p.marital_status}` : ''}
-                    </div>
-                    ${p.work_place ? `<div class="info">🏢 ${p.work_place} ${p.position ? `— ${p.position}` : ''}</div>` : ''}
-                    ${p.phone ? `<div class="info">📱 ${p.phone}</div>` : ''}
-                    ${p.address ? `<div class="info">📍 ${p.address}</div>` : ''}
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('❌ Ошибка загрузки родителей:', error);
-            currentParents = [];
-            container.innerHTML =
-                `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Ошибка загрузки</p></div>`;
-        }
-    }
-
-    async function loadSiblings(studentId) {
-        const container = document.getElementById('siblingsContainer');
-        const countEl = document.getElementById('siblingsCount');
-
-        try {
-            const { data: links, error: linksError } = await window.supabase
-                .from('student_siblings')
-                .select('sibling_id')
-                .eq('student_id', studentId);
-
-            if (linksError) throw linksError;
-
-            if (!links || links.length === 0) {
-                countEl.textContent = '0';
-                currentSiblings = [];
-                container.innerHTML =
-                    `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
-                return;
-            }
-
-            const siblingIds = links.map(l => l.sibling_id);
-            const { data: siblings, error: siblingsError } = await window.supabase
-                .from('siblings')
-                .select('*')
-                .in('id', siblingIds);
-
-            if (siblingsError) throw siblingsError;
-
-            currentSiblings = siblings || [];
-            countEl.textContent = siblings.length;
-            if (siblings.length === 0) {
-                container.innerHTML =
-                    `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
-                return;
-            }
-
-            container.innerHTML = siblings.map(s => `
-                <div class="related-card">
-                    <div class="name">${s.full_name}</div>
-                    <div class="info">
-                        <span class="tag">${s.type || 'Брат/сестра'}</span>
-                        ${s.birth_date ? ` • ${formatDate(s.birth_date)} (${calculateAge(s.birth_date)} лет)` : ''}
-                        ${s.study_work ? ` • ${s.study_work}` : ''}
-                    </div>
-                </div>
-            `).join('');
-
-        } catch (error) {
-            console.error('❌ Ошибка загрузки братьев/сестёр:', error);
-            currentSiblings = [];
-            container.innerHTML =
-                `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Ошибка загрузки</p></div>`;
-        }
-    }
-
-    // ============================================================
-    // ЭКСПОРТ В PDF
-    // ============================================================
-
-    document.getElementById('exportPDFBtn').onclick = function() {
-        if (!currentStudent) {
-            showToast('❌ Нет данных для экспорта', 'error');
-            return;
-        }
-
-        const s = currentStudent;
-        const typeLabels = { 'sso': 'ССО', 'pto': 'ПТО' };
-        const dateStr = new Date().toLocaleDateString('ru-RU');
-
-        let pdfHtml = `
-            <div class="pdf-content">
-                <div class="pdf-header">
-                    <div class="pdf-title">Карточка учащегося</div>
-                    <div class="pdf-subtitle">${s.full_name}</div>
-                    <div class="pdf-info">${s.group_id ? `Группа: ${s.group_name || '—'}` : 'Без группы'} ${s.type ? `| ${typeLabels[s.type] || s.type}` : ''}</div>
-                </div>
-
-                <div class="pdf-section-title">📋 Основная информация</div>
-                <div class="pdf-row"><span class="pdf-label">Дата рождения:</span><span class="pdf-value">${s.birth_date ? formatDate(s.birth_date) + ' (' + calculateAge(s.birth_date) + ' лет)' : '—'}</span></div>
-                <div class="pdf-row"><span class="pdf-label">Телефон:</span><span class="pdf-value">${s.phone || '—'}</span></div>
-                <div class="pdf-row"><span class="pdf-label">Гражданство:</span><span class="pdf-value">${s.citizenship || '—'}</span></div>
-                <div class="pdf-row"><span class="pdf-label">Школа:</span><span class="pdf-value">${s.school || '—'} ${s.school_year ? '(' + s.school_year + ' г.)' : ''}</span></div>
-                <div class="pdf-row"><span class="pdf-label">Средний балл аттестата:</span><span class="pdf-value">${formatGrade(s.avg_grade)}</span></div>
-                <div class="pdf-row"><span class="pdf-label">Пол:</span><span class="pdf-value">${s.gender || '—'}</span></div>
-        `;
-
-        const addresses = getAddresses(s);
-        if (addresses.length > 0) {
-            pdfHtml += `<div class="pdf-section-title">📍 Адреса</div>`;
-            addresses.forEach(addr => {
-                const typeLabel = addr.type === 'регистрации' ? 'Регистрация' :
-                    addr.type === 'проживания' ? 'Проживание' : 'Другой адрес';
-                const fullAddr = addr.full || (addr.locality ? addr.locality : '') + (addr.street ? ', ' + addr.street : '');
-                pdfHtml +=
-                    `<div class="pdf-address-line"><span class="pdf-address-label">${typeLabel}:</span> ${fullAddr || '—'}</div>`;
-                const geoParts = [];
-                if (addr.region) geoParts.push(`Область: ${addr.region}`);
-                if (addr.district) geoParts.push(`Район: ${addr.district}`);
-                if (addr.locality) geoParts.push(`Нас. пункт: ${addr.locality}`);
-                if (geoParts.length > 0) {
-                    pdfHtml += `<div class="pdf-address-detail">${geoParts.join(' | ')}</div>`;
-                }
-            });
-        } else if (s.address_reg || s.address_live || s.address_region || s.address_district || s.address_locality) {
-            pdfHtml += `<div class="pdf-section-title">📍 Адреса</div>`;
-            if (s.address_region) pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Область:</span> ${s.address_region}</div>`;
-            if (s.address_district) pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Район:</span> ${s.address_district}</div>`;
-            if (s.address_locality) pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Нас. пункт:</span> ${s.address_locality}</div>`;
-            if (s.address_reg) pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Регистрация:</span> ${s.address_reg}</div>`;
-            if (s.address_live) pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Проживание:</span> ${s.address_live}</div>`;
-            if (s.street_input) pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Улица, дом:</span> ${s.street_input}</div>`;
-            if (s.living_with) pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Проживает с:</span> ${s.living_with}</div>`;
-        }
-
-        const accountingData = s.accounting_data || [];
-        if (accountingData.length > 0) {
-            pdfHtml += `<div class="pdf-section-title">📋 Учёт</div>`;
-            accountingData.forEach(item => {
-                const startDate = item.start ? formatDate(item.start) : '—';
-                const endDate = item.end ? formatDate(item.end) : null;
-                const isActive = !item.end || item.end === '';
-                pdfHtml +=
-                    `<div class="pdf-address-line"><span class="pdf-address-label">${item.type}:</span> ${startDate}${endDate ? ' - ' + endDate : ''} ${isActive ? '(Активен)' : '(Снят)'}</div>`;
-            });
-        }
-
-        if (s.expulsion_date) {
-            pdfHtml += `<div class="pdf-section-title">📋 Статусные изменения</div>`;
-            pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">❌ Отчислен:</span> ${formatDate(s.expulsion_date)}${s.expulsion_order ? ', Приказ: ' + s.expulsion_order : ''}${s.expulsion_article ? ', Статья: ' + s.expulsion_article : ''}</div>`;
-        }
-        if (s.academic_leave_date) {
-            pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">📚 Академ. отпуск:</span> ${formatDate(s.academic_leave_date)}${s.academic_leave_order ? ', Приказ: ' + s.academic_leave_order : ''}${s.academic_leave_reason ? ', Причина: ' + s.academic_leave_reason : ''}</div>`;
-        }
-
-        if (s.target_training) {
-            pdfHtml += `<div class="pdf-section-title">🎯 Целевое обучение</div>`;
-            pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Заказчик:</span> ${s.target_customer || '—'}</div>`;
-            pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">№ договора:</span> ${s.target_contract || '—'}</div>`;
-            pdfHtml +=
-                `<div class="pdf-address-line"><span class="pdf-address-label">Срок отработки:</span> ${s.target_years ? s.target_years + ' лет' : '—'}</div>`;
-        }
-
-        const type = s.type || '';
-        const maxCourse = getMaxCourse(type);
-        let hasGrades = false;
-        for (let course = 1; course <= maxCourse; course++) {
-            const sem1 = s[`grade_${course}_sem1`];
-            const sem2 = s[`grade_${course}_sem2`];
-            const year = s[`grade_${course}_year`];
-            if (sem1 || sem2 || year) { hasGrades = true; break; }
-        }
-
-        if (hasGrades) {
-            pdfHtml += `<div class="pdf-section-title">📊 Средний балл по курсам</div>`;
-            const courses = [{ num: 1, label: '1 курс' }, { num: 2, label: '2 курс' }, { num: 3, label: '3 курс' }];
-            if (type === 'sso') courses.push({ num: 4, label: '4 курс' });
-            courses.forEach(course => {
-                const sem1 = s[`grade_${course.num}_sem1`];
-                const sem2 = s[`grade_${course.num}_sem2`];
-                const year = s[`grade_${course.num}_year`];
-                if (sem1 || sem2 || year) {
-                    pdfHtml += `
-                        <div class="pdf-grade-section">
-                            <div class="pdf-grade-title">📘 ${course.label}</div>
-                            <div class="pdf-grade-row">
-                                <span class="pdf-grade-label">1-ое полугодие:</span>
-                                <span class="pdf-grade-value">${formatGrade(sem1)}</span>
-                            </div>
-                            <div class="pdf-grade-row">
-                                <span class="pdf-grade-label">2-ое полугодие:</span>
-                                <span class="pdf-grade-value">${formatGrade(sem2)}</span>
-                            </div>
-                            <div class="pdf-grade-row">
-                                <span class="pdf-grade-label">За год:</span>
-                                <span class="pdf-grade-value"><strong>${formatGrade(year)}</strong></span>
-                            </div>
+                // ===== БЛОК ПРОЖИВАНИЯ =====
+                let dormHtml = '';
+                if (student.lives_in_dorm) {
+                    const floor = student.dorm_block ? getFloorLabel(student.dorm_block) : '—';
+                    const roomType = getRoomTypeLabel(student.dorm_room_type);
+                    dormHtml = `
+                        <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
+                            <span class="label" style="width:100%;">🏠 Проживание в общежитии</span>
+                            <span class="value" style="width:100%;">
+                                <div class="dorm-block show">
+                                    <div class="dorm-title">Проживает в общежитии</div>
+                                    <div class="dorm-row">
+                                        <div class="dorm-item">
+                                            <strong>Блок</strong>
+                                            <span>${student.dorm_block || '—'}</span>
+                                        </div>
+                                        <div class="dorm-item">
+                                            <strong>Этаж</strong>
+                                            <span>${floor}</span>
+                                        </div>
+                                        <div class="dorm-item">
+                                            <strong>Тип комнаты</strong>
+                                            <span>${roomType}</span>
+                                        </div>
+                                        ${student.dorm_room_number ? `
+                                        <div class="dorm-item">
+                                            <strong>Номер комнаты</strong>
+                                            <span>${student.dorm_room_number}</span>
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </span>
+                        </div>
+                    `;
+                } else {
+                    dormHtml = `
+                        <div class="item" style="grid-column:1/-1;">
+                            <span class="label">🏠 Проживание в общежитии</span>
+                            <span class="value">❌ Не проживает</span>
                         </div>
                     `;
                 }
-            });
-        }
 
-        if (currentParents && currentParents.length > 0) {
-            pdfHtml += `<div class="pdf-section-title">👨‍👩‍👦 Родители</div>`;
-            currentParents.forEach(p => {
-                pdfHtml += `
-                    <div class="pdf-related">
-                        <div class="pdf-related-name">${p.full_name}</div>
-                        <div class="pdf-related-info">
-                            ${p.relation || 'Родитель'}${p.birth_date ? ' • ' + formatDate(p.birth_date) + ' (' + calculateAge(p.birth_date) + ' лет)' : ''}${p.marital_status ? ' • ' + p.marital_status : ''}
-                            ${p.work_place ? '<br>🏢 ' + p.work_place + (p.position ? ' — ' + p.position : '') : ''}
-                            ${p.phone ? '<br>📱 ' + p.phone : ''}
-                            ${p.address ? '<br>📍 ' + p.address : ''}
+                profileCard.innerHTML = `
+                    <span class="avatar">👨‍🎓</span>
+                    <div class="name">
+                        ${student.full_name}
+                        ${genderBadge}
+                    </div>
+                    <div class="sub">
+                        ${groupName !== '—' ? `
+                            <span class="badge-type ${typeBadges[groupTypeDisplay] || ''}">${typeLabels[groupTypeDisplay] || ''}</span>
+                            ${groupName}
+                        ` : 'Без группы'}
+                        <span style="margin-left:12px;" class="status-badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <hr class="profile-divider">
+                    <div class="profile-info">
+                        <div class="item">
+                            <span class="label">📅 Дата рождения</span>
+                            <span class="value">${student.birth_date ? formatDate(student.birth_date) : '—'} ${student.birth_date ? `(${calculateAge(student.birth_date)} лет)` : ''}</span>
                         </div>
+                        <div class="item">
+                            <span class="label">📱 Телефон</span>
+                            <span class="value">${student.phone || '—'}</span>
+                        </div>
+                        <div class="item">
+                            <span class="label">🌍 Гражданство</span>
+                            <span class="value">${student.citizenship || '—'}</span>
+                        </div>
+                        <div class="item">
+                            <span class="label">🏫 Школа</span>
+                            <span class="value">${student.school || '—'} ${student.school_year ? `(${student.school_year} г.)` : ''}</span>
+                        </div>
+                        <div class="item">
+                            <span class="label">📊 Средний балл аттестата</span>
+                            <span class="value">${formatGrade(student.avg_grade)}</span>
+                        </div>
+                        ${accountingDisplayHtml}
+                        ${statusBlocksHtml ? `
+                        <div class="item" style="grid-column:1/-1;flex-direction:column;align-items:stretch;gap:4px;">
+                            <span class="label" style="width:100%;">📋 Статусные изменения</span>
+                            <span class="value" style="width:100%;">${statusBlocksHtml}</span>
+                        </div>
+                        ` : ''}
+                        ${addressHtml}
+                        ${targetHtml}
+                        ${dormHtml}
+                        ${gradesHtml}
+                        ${student.group_id ? `
+                        <div class="item" style="grid-column:1/-1;">
+                            <span class="label">📚 Группа</span>
+                            <span class="value">
+                                <a href="/students/group.html?id=${student.group_id}" style="color:var(--primary-light);font-weight:600;text-decoration:none;">${groupName}</a>
+                            </span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    ${hasEditRights ? `
+                    <div style="margin-top:16px;padding-top:16px;border-top:2px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn btn-info btn-sm" onclick="openDormEditModal()">🏠 Редактировать проживание</button>
+                    </div>
+                    ` : ''}
+                `;
+
+                await loadParents(student.id);
+                await loadSiblings(student.id);
+
+            } catch (error) {
+                console.error('❌ Ошибка загрузки студента:', error);
+                profileCard.innerHTML = `
+                    <div class="empty-state">
+                        <span class="icon">❌</span>
+                        <h3>Ошибка загрузки</h3>
+                        <p style="color:var(--text-muted);">${error.message}</p>
+                        <a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>
                     </div>
                 `;
-            });
+            }
         }
 
-        if (currentSiblings && currentSiblings.length > 0) {
-            pdfHtml += `<div class="pdf-section-title">👨‍👧‍👦 Братья и сёстры</div>`;
-            currentSiblings.forEach(sib => {
-                pdfHtml += `
-                    <div class="pdf-related">
-                        <div class="pdf-related-name">${sib.full_name}</div>
-                        <div class="pdf-related-info">
-                            ${sib.type || 'Брат/сестра'}${sib.birth_date ? ' • ' + formatDate(sib.birth_date) + ' (' + calculateAge(sib.birth_date) + ' лет)' : ''}${sib.study_work ? ' • ' + sib.study_work : ''}
+        // ============================================================
+        // УПРАВЛЕНИЕ КНОПКАМИ
+        // ============================================================
+
+        function updateButtons(status) {
+            const isActive = status === 'active';
+            const isExpelled = status === 'expelled';
+            const isAcademic = status === 'academic';
+            const isGraduated = status === 'graduated';
+
+            document.getElementById('expelStudentBtn').style.display = (hasEditRights && isActive) ? 'inline-flex' : 'none';
+            document.getElementById('academicLeaveBtn').style.display = (hasEditRights && isActive) ? 'inline-flex' :
+            'none';
+            document.getElementById('restoreStudentBtn').style.display = (hasEditRights && (isExpelled || isAcademic)) ?
+                'inline-flex' : 'none';
+            document.getElementById('deleteStudentBtn').style.display = (hasEditRights && !isGraduated) ? 'inline-flex' :
+                'none';
+            document.getElementById('editStudentBtn').style.display = (hasEditRights && !isGraduated) ? 'inline-flex' :
+                'none';
+        }
+
+        // ============================================================
+        // ЗАГРУЗКА РОДИТЕЛЕЙ И БРАТЬЕВ/СЁСТЕР
+        // ============================================================
+
+        async function loadParents(studentId) {
+            const container = document.getElementById('parentsContainer');
+            const countEl = document.getElementById('parentsCount');
+
+            try {
+                const { data: links, error: linksError } = await sb
+                    .from('student_parents')
+                    .select('parent_id')
+                    .eq('student_id', studentId);
+
+                if (linksError) throw linksError;
+
+                if (!links || links.length === 0) {
+                    countEl.textContent = '0';
+                    currentParents = [];
+                    container.innerHTML =
+                        `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
+                    return;
+                }
+
+                const parentIds = links.map(l => l.parent_id);
+                const { data: parents, error: parentsError } = await sb
+                    .from('parents')
+                    .select('*')
+                    .in('id', parentIds);
+
+                if (parentsError) throw parentsError;
+
+                currentParents = parents || [];
+                countEl.textContent = parents.length;
+                if (parents.length === 0) {
+                    container.innerHTML =
+                        `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
+                    return;
+                }
+
+                container.innerHTML = parents.map(p => `
+                    <div class="related-card">
+                        <div class="name">${p.full_name}</div>
+                        <div class="info">
+                            <span class="tag">${p.relation || 'Родитель'}</span>
+                            ${p.birth_date ? ` • ${formatDate(p.birth_date)} (${calculateAge(p.birth_date)} лет)` : ''}
+                            ${p.marital_status ? ` • ${p.marital_status}` : ''}
+                        </div>
+                        ${p.work_place ? `<div class="info">🏢 ${p.work_place} ${p.position ? `— ${p.position}` : ''}</div>` : ''}
+                        ${p.phone ? `<div class="info">📱 ${p.phone}</div>` : ''}
+                        ${p.address ? `<div class="info">📍 ${p.address}</div>` : ''}
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('❌ Ошибка загрузки родителей:', error);
+                currentParents = [];
+                container.innerHTML =
+                    `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Ошибка загрузки</p></div>`;
+            }
+        }
+
+        async function loadSiblings(studentId) {
+            const container = document.getElementById('siblingsContainer');
+            const countEl = document.getElementById('siblingsCount');
+
+            try {
+                const { data: links, error: linksError } = await sb
+                    .from('student_siblings')
+                    .select('sibling_id')
+                    .eq('student_id', studentId);
+
+                if (linksError) throw linksError;
+
+                if (!links || links.length === 0) {
+                    countEl.textContent = '0';
+                    currentSiblings = [];
+                    container.innerHTML =
+                        `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
+                    return;
+                }
+
+                const siblingIds = links.map(l => l.sibling_id);
+                const { data: siblings, error: siblingsError } = await sb
+                    .from('siblings')
+                    .select('*')
+                    .in('id', siblingIds);
+
+                if (siblingsError) throw siblingsError;
+
+                currentSiblings = siblings || [];
+                countEl.textContent = siblings.length;
+                if (siblings.length === 0) {
+                    container.innerHTML =
+                        `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Нет данных</p></div>`;
+                    return;
+                }
+
+                container.innerHTML = siblings.map(s => `
+                    <div class="related-card">
+                        <div class="name">${s.full_name}</div>
+                        <div class="info">
+                            <span class="tag">${s.type || 'Брат/сестра'}</span>
+                            ${s.birth_date ? ` • ${formatDate(s.birth_date)} (${calculateAge(s.birth_date)} лет)` : ''}
+                            ${s.study_work ? ` • ${s.study_work}` : ''}
                         </div>
                     </div>
-                `;
-            });
+                `).join('');
+
+            } catch (error) {
+                console.error('❌ Ошибка загрузки братьев/сестёр:', error);
+                currentSiblings = [];
+                container.innerHTML =
+                    `<div class="empty-state" style="padding:20px;"><p style="font-size:14px;">Ошибка загрузки</p></div>`;
+            }
         }
 
-        pdfHtml += `
-                <div class="pdf-footer">
-                    Дата: ${dateStr}
+        // ============================================================
+        // ЭКСПОРТ В PDF (исправлен)
+        // ============================================================
+
+        document.getElementById('exportPDFBtn').onclick = function() {
+            if (!currentStudent) {
+                showToast('❌ Нет данных для экспорта', 'error');
+                return;
+            }
+
+            const s = currentStudent;
+            const typeLabels = { 'sso': 'ССО', 'pto': 'ПТО' };
+            const dateStr = new Date().toLocaleDateString('ru-RU');
+
+            // Получаем название группы
+            const groupName = currentGroup?.name || '—';
+            const groupType = currentGroup?.type || '';
+            const typeLabel = typeLabels[groupType] || '';
+
+            let pdfHtml = `
+                <div class="pdf-content">
+                    <div class="pdf-header">
+                        <div class="pdf-title">Карточка студента</div>
+                        <div class="pdf-subtitle">${s.full_name}</div>
+                        <div class="pdf-info">Группа: ${groupName} ${typeLabel ? '| ' + typeLabel : ''}</div>
+                    </div>
+
+                    <div class="pdf-section-title">📋 Основная информация</div>
+                    <div class="pdf-row"><span class="pdf-label">Дата рождения:</span><span class="pdf-value">${s.birth_date ? formatDate(s.birth_date) + ' (' + calculateAge(s.birth_date) + ' лет)' : '—'}</span></div>
+                    <div class="pdf-row"><span class="pdf-label">Телефон:</span><span class="pdf-value">${s.phone || '—'}</span></div>
+                    <div class="pdf-row"><span class="pdf-label">Гражданство:</span><span class="pdf-value">${s.citizenship || '—'}</span></div>
+                    <div class="pdf-row"><span class="pdf-label">Школа:</span><span class="pdf-value">${s.school || '—'} ${s.school_year ? '(' + s.school_year + ' г.)' : ''}</span></div>
+                    <div class="pdf-row"><span class="pdf-label">Средний балл аттестата:</span><span class="pdf-value">${formatGrade(s.avg_grade)}</span></div>
+                    <div class="pdf-row"><span class="pdf-label">Пол:</span><span class="pdf-value">${s.gender || '—'}</span></div>
+            `;
+
+            // Адреса
+            const addresses = getAddresses(s);
+            if (addresses.length > 0) {
+                pdfHtml += `<div class="pdf-section-title">📍 Адреса</div>`;
+                addresses.forEach(addr => {
+                    const typeLabel = addr.type === 'регистрации' ? 'Регистрация' :
+                        addr.type === 'проживания' ? 'Проживание' : 'Другой адрес';
+                    const fullAddr = addr.full || (addr.locality ? addr.locality : '') + (addr.street ? ', ' + addr
+                        .street : '');
+                    pdfHtml +=
+                        `<div class="pdf-address-line"><span class="pdf-address-label">${typeLabel}:</span> ${fullAddr || '—'}</div>`;
+                    const geoParts = [];
+                    if (addr.region) geoParts.push(`Область: ${addr.region}`);
+                    if (addr.district) geoParts.push(`Район: ${addr.district}`);
+                    if (addr.locality) geoParts.push(`Нас. пункт: ${addr.locality}`);
+                    if (geoParts.length > 0) {
+                        pdfHtml += `<div class="pdf-address-detail">${geoParts.join(' | ')}</div>`;
+                    }
+                });
+            } else if (s.address_reg || s.address_live || s.address_region || s.address_district || s.address_locality) {
+                pdfHtml += `<div class="pdf-section-title">📍 Адреса</div>`;
+                if (s.address_region) pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Область:</span> ${s.address_region}</div>`;
+                if (s.address_district) pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Район:</span> ${s.address_district}</div>`;
+                if (s.address_locality) pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Нас. пункт:</span> ${s.address_locality}</div>`;
+                if (s.address_reg) pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Регистрация:</span> ${s.address_reg}</div>`;
+                if (s.address_live) pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Проживание:</span> ${s.address_live}</div>`;
+                if (s.street_input) pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Улица, дом:</span> ${s.street_input}</div>`;
+                if (s.living_with) pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Проживает с:</span> ${s.living_with}</div>`;
+            }
+
+            // Учёт
+            const accountingData = s.accounting_data || [];
+            if (accountingData.length > 0) {
+                pdfHtml += `<div class="pdf-section-title">📋 Учёт</div>`;
+                accountingData.forEach(item => {
+                    const startDate = item.start ? formatDate(item.start) : '—';
+                    const endDate = item.end ? formatDate(item.end) : null;
+                    const isActive = !item.end || item.end === '';
+                    pdfHtml +=
+                        `<div class="pdf-address-line"><span class="pdf-address-label">${item.type}:</span> ${startDate}${endDate ? ' - ' + endDate : ''} ${isActive ? '(Активен)' : '(Снят)'}</div>`;
+                });
+            }
+
+            // Статусные изменения
+            if (s.expulsion_date) {
+                pdfHtml += `<div class="pdf-section-title">📋 Статусные изменения</div>`;
+                pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">❌ Отчислен:</span> ${formatDate(s.expulsion_date)}${s.expulsion_order ? ', Приказ: ' + s.expulsion_order : ''}${s.expulsion_article ? ', Статья: ' + s.expulsion_article : ''}</div>`;
+            }
+            if (s.academic_leave_date) {
+                pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">📚 Академ. отпуск:</span> ${formatDate(s.academic_leave_date)}${s.academic_leave_order ? ', Приказ: ' + s.academic_leave_order : ''}${s.academic_leave_reason ? ', Причина: ' + s.academic_leave_reason : ''}</div>`;
+            }
+
+            // Целевое обучение
+            if (s.target_training) {
+                pdfHtml += `<div class="pdf-section-title">🎯 Целевое обучение</div>`;
+                pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Заказчик:</span> ${s.target_customer || '—'}</div>`;
+                pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">№ договора:</span> ${s.target_contract || '—'}</div>`;
+                pdfHtml +=
+                    `<div class="pdf-address-line"><span class="pdf-address-label">Срок отработки:</span> ${s.target_years ? s.target_years + ' лет' : '—'}</div>`;
+            }
+
+            // Оценки по курсам
+            const type = s.type || '';
+            const maxCourse = getMaxCourse(type);
+            let hasGrades = false;
+            for (let course = 1; course <= maxCourse; course++) {
+                const sem1 = s[`grade_${course}_sem1`];
+                const sem2 = s[`grade_${course}_sem2`];
+                const year = s[`grade_${course}_year`];
+                if (sem1 || sem2 || year) { hasGrades = true; break; }
+            }
+
+            if (hasGrades) {
+                pdfHtml += `<div class="pdf-section-title">📊 Средний балл по курсам</div>`;
+                const courses = [{ num: 1, label: '1 курс' }, { num: 2, label: '2 курс' }, { num: 3, label: '3 курс' }];
+                if (type === 'sso') courses.push({ num: 4, label: '4 курс' });
+                courses.forEach(course => {
+                    const sem1 = s[`grade_${course.num}_sem1`];
+                    const sem2 = s[`grade_${course.num}_sem2`];
+                    const year = s[`grade_${course.num}_year`];
+                    if (sem1 || sem2 || year) {
+                        pdfHtml += `
+                            <div class="pdf-grade-section">
+                                <div class="pdf-grade-title">📘 ${course.label}</div>
+                                <div class="pdf-grade-row">
+                                    <span class="pdf-grade-label">1-ое полугодие:</span>
+                                    <span class="pdf-grade-value">${formatGrade(sem1)}</span>
+                                </div>
+                                <div class="pdf-grade-row">
+                                    <span class="pdf-grade-label">2-ое полугодие:</span>
+                                    <span class="pdf-grade-value">${formatGrade(sem2)}</span>
+                                </div>
+                                <div class="pdf-grade-row">
+                                    <span class="pdf-grade-label">За год:</span>
+                                    <span class="pdf-grade-value"><strong>${formatGrade(year)}</strong></span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            }
+
+            // Родители
+            if (currentParents && currentParents.length > 0) {
+                pdfHtml += `<div class="pdf-section-title">👨‍👩‍👦 Родители</div>`;
+                currentParents.forEach(p => {
+                    pdfHtml += `
+                        <div class="pdf-related">
+                            <div class="pdf-related-name">${p.full_name}</div>
+                            <div class="pdf-related-info">
+                                ${p.relation || 'Родитель'}${p.birth_date ? ' • ' + formatDate(p.birth_date) + ' (' + calculateAge(p.birth_date) + ' лет)' : ''}${p.marital_status ? ' • ' + p.marital_status : ''}
+                                ${p.work_place ? '<br>🏢 ' + p.work_place + (p.position ? ' — ' + p.position : '') : ''}
+                                ${p.phone ? '<br>📱 ' + p.phone : ''}
+                                ${p.address ? '<br>📍 ' + p.address : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Братья и сёстры
+            if (currentSiblings && currentSiblings.length > 0) {
+                pdfHtml += `<div class="pdf-section-title">👨‍👧‍👦 Братья и сёстры</div>`;
+                currentSiblings.forEach(sib => {
+                    pdfHtml += `
+                        <div class="pdf-related">
+                            <div class="pdf-related-name">${sib.full_name}</div>
+                            <div class="pdf-related-info">
+                                ${sib.type || 'Брат/сестра'}${sib.birth_date ? ' • ' + formatDate(sib.birth_date) + ' (' + calculateAge(sib.birth_date) + ' лет)' : ''}${sib.study_work ? ' • ' + sib.study_work : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // ПРОЖИВАНИЕ В ОБЩЕЖИТИИ (PDF)
+            pdfHtml += `<div class="pdf-section-title">🏠 Проживание в общежитии</div>`;
+            pdfHtml +=
+                `<div class="pdf-dorm-row"><span class="pdf-dorm-label">Проживает:</span><span class="pdf-dorm-value">${s.lives_in_dorm ? '✅ Да' : '❌ Нет'}</span></div>`;
+            if (s.lives_in_dorm) {
+                const floor = s.dorm_block ? getFloorLabel(s.dorm_block) : '—';
+                pdfHtml +=
+                    `<div class="pdf-dorm-row"><span class="pdf-dorm-label">Блок:</span><span class="pdf-dorm-value">${s.dorm_block || '—'}</span></div>`;
+                pdfHtml +=
+                    `<div class="pdf-dorm-row"><span class="pdf-dorm-label">Этаж:</span><span class="pdf-dorm-value">${floor}</span></div>`;
+                const roomType = getRoomTypeLabel(s.dorm_room_type);
+                pdfHtml +=
+                    `<div class="pdf-dorm-row"><span class="pdf-dorm-label">Тип комнаты:</span><span class="pdf-dorm-value">${roomType}</span></div>`;
+                if (s.dorm_room_number) {
+                    pdfHtml +=
+                        `<div class="pdf-dorm-row"><span class="pdf-dorm-label">Номер комнаты:</span><span class="pdf-dorm-value">${s.dorm_room_number}</span></div>`;
+                }
+            }
+
+            pdfHtml += `
+                    <div class="pdf-footer">
+                        Дата: ${dateStr}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
 
-        const content = document.createElement('div');
-        content.innerHTML = pdfHtml;
+            const content = document.createElement('div');
+            content.innerHTML = pdfHtml;
 
-        const opt = {
-            margin: [6, 6, 6, 6],
-            filename: `Карточка_учащегося_${s.full_name.replace(/\s/g, '_')}_${dateStr.replace(/\./g, '-')}.pdf`,
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            const opt = {
+                margin: [6, 6, 6, 6],
+                filename: `Карточка_студента_${s.full_name.replace(/\s/g, '_')}_${dateStr.replace(/\./g, '-')}.pdf`,
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+
+            html2pdf().set(opt).from(content).save().then(() => {
+                showToast('✅ Карточка сохранена в PDF');
+            }).catch((error) => {
+                showToast('❌ Ошибка создания PDF: ' + error.message, 'error');
+            });
         };
 
-        html2pdf().set(opt).from(content).save().then(() => {
-            showToast('✅ Карточка сохранена в PDF');
-        }).catch((error) => {
-            showToast('❌ Ошибка создания PDF: ' + error.message, 'error');
-        });
-    };
+        // ============================================================
+        // РЕДАКТИРОВАНИЕ СТУДЕНТА
+        // ============================================================
 
-    // ============================================================
-    // РЕДАКТИРОВАНИЕ УЧАЩЕГОСЯ
-    // ============================================================
+        document.getElementById('editStudentBtn').onclick = () => {
+            if (!hasEditRights) { showToast('❌ У вас нет прав', 'error'); return; }
+            window.location.href = `/students/edit-student.html?id=${studentId}`;
+        };
 
-    document.getElementById('editStudentBtn').onclick = () => {
-        if (!hasEditRights) { showToast('❌ У вас нет прав', 'error'); return; }
-        window.location.href = `/students/edit-student.html?id=${studentId}`;
-    };
+        // ============================================================
+        // ОБРАБОТЧИКИ
+        // ============================================================
 
-    // ============================================================
-    // ОБРАБОТЧИКИ
-    // ============================================================
+        document.getElementById('backBtn').onclick = async () => {
+            if (!studentId) { window.location.href = '/students/index.html'; return; }
+            const { data: student } = await sb
+                .from('students')
+                .select('group_id')
+                .eq('id', studentId)
+                .single();
 
-    document.getElementById('backBtn').onclick = async () => {
-        if (!studentId) { window.location.href = '/students/index.html'; return; }
-        const { data: student } = await window.supabase
-            .from('students')
-            .select('group_id')
-            .eq('id', studentId)
-            .single();
+            if (student && student.group_id) {
+                window.location.href = `/students/group.html?id=${student.group_id}`;
+            } else {
+                window.location.href = '/students/index.html';
+            }
+        };
 
-        if (student && student.group_id) {
-            window.location.href = `/students/group.html?id=${student.group_id}`;
-        } else {
-            window.location.href = '/students/index.html';
-        }
-    };
+        // ============================================================
+        // МОБИЛЬНОЕ МЕНЮ
+        // ============================================================
 
-    // ============================================================
-    // МОБИЛЬНОЕ МЕНЮ
-    // ============================================================
+        document.getElementById('menuToggle').onclick = () => {
+            document.getElementById('sidebar').classList.toggle('open');
+        };
 
-    document.getElementById('menuToggle').onclick = () => {
-        document.getElementById('sidebar').classList.toggle('open');
-    };
-
-    if (window.innerWidth <= 768) {
-        document.getElementById('menuToggle').style.display = 'inline-block';
-    }
-
-    window.onresize = () => {
         if (window.innerWidth <= 768) {
             document.getElementById('menuToggle').style.display = 'inline-block';
-        } else {
-            document.getElementById('menuToggle').style.display = 'none';
-            document.getElementById('sidebar').classList.remove('open');
         }
-    };
 
-    // ============================================================
-    // ИНИЦИАЛИЗАЦИЯ
-    // ============================================================
+        window.onresize = () => {
+            if (window.innerWidth <= 768) {
+                document.getElementById('menuToggle').style.display = 'inline-block';
+            } else {
+                document.getElementById('menuToggle').style.display = 'none';
+                document.getElementById('sidebar').classList.remove('open');
+            }
+        };
 
-    async function init() {
-        // Проверяем сессию
-        if (window.Session) {
-            const isValid = await window.Session.check();
-            if (!isValid) return;
-        }
-        
+        // ============================================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================================
+
         loadUser();
         loadStudent();
-    }
-
-    // Запускаем
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
     </script>
 
 </body>

@@ -14,10 +14,8 @@
     <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
     <link rel="stylesheet" href="/css/components.css">
     
-    <!-- ===== СКРИПТЫ СЕССИИ ===== -->
+    <!-- ===== SUPABASE ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="/js/session.js"></script>
-    <script src="/js/session-init.js"></script>
     
     <style>
         /* ===== ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ГРУПП ===== */
@@ -58,6 +56,7 @@
             gap: 12px;
             margin-bottom: 24px;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .search-bar input {
@@ -75,6 +74,39 @@
             outline: none;
             border-color: var(--primary-light);
             box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-bar .filter-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .search-bar .filter-checkbox:hover {
+            border-color: var(--primary-light);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .search-bar .filter-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-light);
+        }
+
+        .search-bar .filter-checkbox.active {
+            border-color: var(--primary-light);
+            background: rgba(44, 62, 143, 0.05);
         }
 
         .type-section {
@@ -219,6 +251,30 @@
         .group-card .group-actions {
             display: flex;
             gap: 6px;
+        }
+
+        /* ===== БЭЙДЖИ ДЛЯ ПРОЖИВАНИЯ ===== */
+        .dorm-badge-small {
+            display: inline-block;
+            padding: 1px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .dorm-badge-yes-small {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .dorm-badge-no-small {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        /* ===== ОБЩЕЖИТИЕ В КАРТОЧКЕ ГРУППЫ ===== */
+        .group-dorm-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
 
         .modal-overlay {
@@ -411,6 +467,24 @@
             color: #991B1B;
         }
 
+        /* ===== DORM INDICATOR ===== */
+        .dorm-indicator {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        .dorm-indicator-yes {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+        .dorm-indicator-no {
+            background: #F3F4F6;
+            color: #6B7280;
+        }
+
         @media (max-width: 768px) {
             .page-header { flex-direction: column; align-items: flex-start; }
             .year-groups { grid-template-columns: 1fr 1fr; padding-left: 0; }
@@ -418,12 +492,13 @@
             .header-actions .btn { flex: 1; }
             .page-title { font-size: 20px; }
             .toast-container { left: 16px; right: 16px; top: 80px; max-width: none; }
+            .search-bar { flex-direction: column; }
+            .search-bar input { width: 100%; }
+            .search-bar .filter-checkbox { width: 100%; justify-content: center; }
         }
 
         @media (max-width: 480px) {
             .year-groups { grid-template-columns: 1fr; }
-            .search-bar { flex-direction: column; }
-            .search-bar input { width: 100%; }
             .group-card { padding: 12px; }
             .header-actions .btn { font-size: 11px; padding: 6px 12px; }
             .page-title { font-size: 18px; }
@@ -473,11 +548,17 @@
             <div>
                 <h1 class="page-title">📚 Группы <small>учебные группы</small></h1>
             </div>
-            <button class="btn btn-success" id="createGroupBtn">➕ Создать группу</button>
+            <div class="header-actions">
+                <button class="btn btn-success" id="createGroupBtn">➕ Создать группу</button>
+            </div>
         </div>
 
         <div class="search-bar">
             <input type="text" id="searchInput" placeholder="🔍 Поиск по названию группы...">
+            <label class="filter-checkbox" id="dormFilterLabel">
+                <input type="checkbox" id="dormFilterCheckbox">
+                🏠 Только проживающие в общежитии
+            </label>
             <button class="btn btn-secondary" id="clearSearchBtn">Сбросить</button>
         </div>
 
@@ -506,20 +587,60 @@
 </div>
 
 <!-- ============================================================
-   SCRIPT — ИСПОЛЬЗУЕМ СЕССИЮ
+   SCRIPT — ИСПОЛЬЗУЕМ ТОЛЬКО ОДИН РАЗ!
+   components.js уже создал window.supabaseClient
    ============================================================ -->
+<script src="/js/components.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+
 <script>
 // ============================================================
-// ТОСТ УВЕДОМЛЕНИЯ
+// НЕ СОЗДАЁМ НОВЫЙ supabase — ИСПОЛЬЗУЕМ СУЩЕСТВУЮЩИЙ!
+// components.js уже создал window.supabaseClient
+// ============================================================
+
+// Проверяем, что supabaseClient доступен
+if (typeof window.supabaseClient === 'undefined') {
+    console.warn('⚠️ components.js не загружен, создаём supabaseClient локально');
+    window.supabaseClient = window.supabase.createClient(
+        'https://selbolepupendprhixas.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+    );
+}
+
+// БЕРЁМ ГОТОВЫЙ КЛИЕНТ, НЕ СОЗДАЁМ НОВЫЙ!
+console.log('✅ Supabase готов к использованию');
+
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+
+let currentUser = null;
+let currentEmployee = null;
+let dormRole = null;
+let isDormEmployee = false;
+let isEducator = false;
+let isHead = false;
+let isGuard = false;
+let hasEditRights = false;
+let groupToDelete = null;
+let allGroupsData = [];
+let allStudentsData = [];
+
+// ============================================================
+// TOAST УВЕДОМЛЕНИЯ
 // ============================================================
 
 function showToast(message, type = 'success', duration = 4000) {
-    const container = document.querySelector('.toast-container') || (() => {
-        const c = document.createElement('div');
-        c.className = 'toast-container';
-        document.body.appendChild(c);
-        return c;
-    })();
+    const existingContainer = document.querySelector('.toast-container');
+    if (!existingContainer) {
+        const container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    
+    const container = document.querySelector('.toast-container');
     
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
@@ -543,36 +664,50 @@ function showToast(message, type = 'success', duration = 4000) {
 }
 
 // ============================================================
-// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ПОЛЬЗОВАТЕЛЬ И ПРАВА
 // ============================================================
 
-let currentUser = null;
-let groupToDelete = null;
-
-// ============================================================
-// ПОЛЬЗОВАТЕЛЬ (ИСПОЛЬЗУЕМ СЕССИЮ)
-// ============================================================
-
-function loadUser() {
-    const user = window.Session.getUser();
-    if (!user) {
+async function loadUserAndRights() {
+    const savedUser = localStorage.getItem('currentUser');
+    if (!savedUser) {
         window.location.href = '/index.html';
-        return;
+        return false;
     }
-    
-    currentUser = user;
-    document.getElementById('userNameDisplay').textContent = user.name || user.full_name || user.login;
-    const roleMap = {
-        'super_admin': 'Супер-Админ',
-        'admin': 'Администратор',
-        'teacher': 'Преподаватель',
-        'viewer': 'Наблюдатель'
-    };
-    document.getElementById('userRoleDisplay').textContent = roleMap[user.role] || user.role;
+    try {
+        currentUser = JSON.parse(savedUser);
+        document.getElementById('userNameDisplay').textContent = currentUser.name || currentUser.login;
+        const roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'viewer': 'Наблюдатель' };
+        document.getElementById('userRoleDisplay').textContent = roleMap[currentUser.role] || currentUser.role;
+
+        hasEditRights = currentUser.role === 'super_admin' || currentUser.role === 'admin';
+
+        // Получаем информацию о сотруднике
+        const { data: employee, error } = await window.supabaseClient
+            .from('employees')
+            .select('*')
+            .eq('id', currentUser.id)
+            .single();
+
+        if (!error && employee) {
+            currentEmployee = employee;
+            dormRole = employee.dorm_role || null;
+            isDormEmployee = !!employee.dorm_role;
+            isEducator = employee.dorm_role === 'educator';
+            isHead = employee.dorm_role === 'head';
+            isGuard = employee.dorm_role === 'guard';
+        }
+
+        return true;
+    } catch (e) {
+        localStorage.removeItem('currentUser');
+        window.location.href = '/index.html';
+        return false;
+    }
 }
 
 document.getElementById('logoutBtn').onclick = () => {
-    window.Session.logout();
+    localStorage.removeItem('currentUser');
+    window.location.href = '/index.html';
 };
 
 // ============================================================
@@ -604,21 +739,12 @@ function getGroupYear(dateStart) {
 
 async function loadGroups() {
     const container = document.getElementById('groupsContainer');
-    const sb = window.Session.supabase();
-    
-    if (!sb) {
-        console.error('❌ Supabase клиент не доступен');
-        container.innerHTML = `
-            <div class="empty-state">
-                <span class="icon">❌</span>
-                <p>Ошибка подключения</p>
-            </div>
-        `;
-        return;
-    }
+    const search = document.getElementById('searchInput').value.toLowerCase().trim();
+    const dormFilter = document.getElementById('dormFilterCheckbox').checked;
 
     try {
-        const { data: groups, error } = await sb
+        // Получаем все группы
+        const { data: groups, error } = await window.supabaseClient
             .from('groups')
             .select('*')
             .eq('is_archived', false)
@@ -626,42 +752,50 @@ async function loadGroups() {
 
         if (error) throw error;
 
-        if (!groups || groups.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <span class="icon">📭</span>
-                    <p>Нет групп</p>
-                    <p style="font-size:13px;color:var(--text-muted);">Нажмите "Создать группу"</p>
-                </div>
-            `;
-            return;
-        }
-
-        const { data: students, error: studentsError } = await sb
+        // Получаем всех студентов
+        const { data: students, error: studentsError } = await window.supabaseClient
             .from('students')
-            .select('group_id, status');
+            .select('group_id, status, lives_in_dorm, dorm_block, dorm_room_type');
 
         if (studentsError) throw studentsError;
 
+        allStudentsData = students || [];
+
+        // Подсчёт студентов по группам
         const studentCounts = {};
+        const dormCounts = {};
         students.forEach(s => {
             if (s.status === 'active') {
                 studentCounts[s.group_id] = (studentCounts[s.group_id] || 0) + 1;
+                if (s.lives_in_dorm) {
+                    dormCounts[s.group_id] = (dormCounts[s.group_id] || 0) + 1;
+                }
             }
         });
 
-        const search = document.getElementById('searchInput').value.toLowerCase().trim();
+        allGroupsData = groups;
+
+        // Фильтруем
         let filtered = groups;
         if (search) {
             filtered = filtered.filter(g => g.name.toLowerCase().includes(search));
         }
 
+        // Если фильтр "только проживающие" и работник общежития - показываем группы, где есть проживающие
+        if (dormFilter && isDormEmployee) {
+            filtered = filtered.filter(g => (dormCounts[g.id] || 0) > 0);
+        }
+
+        // Разделяем на ПТО и ССО
         const ptoGroups = filtered.filter(g => g.type === 'pto');
         const ssoGroups = filtered.filter(g => g.type === 'sso');
 
         let html = '';
-        html += renderTypeSection('ПТО', '🔧', ptoGroups, studentCounts);
-        html += renderTypeSection('ССО', '🎓', ssoGroups, studentCounts);
+        
+        // Сначала ПТО
+        html += renderTypeSection('ПТО', '🔧', ptoGroups, studentCounts, dormCounts);
+        // Потом ССО
+        html += renderTypeSection('ССО', '🎓', ssoGroups, studentCounts, dormCounts);
 
         container.innerHTML = html;
 
@@ -685,6 +819,17 @@ async function loadGroups() {
             };
         });
 
+        // Если нет групп
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <span class="icon">📭</span>
+                    <p>Нет групп</p>
+                    <p style="font-size:13px;color:var(--text-muted);">Нажмите "Создать группу"</p>
+                </div>
+            `;
+        }
+
     } catch (error) {
         console.error('❌ Ошибка загрузки групп:', error);
         container.innerHTML = `
@@ -702,7 +847,7 @@ async function loadGroups() {
 // РЕНДЕРИНГ СЕКЦИИ ПО ТИПУ
 // ============================================================
 
-function renderTypeSection(title, icon, groups, studentCounts) {
+function renderTypeSection(title, icon, groups, studentCounts, dormCounts) {
     if (groups.length === 0) {
         return `
             <div class="type-section">
@@ -749,10 +894,27 @@ function renderTypeSection(title, icon, groups, studentCounts) {
         `;
 
         yearGroups.forEach(g => {
-            const count = studentCounts[g.id] || 0;
+            const total = studentCounts[g.id] || 0;
+            const dorm = dormCounts[g.id] || 0;
             const typeLabel = getTypeLabel(g.type);
             const typeBadge = getTypeBadge(g.type);
             const period = g.date_start && g.date_end ? `${formatDate(g.date_start)} — ${formatDate(g.date_end)}` : '';
+
+            // Показываем информацию о проживании только для работников общежития
+            let dormInfoHtml = '';
+            if (isDormEmployee && dorm > 0) {
+                dormInfoHtml = `
+                    <div class="group-dorm-info">
+                        🏠 Проживает в общаге: <strong>${dorm}</strong> чел.
+                    </div>
+                `;
+            } else if (isDormEmployee && dorm === 0) {
+                dormInfoHtml = `
+                    <div class="group-dorm-info" style="color:var(--text-muted);">
+                        🏠 Нет проживающих в общаге
+                    </div>
+                `;
+            }
 
             html += `
                 <div class="group-card">
@@ -761,12 +923,15 @@ function renderTypeSection(title, icon, groups, studentCounts) {
                         <span class="badge-type ${typeBadge}">${typeLabel}</span>
                         ${period ? ` • ${period}` : ''}
                     </div>
-                    <div class="group-students">👨‍🎓 ${count} учащихся</div>
+                    <div class="group-students">👨‍🎓 ${total} учащихся</div>
+                    ${dormInfoHtml}
                     <div class="group-footer">
                         <span>${g.specialty ? (Array.isArray(g.specialty) ? g.specialty[0] || '—' : g.specialty) || '—' : '—'}</span>
+                        ${hasEditRights ? `
                         <div class="group-actions">
                             <button class="btn btn-danger btn-xs delete-group-btn" data-id="${g.id}" data-name="${g.name}">🗑️</button>
                         </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -794,15 +959,9 @@ function showDeleteConfirm(groupId, groupName) {
 
 async function confirmDelete() {
     if (!groupToDelete) return;
-    
-    const sb = window.Session.supabase();
-    if (!sb) {
-        showToast('❌ Ошибка подключения к базе данных', 'error');
-        return;
-    }
 
     try {
-        const { data: students, error: checkError } = await sb
+        const { data: students, error: checkError } = await window.supabaseClient
             .from('students')
             .select('id')
             .eq('group_id', groupToDelete)
@@ -811,12 +970,12 @@ async function confirmDelete() {
         if (checkError) throw checkError;
 
         if (students && students.length > 0) {
-            showToast(`❌ Нельзя удалить группу, в которой есть активные учащиеся (${students.length} чел.)`, 'error');
+            showToast(`❌ Нельзя удалить группу, в которой есть активные студенты (${students.length} чел.)`, 'error');
             closeConfirmModal();
             return;
         }
 
-        const { error } = await sb
+        const { error } = await window.supabaseClient
             .from('groups')
             .delete()
             .eq('id', groupToDelete);
@@ -850,8 +1009,11 @@ document.getElementById('confirmModal').addEventListener('click', function(e) {
 });
 
 document.getElementById('searchInput').addEventListener('input', loadGroups);
+document.getElementById('dormFilterCheckbox').addEventListener('change', loadGroups);
+
 document.getElementById('clearSearchBtn').onclick = () => {
     document.getElementById('searchInput').value = '';
+    document.getElementById('dormFilterCheckbox').checked = false;
     loadGroups();
 };
 
@@ -885,20 +1047,12 @@ window.onresize = () => {
 // ============================================================
 
 async function init() {
-    // Проверяем сессию
-    const isValid = await window.Session.check();
-    if (!isValid) return;
-    
-    loadUser();
+    const userLoaded = await loadUserAndRights();
+    if (!userLoaded) return;
     loadGroups();
 }
 
-// Запускаем
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+init();
 </script>
 
 </body>
