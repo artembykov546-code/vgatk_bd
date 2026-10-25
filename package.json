@@ -22,7 +22,7 @@
     "concurrently": "^9.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
-    "electron-updater": "^6.3.9",
+    "electron-updater": "^6.8.11",
     "serve": "^14.2.6",
     "vite": "^5.4.21",
     "wait-on": "^8.0.1"
@@ -64,7 +64,7 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "ВАШ_GITHUB_ЛОГИН",
+        "owner": "artembykov546-code",
         "repo": "vgatk_bd"
       }
     ]

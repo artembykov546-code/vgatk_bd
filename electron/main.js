@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Menu, shell, protocol, net } = require('electron');
+const { app, BrowserWindow, Menu, shell, protocol, net, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater'); // ✅ ДОБАВЛЕН ИМПОРТ
 const path = require('path');
 const { pathToFileURL } = require('url');
 
@@ -20,6 +21,50 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow = null;
+
+// ============================================================
+// ЛОГИКА АВТООБНОВЛЕНИЯ
+// ============================================================
+function setupAutoUpdater() {
+  // Настраиваем, куда обращаться за обновлениями
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'artembykov546-code',
+    repo: 'vgatk_bd'
+  });
+
+  // Проверяем обновления при запуске (только в собранном приложении)
+  if (!app.isPackaged) {
+    console.log('⚠️ Режим разработки: проверка обновлений отключена.');
+    return;
+  }
+
+  autoUpdater.checkForUpdatesAndNotify();
+
+  // Если обновление найдено
+  autoUpdater.on('update-available', (info) => {
+    console.log('Доступно обновление:', info.version);
+  });
+
+  // Если обновление скачано
+  autoUpdater.on('update-downloaded', (info) => {
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Обновление готово',
+      message: `Новая версия ${info.version} загружена. Перезапустить приложение сейчас, чтобы применить обновление?`, // ✅ ИСПРАВЛЕНЫ КАВЫЧКИ
+      buttons: ['Перезапустить', 'Позже']
+    }).then((result) => {
+      if (result.response === 0) {
+        autoUpdater.quitAndInstall();
+      }
+    });
+  });
+
+  // Обработка ошибок
+  autoUpdater.on('error', (err) => {
+    console.error('Ошибка обновления:', err);
+  });
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -74,6 +119,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  setupAutoUpdater(); // ✅ ВЫЗЫВАЕМ ФУНКЦИЮ
+
   if (!isDev) {
     const distPath = path.join(__dirname, '..', 'dist');
 
