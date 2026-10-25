@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация | vgatk_bd</title>
+    
+    <!-- ===== FAVICON ===== -->
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    
+    <!-- ===== ШРИФТЫ ===== -->
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    
+    <!-- ===== SUPABASE & BCRYPT ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+    
+    <style>
+        /* ===== ВАШИ ОРИГИНАЛЬНЫЕ СТИЛИ (БЕЗ ИЗМЕНЕНИЙ) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 25%, #f0f9ff 50%, #fef3c7 75%, #fde68a 100%);
+            background-attachment: fixed; min-height: 100vh; color: #1E293B;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-10px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-6px); } 80% { transform: translateX(6px); } }
+
+        .header { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); padding: 12px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.12); border-bottom: 1px solid #dbeafe; }
+        .header-logo { display: flex; align-items: center; gap: 12px; }
+        .college-name { font-family: 'Lobster', cursive; font-size: 16px; color: #1E3A8A; line-height: 1.2; letter-spacing: 0.5px; }
+        .college-name .sub { font-family: 'Lobster', cursive; font-size: 16px; color: #1E3A8A; }
+
+        .main-content { display: flex; align-items: center; justify-content: center; min-height: calc(100vh - 80px); padding: 40px 20px; }
+        .register-container { max-width: 480px; width: 100%; }
+        .register-card { background: rgba(255, 255, 255, 0.98); border-radius: 16px; padding: 40px 36px; box-shadow: 0 20px 60px rgba(37, 99, 235, 0.15); animation: slideUp 0.5s ease; border: 1px solid #dbeafe; }
+        
+        .register-header { text-align: center; margin-bottom: 28px; }
+        .register-header .icon { font-size: 48px; display: block; margin-bottom: 8px; }
+        .register-header h1 { font-family: 'Lobster', cursive; font-size: 22px; color: #1E3A8A; letter-spacing: 0.5px; }
+        .register-header p { color: #64748B; font-size: 14px; margin-top: 4px; }
+
+        .register-steps { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+        .register-steps .step { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #94A3B8; padding: 6px 14px; border-radius: 20px; background: #f1f5f9; transition: all 0.3s ease; }
+        .register-steps .step.active { background: #dbeafe; color: #1E3A8A; font-weight: 600; }
+        .register-steps .step.done { background: #D1FAE5; color: #059669; }
+        .register-steps .step .num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: currentColor; color: white; font-size: 11px; font-weight: 700; }
+        .register-steps .step.active .num { background: #1E3A8A; }
+        .register-steps .step.done .num { background: #059669; }
+
+        .form-group { margin-bottom: 18px; }
+        .form-label { display: block; font-weight: 600; font-size: 14px; color: #475569; margin-bottom: 6px; }
+        .form-label .required { color: #DC2626; margin-left: 2px; }
+        .form-control { width: 100%; padding: 12px 16px; border: 2px solid #dbeafe; border-radius: 8px; font-size: 14px; transition: all 0.3s ease; background: white; height: 48px; box-sizing: border-box; }
+        .form-control:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .form-control::placeholder { color: #94A3B8; }
+        .form-control-invite { font-family: 'Courier New', monospace; font-size: 20px; font-weight: 700; letter-spacing: 3px; text-align: center; text-transform: uppercase; }
+        .form-hint { font-size: 12px; color: #94A3B8; margin-top: 4px; }
+
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border: none; border-radius: 8px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; width: 100%; height: 48px; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+        .btn-primary { background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); color: white; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .btn-primary:hover { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4); }
+        .btn-success { background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+        .btn-success:hover { background: linear-gradient(135deg, #059669 0%, #047857 100%); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4); }
+        .btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #dbeafe; }
+        .btn-secondary:hover { background: #e2e8f0; }
+        .btn-sm { padding: 6px 14px; font-size: 12px; height: 36px; }
+
+        .alert { padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none; }
+        .alert.show { display: block; animation: shake 0.5s ease; }
+        .alert-success { background: #D1FAE5; color: #059669; border-left: 4px solid #10B981; }
+        .alert-danger { background: #FEE2E2; color: #DC2626; border-left: 4px solid #EF4444; }
+        .alert-info { background: #DBEAFE; color: #1A5276; border-left: 4px solid #3B82F6; }
+        .alert .close-btn { float: right; cursor: pointer; font-weight: 700; font-size: 18px; line-height: 1; color: inherit; opacity: 0.6; }
+        .alert .close-btn:hover { opacity: 1; }
+
+        .loading-spinner { display: inline-block; width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 0.8s ease infinite; vertical-align: middle; margin-right: 8px; }
+
+        .password-wrapper { position: relative; }
+        .password-wrapper .form-control { padding-right: 48px; }
+        .password-wrapper .toggle-password { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; color: #94A3B8; background: none; border: none; padding: 4px; transition: all 0.3s ease; line-height: 1; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 4px; }
+        .password-wrapper .toggle-password:hover { color: #3B82F6; background: rgba(59, 130, 246, 0.08); }
+
+        .password-strength { height: 4px; border-radius: 4px; margin-top: 8px; background: #e2e8f0; transition: all 0.3s ease; overflow: hidden; }
+        .password-strength .bar { height: 100%; width: 0%; border-radius: 4px; transition: all 0.3s ease; }
+        .password-strength .bar.weak { width: 25%; background: linear-gradient(90deg, #EF4444, #DC2626); }
+        .password-strength .bar.medium { width: 50%; background: linear-gradient(90deg, #F59E0B, #D97706); }
+        .password-strength .bar.strong { width: 75%; background: linear-gradient(90deg, #3B82F6, #2563EB); }
+        .password-strength .bar.very-strong { width: 100%; background: linear-gradient(90deg, #10B981, #059669); }
+
+        .register-footer { text-align: center; margin-top: 16px; font-size: 14px; color: #64748B; }
+        .register-footer a { color: #1E3A8A; font-weight: 600; text-decoration: none; }
+        .register-footer a:hover { text-decoration: underline; }
+
+        .step-content { display: none; }
+        .step-content.active { display: block; animation: fadeIn 0.4s ease; }
+
+        @media (max-width: 480px) {
+            .register-card { padding: 24px 20px; }
+            .register-header h1 { font-size: 18px; }
+            .register-steps .step { font-size: 11px; padding: 4px 10px; }
+            .register-steps .step .num { width: 18px; height: 18px; font-size: 10px; }
+            .form-control-invite { font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <div class="register-container">
+        <div class="register-card">
+
+            <!-- Заголовок -->
+            <div class="register-header">
+                <span class="icon">🎫</span>
+                <h1>Регистрация</h1>
+                <p>Введите пригласительный код и создайте учётную запись</p>
+            </div>
+
+            <!-- Шаги -->
+            <div class="register-steps">
+                <div class="step active" id="step1Label"><span class="num">1</span> Код</div>
+                <div class="step" id="step2Label"><span class="num">2</span> Регистрация</div>
+            </div>
+
+            <!-- ===== ШАГ 1: ВВОД КОДА ===== -->
+            <div class="step-content active" id="step1">
+                <div id="step1Alert" class="alert alert-danger">
+                    <span id="step1Message"></span>
+                    <span class="close-btn" onclick="this.parentElement.classList.remove('show')">×</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Пригласительный код <span class="required">*</span></label>
+                    <input type="text" class="form-control form-control-invite" id="inviteCode" placeholder="____-____" maxlength="9" autofocus>
+                    <div class="form-hint">Введите код в формате XXXX-XXXX</div>
+                </div>
+
+                <button class="btn btn-primary" id="checkCodeBtn"> Проверить код</button>
+
+                <div class="register-footer" style="margin-top:16px;">
+                    Уже есть аккаунт? <a href="/pages/index.html">Войти</a>
+                </div>
+            </div>
+
+            <!-- ===== ШАГ 2: РЕГИСТРАЦИЯ ===== -->
+            <div class="step-content" id="step2">
+                <div id="step2Alert" class="alert alert-danger">
+                    <span id="step2Message"></span>
+                    <span class="close-btn" onclick="this.parentElement.classList.remove('show')">×</span>
+                </div>
+
+                <!-- Информация о пользователе -->
+                <div class="alert alert-info show" style="display:block;">
+                    <strong>👤 Регистрация для:</strong>
+                    <span id="userFullName">Загрузка...</span>
+                    <div style="font-size:12px;color:#64748B;margin-top:4px;">
+                        Код: <strong id="confirmedCode">—</strong>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Придумайте логин <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="newLogin" placeholder="Введите логин (мин. 3 символа)">
+                    <div class="form-hint">Логин должен быть уникальным</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Придумайте пароль <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="newPassword" placeholder="Введите пароль (мин. 6 символов)">
+                        <button type="button" class="toggle-password" onclick="togglePassword('newPassword')">️</button>
+                    </div>
+                    <div class="password-strength"><div class="bar" id="strengthBar"></div></div>
+                    <div class="form-hint" id="strengthText">Введите пароль для оценки надёжности</div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Подтвердите пароль <span class="required">*</span></label>
+                    <div class="password-wrapper">
+                        <input type="password" class="form-control" id="confirmPassword" placeholder="Повторите пароль">
+                        <button type="button" class="toggle-password" onclick="togglePassword('confirmPassword')">️</button>
+                    </div>
+                    <div class="form-hint" id="confirmHint">Пароли должны совпадать</div>
+                </div>
+
+                <button class="btn btn-success" id="registerBtn">✅ Зарегистрироваться</button>
+
+                <div class="register-footer" style="margin-top:16px;">
+                    <button class="btn btn-secondary btn-sm" id="backToCodeBtn" style="width:auto;">← Вернуться к коду</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+
+<script>
+// ============================================================
+// ПРОВЕРКА ЗАГРУЗКИ BCRYPTJS
+// ============================================================
+if (typeof dcodeIO === 'undefined' || typeof dcodeIO.bcrypt === 'undefined') {
+    console.error(' ОШИБКА: Библиотека bcryptjs не загрузилась!');
+    alert('Ошибка загрузки системы безопасности. Пожалуйста, обновите страницу.');
+} else {
+    window.bcrypt = dcodeIO.bcrypt;
+    console.log('✅ bcryptjs успешно загружен');
+}
+
+// ============================================================
+// КОНФИГУРАЦИЯ SUPABASE
+// ============================================================
+const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let verifiedUserId = null; // ID пользователя из таблицы users
+let userFullName = '';     // Имя сотрудника для отображения
+
+// ============================================================
+// УТИЛИТЫ
+// ============================================================
+function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const button = input.parentElement.querySelector('.toggle-password');
+    if (input.type === 'password') { input.type = 'text'; button.textContent = ''; } 
+    else { input.type = 'password'; button.textContent = '👁️'; }
+}
+
+function showAlert(containerId, type, message) {
+    const container = document.getElementById(containerId);
+    const msgSpan = container.querySelector('span:first-child');
+    if (msgSpan) msgSpan.textContent = message;
+    container.className = `alert alert-${type} show`;
+}
+
+function hideAlert(id) { 
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('show'); 
+}
+
+function goToStep(step) {
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    const target = document.getElementById(`step${step}`);
+    if (target) target.classList.add('active');
+    
+    document.querySelectorAll('.register-steps .step').forEach(el => el.classList.remove('active', 'done'));
+    if (step === 2) {
+        const s1 = document.getElementById('step1Label');
+        const s2 = document.getElementById('step2Label');
+        if (s1) s1.classList.add('done');
+        if (s2) s2.classList.add('active');
+    } else {
+        const s1 = document.getElementById('step1Label');
+        if (s1) s1.classList.add('active');
+    }
+}
+
+// Автоформатирование кода (только цифры + дефис)
+document.getElementById('inviteCode').addEventListener('input', function(e) {
+    let val = this.value.replace(/[^0-9]/g, '');
+    if (val.length > 4) val = val.substring(0, 4) + '-' + val.substring(4, 8);
+    this.value = val;
+});
+
+// Индикатор силы пароля
+document.getElementById('newPassword').addEventListener('input', function() {
+    const p = this.value; 
+    const bar = document.getElementById('strengthBar'); 
+    const txt = document.getElementById('strengthText');
+    bar.className = 'bar';
+    if (!p) { txt.textContent = 'Введите пароль для оценки надёжности'; return; }
+    let s = 0;
+    if (p.length >= 6) s++; 
+    if (p.length >= 10) s++;
+    if (/[a-z]/.test(p) && /[A-Z]/.test(p)) s++;
+    if (/\d/.test(p)) s++; 
+    if (/[^a-zA-Z0-9]/.test(p)) s++;
+    const lvls = ['','weak','medium','strong','very-strong'];
+    const labels = ['','Слабый','Средний','Хороший','Отличный'];
+    const idx = Math.min(s, 4);
+    if (idx > 0) { bar.classList.add(lvls[idx]); txt.textContent = 'Надёжность: ' + labels[idx]; }
+});
+
+// Проверка совпадения паролей
+document.getElementById('confirmPassword').addEventListener('input', function() {
+    const h = document.getElementById('confirmHint');
+    const newP = document.getElementById('newPassword').value;
+    if (this.value === newP && this.value.length > 0) {
+        h.textContent = '✅ Пароли совпадают'; 
+        h.style.color = '#10B981';
+    } else if (this.value.length > 0) {
+        h.textContent = '❌ Пароли не совпадают'; 
+        h.style.color = '#EF4444';
+    } else {
+        h.textContent = 'Пароли должны совпадать';
+        h.style.color = '#94A3B8';
+    }
+});
+
+// ============================================================
+// ЛОГИКА ШАГА 1: ПРОВЕРКА КОДА (ИСПРАВЛЕНО!)
+// ============================================================
+document.getElementById('checkCodeBtn').addEventListener('click', async () => {
+    const code = document.getElementById('inviteCode').value.trim().toUpperCase();
+    if (!code || code.length !== 9) { 
+        showAlert('step1Alert', 'danger', '❌ Введите код в формате XXXX-XXXX'); 
+        return; 
+    }
+
+    const btn = document.getElementById('checkCodeBtn');
+    btn.innerHTML = '<span class="loading-spinner"></span> Проверка...';
+    btn.disabled = true;
+    hideAlert('step1Alert');
+
+    try {
+        // Ищем ПОЛЬЗОВАТЕЛЯ по invite_code в таблице users
+        // ВАЖНО: Мы запрашиваем конкретные поля, чтобы не触发 RLS ошибки на скрытых полях
+        const { data: user, error } = await supabaseClient
+            .from('users')
+            .select('id, employee_id, invite_code, invite_used, login')
+            .eq('invite_code', code)
+            .eq('invite_used', false)
+            .maybeSingle();
+
+        if (error) {
+            console.error('Supabase Error:', error);
+            // Если ошибка 403 или 500, скорее всего проблема в RLS
+            showAlert('step1Alert', 'danger', '❌ Ошибка сервера. Попробуйте позже.');
+            return;
+        }
+
+        if (!user) {
+            showAlert('step1Alert', 'danger', ' Неверный или уже использованный код');
+            return;
+        }
+
+        // Если у пользователя уже есть логин, значит он уже зарегистрирован
+        if (user.login) {
+            showAlert('step1Alert', 'danger', '❌ Этот код уже был использован');
+            return;
+        }
+
+        // Получаем ФИО сотрудника через employee_id
+        let fullName = 'Сотрудник';
+        if (user.employee_id) {
+            const { data: emp, error: empError } = await supabaseClient
+                .from('employees')
+                .select('full_name')
+                .eq('id', user.employee_id)
+                .single();
+            
+            if (!empError && emp && emp.full_name) fullName = emp.full_name;
+        }
+
+        // Сохраняем ID пользователя (из таблицы users), а не сотрудника
+        verifiedUserId = user.id;
+        userFullName = fullName;
+        
+        document.getElementById('userFullName').textContent = fullName;
+        document.getElementById('confirmedCode').textContent = code;
+        
+        showAlert('step1Alert', 'success', '✅ Код подтверждён!');
+        setTimeout(() => goToStep(2), 500);
+
+    } catch (err) {
+        console.error('❌ Ошибка:', err);
+        showAlert('step1Alert', 'danger', '❌ Ошибка подключения');
+    } finally {
+        btn.innerHTML = '🔍 Проверить код';
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('inviteCode').addEventListener('keydown', e => { 
+    if(e.key === 'Enter') document.getElementById('checkCodeBtn').click(); 
+});
+
+document.getElementById('backToCodeBtn').onclick = () => { 
+    hideAlert('step2Alert'); 
+    goToStep(1); 
+};
+
+// ============================================================
+// ЛОГИКА ШАГА 2: РЕГИСТРАЦИЯ (ИСПРАВЛЕНО!)
+// ============================================================
+document.getElementById('registerBtn').addEventListener('click', async () => {
+    hideAlert('step2Alert');
+    
+    if (!verifiedUserId) {
+        showAlert('step2Alert', 'danger', '❌ Ошибка: код не подтверждён');
+        return;
+    }
+
+    if (typeof window.bcrypt === 'undefined') {
+        showAlert('step2Alert', 'danger', '❌ Ошибка: Система безопасности не загружена. Обновите страницу.');
+        return;
+    }
+
+    const login = document.getElementById('newLogin').value.trim();
+    const pass = document.getElementById('newPassword').value;
+    const conf = document.getElementById('confirmPassword').value;
+
+    if (login.length < 3) { showAlert('step2Alert', 'danger', ' Логин должен содержать минимум 3 символа'); return; }
+    if (pass.length < 6) { showAlert('step2Alert', 'danger', '❌ Пароль должен содержать минимум 6 символов'); return; }
+    if (pass !== conf) { showAlert('step2Alert', 'danger', ' Пароли не совпадают'); return; }
+
+    const btn = document.getElementById('registerBtn');
+    btn.innerHTML = '<span class="loading-spinner"></span> Регистрация...';
+    btn.disabled = true;
+
+    try {
+        console.log('🔍 Проверка уникальности логина в Supabase...');
+        
+        // 1. ПРОВЕРКА ЛОГИНА В SUPABASE
+        // Мы ищем, есть ли уже такой login в таблице users
+        const { data: existingLogin, error: loginCheckError } = await supabaseClient
+            .from('users')
+            .select('id')
+            .eq('login', login)
+            .maybeSingle();
+
+        if (loginCheckError) {
+            console.error('Ошибка проверки логина:', loginCheckError);
+            throw new Error('Не удалось проверить занятость логина');
+        }
+
+        if (existingLogin) {
+            showAlert('step2Alert', 'danger', '❌ Пользователь с таким логином уже существует');
+            btn.innerHTML = '✅ Зарегистрироваться';
+            btn.disabled = false;
+            return;
+        }
+
+        console.log('✅ Логин свободен. Хеширование пароля...');
+        
+        // 2. ХЕШИРОВАНИЕ ПАРОЛЯ
+        // Пароль НЕ отправляется в базу в открытом виде.
+        // Мы превращаем его в хеш прямо здесь, в браузере.
+        const passwordHash = await window.bcrypt.hash(pass, 10);
+        console.log('✅ Пароль захеширован');
+
+        console.log('💾 Сохранение в базу данных...');
+        
+        // 3. ОБНОВЛЕНИЕ ЗАПИСИ В USERS
+        // Мы обновляем запись, которую нашли по коду (verifiedUserId)
+        const { error: updateError } = await supabaseClient
+            .from('users')
+            .update({
+                login: login,
+                password_hash: passwordHash, // Сохраняем ТОЛЬКО хеш
+                invite_used: true,
+                invite_status: 'used'
+            })
+            .eq('id', verifiedUserId);
+
+        if (updateError) {
+            console.error('Ошибка обновления:', updateError);
+            throw updateError;
+        }
+
+        // Получаем роль пользователя для localStorage
+        const { data: updatedUser } = await supabaseClient
+            .from('users')
+            .select('role, employee_id')
+            .eq('id', verifiedUserId)
+            .single();
+
+        // Сохраняем данные пользователя в localStorage
+        const userData = {
+            id: verifiedUserId,
+            login: login,
+            name: userFullName,
+            role: updatedUser?.role || 'viewer',
+            employee_id: updatedUser?.employee_id
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        console.log('✅ Данные сохранены в localStorage');
+
+        showAlert('step2Alert', 'success', '✅ Регистрация успешно завершена!');
+        
+        // Перенаправление на главную
+        setTimeout(() => {
+            window.location.href = '/pages/dashboard.html';
+        }, 1500);
+
+    } catch (err) {
+        console.error('❌ Ошибка регистрации:', err);
+        showAlert('step2Alert', 'danger', '❌ Ошибка: ' + (err.message || 'Неизвестная ошибка'));
+        btn.innerHTML = '✅ Зарегистрироваться';
+        btn.disabled = false;
+    }
+});
+
+// ============================================================
+// ПРОВЕРКА: ЕСЛИ УЖЕ АВТОРИЗОВАН
+// ============================================================
+if (localStorage.getItem('currentUser')) {
+    window.location.href = '/pages/dashboard.html';
+}
+
+console.log('✅ Страница регистрации загружена');
+</script>
+
+</body>
+</html>

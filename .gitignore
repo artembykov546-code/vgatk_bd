@@ -1,0 +1,35 @@
+# ===== Node.js =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# ===== Сборка Vite =====
+dist/
+.vite/
+
+# ===== Окружение (СЕКРЕТЫ) =====
+.env
+.env.local
+.env.*.local
+
+# ===== Система =====
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+
+# ===== Прочее =====
+*.tmp
+*.bak
+.cache/
+# ===== Установщики Electron =====
+release/
+release2/
+build/win-unpacked/
+

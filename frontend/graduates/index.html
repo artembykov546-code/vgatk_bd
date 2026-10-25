@@ -1,0 +1,1012 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Архив студентов | vgatk_bd</title>
+    
+    <!-- ===== FAVICON ===== -->
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    
+    <!-- ===== ШРИФТЫ ===== -->
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    
+    <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
+    <link rel="stylesheet" href="/css/components.css">
+    
+    <!-- ===== SUPABASE ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- ===== Сессия ===== -->
+    <script src="/js/session.js"></script>
+    
+    <!-- ===== Наименование УО (Шапка) ===== -->
+    <script src="/js/header.js?v=2"></script>
+    
+    <!-- ===== Боковое меню ===== -->
+    <script src="/js/sidebar.js?v=2"></script>
+    
+    <!-- ===== html2pdf ДЛЯ PDF ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- ===== FileSaver ДЛЯ DOC ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-box { background: var(--bg-card); padding: 16px 20px; border-radius: var(--border-radius-lg); border: 1px solid var(--border); text-align: center; box-shadow: var(--shadow); transition: var(--transition); cursor: pointer; }
+        .stat-box:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: var(--primary-light); }
+        .stat-box .number { font-size: 28px; font-weight: 700; color: var(--primary); }
+        .stat-box .label { font-size: 13px; color: var(--text-muted); }
+        .stat-box.active { border-color: var(--primary); background: rgba(59, 130, 246, 0.05); }
+
+        .filters-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
+        .filters-bar select, .filters-bar input { padding: 10px 14px; border: 2px solid var(--border); border-radius: var(--border-radius); font-size: 14px; background: var(--bg-card); transition: var(--transition); }
+        .filters-bar select:focus, .filters-bar input:focus { outline: none; border-color: var(--primary-light); box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
+        .filters-bar input { flex: 1; min-width: 200px; }
+
+        .badge-type { display: inline-block; padding: 2px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .badge-sso { background: #D6EAF8; color: #1A5276; }
+        .badge-pto { background: #FDEBD0; color: #7E5109; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 64px; display: block; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 20px; color: var(--text-primary); margin-bottom: 8px; }
+
+        /* ===== КАРТОЧКИ КАК В STUDENTS ===== */
+        .type-section { margin-bottom: 32px; }
+        .type-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+        .type-header .icon { font-size: 28px; }
+        .type-header h2 { font-size: 20px; font-weight: 600; color: var(--primary); }
+        .type-header .count { font-size: 14px; color: var(--text-muted); background: rgba(255, 255, 255, 0.8); padding: 2px 12px; border-radius: 20px; }
+
+        .year-block { margin-bottom: 16px; }
+        .year-header { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: rgba(255, 255, 255, 0.8); border-radius: var(--border-radius); cursor: pointer; user-select: none; transition: var(--transition); border: 1px solid var(--border); }
+        .year-header:hover { background: rgba(255, 255, 255, 0.95); border-color: var(--primary-light); }
+        .year-header .year-label { font-weight: 600; font-size: 15px; color: var(--text-secondary); }
+        .year-header .year-count { font-size: 13px; color: var(--text-muted); }
+        .year-header .arrow { font-size: 14px; color: var(--text-muted); transition: transform 0.3s; margin-left: auto; }
+        .year-header .arrow.open { transform: rotate(90deg); }
+
+        /* ===== СЕТКА КАРТОЧЕК (ГОРИЗОНТАЛЬНО) ===== */
+        .year-groups { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 16px; 
+            padding: 12px 0; 
+        }
+        .year-groups.hidden { display: none; }
+
+        .group-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+        .group-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-light);
+        }
+        .group-card .group-name { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .group-card .group-name:hover {
+            text-decoration: underline;
+        }
+        .group-card .group-meta { font-size: 13px; color: var(--text-muted); margin: 4px 0 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .group-card .group-students { font-size: 14px; font-weight: 500; color: var(--text-secondary); margin-bottom: 4px; }
+        
+        /* ===== СПЕЦИАЛЬНОСТИ ТЕГАМИ ===== */
+        .group-card .group-specialties {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: 6px 0 8px;
+        }
+        .group-card .group-specialties .specialty-tag {
+            display: inline-block;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #86EFAC;
+        }
+        
+        .group-card .group-footer { 
+            margin-top: auto; 
+            padding-top: 8px; 
+            border-top: 1px solid var(--border); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            flex-wrap: wrap; 
+            gap: 8px; 
+        }
+        .group-card .group-footer .qualification-text {
+            font-size: 11px;
+            color: var(--text-muted);
+            flex: 1;
+            min-width: 100px;
+        }
+        .group-card .group-actions { display: flex; gap: 6px; }
+
+        /* ===== ВЫДЕЛЕННАЯ КНОПКА РАСПРЕДЕЛЕНИЯ ===== */
+        .btn-distribution-highlight {
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            color: white;
+            border: none;
+            font-weight: 600;
+        }
+        .btn-distribution-highlight:hover {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            transform: translateY(-1px);
+        }
+
+        .btn-export-pdf { background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); color: white; }
+        .btn-export-pdf:hover { background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%); }
+        .btn-export-doc { background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); color: white; }
+        .btn-export-doc:hover { background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%); }
+
+        .toast-notification {
+            position: fixed; top: 80px; right: 20px; padding: 16px 24px;
+            border-radius: var(--border-radius); color: white; font-weight: 600;
+            z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px;
+            box-shadow: var(--shadow-modal);
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-info { background: var(--primary-light); }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        /* Стили для PDF */
+        .pdf-content {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            padding: 20px;
+            background: white;
+            color: #000;
+            max-width: 100%;
+        }
+        .pdf-content .pdf-header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #000;
+        }
+        .pdf-content .pdf-header .pdf-title {
+            font-size: 18pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .pdf-content .pdf-header .pdf-subtitle {
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        .pdf-content .pdf-header .pdf-info {
+            font-size: 11pt;
+            margin-top: 4px;
+            color: #555;
+        }
+        .pdf-content .pdf-section-title {
+            font-size: 13pt;
+            font-weight: 700;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #ccc;
+        }
+        .pdf-content .pdf-footer {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #000;
+            text-align: center;
+            font-size: 11pt;
+        }
+
+        @media (max-width: 768px) {
+            .page-header { flex-direction: column; align-items: flex-start; }
+            .filters-bar { flex-direction: column; }
+            .filters-bar input { width: 100%; }
+            .filters-bar select { width: 100%; }
+            .stats-row { grid-template-columns: 1fr 1fr; }
+            .header-actions { width: 100%; }
+            .header-actions .btn { flex: 1; font-size: 12px; padding: 6px 10px; }
+            .year-groups { grid-template-columns: 1fr; }
+            .page-title { font-size: 20px; }
+            .toast-notification { left: 20px; right: 20px; top: 80px; }
+            .group-card .group-footer { flex-direction: column; align-items: stretch; }
+            .group-card .group-actions { justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .stats-row { grid-template-columns: 1fr; }
+            .year-groups { grid-template-columns: 1fr; }
+            .page-title { font-size: 18px; }
+            .header-actions .btn { font-size: 10px; padding: 4px 8px; }
+            .group-card { padding: 12px; }
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white; }
+            .header, .sidebar, .page-header .header-actions { display: none !important; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+        }
+    </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1E3A8A">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header"></header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar"></aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <div class="page-container">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">🎓 Архив студентов <small>выпущенные группы</small></h1>
+            </div>
+            <div class="header-actions">
+                <a href="/students/index.html" class="btn btn-secondary">← Назад к группам</a>
+                <a href="/graduates/expelled.html" class="btn btn-danger">❌ Отчисленные</a>
+                <a href="/graduates/academic.html" class="btn btn-info">📚 Академ. отпуск</a>
+                <a href="/graduates/distribution.html" class="btn btn-distribution-highlight">📊 Распределение</a>
+                <button class="btn btn-export-pdf" id="exportPDFBtn">📄 PDF</button>
+                <button class="btn btn-export-doc" id="exportDOCBtn">📝 DOC</button>
+            </div>
+        </div>
+
+        <!-- СТАТИСТИКА -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-box" data-filter="graduated">
+                <div class="number" id="graduatedCount">0</div>
+                <div class="label">🎓 Выпускники</div>
+            </div>
+            <div class="stat-box" style="border-color: var(--primary-light);">
+                <div class="number" id="groupsCount" style="color: var(--primary-light);">0</div>
+                <div class="label">📁 Групп выпущено</div>
+            </div>
+        </div>
+
+        <!-- ФИЛЬТРЫ -->
+        <div class="filters-bar">
+            <select id="typeFilter">
+                <option value="all">Все типы</option>
+                <option value="sso">🎓 ССО</option>
+                <option value="pto">🔧 ПТО</option>
+            </select>
+            <select id="yearFilter">
+                <option value="all">Все годы</option>
+            </select>
+            <input type="text" id="searchInput" placeholder="🔍 Поиск по названию группы...">
+            <button class="btn btn-secondary" id="clearFiltersBtn">Сбросить</button>
+        </div>
+
+        <div id="groupsContainer">
+            <div class="empty-state"><span class="icon">⏳</span><h3>Загрузка...</h3></div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+var sb = null;
+var currentUser = null;
+var hasEditRights = false;
+var allGroupsData = [];
+
+// ============================================================
+// ЖДЁМ ОТРИСОВКИ ШАПКИ (header.js / sidebar.js)
+// ============================================================
+function waitForHeaderAndSidebar(callback, attempts) {
+    attempts = attempts || 0;
+    var header = document.querySelector('header.header');
+    var sidebar = document.getElementById('sidebar');
+    var hasHeaderContent = header && (header.innerHTML.trim().length > 0 || header.children.length > 0);
+    var hasSidebarContent = sidebar && (sidebar.innerHTML.trim().length > 0 || sidebar.children.length > 0);
+
+    if (hasHeaderContent && hasSidebarContent) {
+        callback();
+        return;
+    }
+    if (attempts > 100) {
+        console.warn('⚠️ Шапка/сайдбар так и не отрисовались, продолжаем всё равно');
+        callback();
+        return;
+    }
+    setTimeout(function() { waitForHeaderAndSidebar(callback, attempts + 1); }, 100);
+}
+
+// ============================================================
+// ПОЛУЧЕНИЕ КЛИЕНТА SUPABASE
+// ============================================================
+function getSupabaseClient() {
+    if (window.Session && typeof window.Session.supabase === 'function') {
+        var client = window.Session.supabase();
+        if (client) return client;
+    }
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        return window.supabaseClient;
+    }
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        var client = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+        window.supabaseClient = client;
+        return client;
+    }
+    return null;
+}
+
+// ============================================================
+// TOAST УВЕДОМЛЕНИЯ
+// ============================================================
+function showToast(message, type) {
+    type = type || 'success';
+    var existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'toast-notification toast-' + type;
+    toast.innerHTML = '<span class="toast-close" onclick="this.parentElement.remove()">×</span>' + message;
+    document.body.appendChild(toast);
+    setTimeout(function() { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ
+// ============================================================
+async function loadUser() {
+    var user = window.Session ? window.Session.getUser() : null;
+    if (!user) {
+        var savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        try { user = JSON.parse(savedUser); } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return false;
+        }
+    }
+    currentUser = user;
+    hasEditRights = user.role === 'super_admin' || user.role === 'admin';
+
+    waitForHeaderAndSidebar(function() {
+        var nameEl = document.getElementById('userNameDisplay');
+        var roleEl = document.getElementById('userRoleDisplay');
+        if (nameEl) nameEl.textContent = user.name || user.full_name || user.login;
+        var roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'master': 'Мастер ПО', 'viewer': 'Наблюдатель' };
+        if (roleEl) roleEl.textContent = roleMap[user.role] || user.role;
+    });
+    return true;
+}
+
+function bindHeaderButtons() {
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn && !logoutBtn.__bound) {
+        logoutBtn.__bound = true;
+        logoutBtn.onclick = function() {
+            if (window.Session && typeof window.Session.logout === 'function') {
+                window.Session.logout();
+            } else {
+                localStorage.removeItem('currentUser');
+                window.location.href = '/index.html';
+            }
+        };
+    }
+    var menuToggle = document.getElementById('menuToggle');
+    if (menuToggle && !menuToggle.__bound) {
+        menuToggle.__bound = true;
+        menuToggle.onclick = function() {
+            var sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('open');
+        };
+        if (window.innerWidth > 768) {
+            menuToggle.style.display = 'none';
+        } else {
+            menuToggle.style.display = 'inline-block';
+        }
+    }
+}
+
+// ============================================================
+// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+// ============================================================
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    var d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getTypeBadge(type) {
+    return type === 'sso' ? 'badge-sso' : 'badge-pto';
+}
+
+// ============================================================
+// ЗАГРУЗКА ГРУПП
+// ============================================================
+async function loadGroups() {
+    var container = document.getElementById('groupsContainer');
+    var typeFilter = document.getElementById('typeFilter').value;
+    var yearFilter = document.getElementById('yearFilter').value;
+    var search = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    try {
+        var groupsResult = await sb
+            .from('groups')
+            .select('*')
+            .eq('is_archived', true)
+            .order('name', { ascending: true });
+
+        if (groupsResult.error) throw groupsResult.error;
+
+        var graduatesResult = await sb.from('graduates').select('*');
+        if (graduatesResult.error) throw graduatesResult.error;
+
+        var expelledResult = await sb.from('expelled_students').select('*');
+        if (expelledResult.error) throw expelledResult.error;
+
+        var academicResult = await sb.from('academic_leave_students').select('*');
+        if (academicResult.error) throw academicResult.error;
+
+        var groups = groupsResult.data || [];
+        var graduates = graduatesResult.data || [];
+        var expelled = expelledResult.data || [];
+        var academic = academicResult.data || [];
+
+        var studentsByGroup = {};
+
+        graduates.forEach(function(g) {
+            var groupName = g.group_name || 'Без группы';
+            if (!studentsByGroup[groupName]) studentsByGroup[groupName] = [];
+            var copy = {};
+            for (var k in g) if (g.hasOwnProperty(k)) copy[k] = g[k];
+            copy.status = 'graduated';
+            studentsByGroup[groupName].push(copy);
+        });
+
+        expelled.forEach(function(g) {
+            var groupName = g.group_name || 'Без группы';
+            if (!studentsByGroup[groupName]) studentsByGroup[groupName] = [];
+            var copy = {};
+            for (var k in g) if (g.hasOwnProperty(k)) copy[k] = g[k];
+            copy.status = 'expelled';
+            studentsByGroup[groupName].push(copy);
+        });
+
+        academic.forEach(function(g) {
+            var groupName = g.group_name || 'Без группы';
+            if (!studentsByGroup[groupName]) studentsByGroup[groupName] = [];
+            var copy = {};
+            for (var k in g) if (g.hasOwnProperty(k)) copy[k] = g[k];
+            copy.status = 'academic';
+            studentsByGroup[groupName].push(copy);
+        });
+
+        var groupsWithStudents = groups
+            .filter(function(group) {
+                return studentsByGroup[group.name] && studentsByGroup[group.name].length > 0;
+            })
+            .map(function(group) {
+                var studentsList = studentsByGroup[group.name] || [];
+                var year = group.date_end ? new Date(group.date_end).getFullYear() :
+                            (group.date_start ? new Date(group.date_start).getFullYear() : '—');
+                
+                var graduatedCount = 0;
+                var expelledCount = 0;
+                var academicCount = 0;
+                
+                studentsList.forEach(function(s) {
+                    if (s.status === 'graduated') graduatedCount++;
+                    else if (s.status === 'expelled') expelledCount++;
+                    else if (s.status === 'academic') academicCount++;
+                });
+                
+                return {
+                    id: group.id,
+                    name: group.name,
+                    type: group.type,
+                    date_start: group.date_start,
+                    date_end: group.date_end,
+                    specialty: group.specialty,
+                    qualification: group.qualification,
+                    year: String(year),
+                    students: studentsList,
+                    studentCount: studentsList.length,
+                    graduated: graduatedCount,
+                    expelled: expelledCount,
+                    academic: academicCount
+                };
+            });
+
+        allGroupsData = groupsWithStudents;
+
+        var filtered = groupsWithStudents;
+
+        if (typeFilter !== 'all') {
+            filtered = filtered.filter(function(g) { return g.type === typeFilter; });
+        }
+
+        if (yearFilter !== 'all') {
+            filtered = filtered.filter(function(g) { return g.year === yearFilter; });
+        }
+
+        if (search) {
+            filtered = filtered.filter(function(g) {
+                if (g.name.toLowerCase().indexOf(search) !== -1) return true;
+                if (g.specialty && Array.isArray(g.specialty)) {
+                    for (var i = 0; i < g.specialty.length; i++) {
+                        if (g.specialty[i].toLowerCase().indexOf(search) !== -1) return true;
+                    }
+                }
+                return false;
+            });
+        }
+
+        updateStats(groupsWithStudents);
+
+        if (filtered.length === 0) {
+            container.innerHTML = 
+                '<div class="empty-state">' +
+                    '<span class="icon">🔍</span>' +
+                    '<h3>Ничего не найдено</h3>' +
+                    '<p style="color:var(--text-muted);">Попробуйте изменить параметры фильтрации</p>' +
+                '</div>';
+            loadYearsFilter(groupsWithStudents);
+            return;
+        }
+
+        var ptoGroups = filtered.filter(function(g) { return g.type === 'pto'; });
+        var ssoGroups = filtered.filter(function(g) { return g.type === 'sso'; });
+        
+        ptoGroups.sort(function(a, b) { return parseInt(b.year) - parseInt(a.year); });
+        ssoGroups.sort(function(a, b) { return parseInt(b.year) - parseInt(a.year); });
+
+        var html = '';
+
+        if (ptoGroups.length > 0) {
+            html += renderTypeSection(ptoGroups, 'ПТО', '🔧');
+        }
+
+        if (ssoGroups.length > 0) {
+            html += renderTypeSection(ssoGroups, 'ССО', '🎓');
+        }
+
+        container.innerHTML = html;
+        loadYearsFilter(groupsWithStudents);
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки групп:', error);
+        container.innerHTML = 
+            '<div class="empty-state">' +
+                '<span class="icon">❌</span>' +
+                '<h3>Ошибка загрузки</h3>' +
+                '<p style="color:var(--text-muted);">' + error.message + '</p>' +
+            '</div>';
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// РЕНДЕРИНГ ГРУПП ПО ТИПУ
+// ============================================================
+function renderTypeSection(groups, title, icon) {
+    var yearMap = {};
+    groups.forEach(function(g) {
+        var year = g.year || '—';
+        if (!yearMap[year]) yearMap[year] = [];
+        yearMap[year].push(g);
+    });
+
+    var sortedYears = Object.keys(yearMap).sort(function(a, b) {
+        if (a === '—') return 1;
+        if (b === '—') return -1;
+        return parseInt(b) - parseInt(a);
+    });
+
+    var html = 
+        '<div class="type-section">' +
+            '<div class="type-header">' +
+                '<span class="icon">' + icon + '</span>' +
+                '<h2>' + title + '</h2>' +
+                '<span class="count">' + groups.length + ' групп</span>' +
+            '</div>';
+
+    sortedYears.forEach(function(year) {
+        var yearGroups = yearMap[year];
+        yearGroups.sort(function(a, b) { return a.name.localeCompare(b.name, 'ru'); });
+        
+        var isDefaultOpen = false;
+
+        html += 
+            '<div class="year-block">' +
+                '<div class="year-header" onclick="toggleYear(this)">' +
+                    '<span class="year-label">📅 ' + year + ' год</span>' +
+                    '<span class="year-count">(' + yearGroups.length + ' групп)</span>' +
+                    '<span class="arrow ' + (isDefaultOpen ? 'open' : '') + '">▶</span>' +
+                '</div>' +
+                '<div class="year-groups ' + (isDefaultOpen ? '' : 'hidden') + '">';
+
+        yearGroups.forEach(function(g) {
+            var typeLabel = getTypeLabel(g.type);
+            var typeBadge = getTypeBadge(g.type);
+            var specialty = g.specialty ? (Array.isArray(g.specialty) ? g.specialty : [g.specialty]) : [];
+            var period = g.date_start && g.date_end ? formatDate(g.date_start) + ' — ' + formatDate(g.date_end) : '';
+
+            var statusBadges = '';
+            if (g.graduated > 0) {
+                statusBadges += '<span style="color:var(--success-dark);font-weight:500;">🎓 ' + g.graduated + '</span> ';
+            }
+            if (g.expelled > 0) {
+                statusBadges += '<span style="color:var(--danger);font-weight:500;">❌ ' + g.expelled + '</span> ';
+            }
+            if (g.academic > 0) {
+                statusBadges += '<span style="color:var(--primary-light);font-weight:500;">📚 ' + g.academic + '</span> ';
+            }
+
+            var specialtiesHtml = '';
+            if (specialty.length > 0 && specialty[0] !== '—') {
+                specialtiesHtml = 
+                    '<div class="group-specialties">' +
+                        specialty.map(function(s) { return '<span class="specialty-tag">' + s + '</span>'; }).join('') +
+                    '</div>';
+            }
+
+            var qualification = g.qualification ? (Array.isArray(g.qualification) ? g.qualification.join(', ') : g.qualification) : null;
+
+            html += 
+                '<div class="group-card">' +
+                    '<a href="/graduates/group.html?id=' + g.id + '" class="group-name">' + g.name + '</a>' +
+                    '<div class="group-meta">' +
+                        '<span class="badge-type ' + typeBadge + '">' + typeLabel + '</span>' +
+                        (period ? ' • ' + period : '') +
+                    '</div>' +
+                    specialtiesHtml +
+                    '<div class="group-students">👨‍🎓 ' + g.studentCount + ' студентов (' + statusBadges + ')</div>' +
+                    '<div class="group-footer">' +
+                        (qualification ? '<span class="qualification-text">' + qualification + '</span>' : '<span class="qualification-text" style="color:var(--text-muted);">📦 В архиве</span>') +
+                        '<div class="group-actions">' +
+                            '<a href="/graduates/group.html?id=' + g.id + '" class="btn btn-info btn-xs">👁️ Просмотр</a>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+        });
+
+        html += 
+                '</div>' +
+            '</div>';
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// ============================================================
+// СТАТИСТИКА
+// ============================================================
+function updateStats(groups) {
+    var graduated = 0;
+
+    groups.forEach(function(g) {
+        graduated += g.graduated || 0;
+    });
+
+    document.getElementById('graduatedCount').textContent = graduated;
+    document.getElementById('groupsCount').textContent = groups.length;
+}
+
+// ============================================================
+// ЗАГРУЗКА ГОДОВ В ФИЛЬТР
+// ============================================================
+function loadYearsFilter(groups) {
+    var select = document.getElementById('yearFilter');
+    var years = {};
+    groups.forEach(function(g) {
+        if (g.year && g.year !== '—') years[g.year] = true;
+    });
+    var sortedYears = Object.keys(years).sort(function(a, b) { return parseInt(b) - parseInt(a); });
+
+    var currentValue = select.value;
+    select.innerHTML = '<option value="all">Все годы</option>';
+    sortedYears.forEach(function(year) {
+        select.innerHTML += '<option value="' + year + '">' + year + '</option>';
+    });
+    select.value = currentValue;
+}
+
+// ============================================================
+// СВОРАЧИВАНИЕ/РАЗВОРАЧИВАНИЕ
+// ============================================================
+function toggleYear(header) {
+    var content = header.nextElementSibling;
+    var arrow = header.querySelector('.arrow');
+    if (content) {
+        content.classList.toggle('hidden');
+        if (arrow) arrow.classList.toggle('open');
+    }
+}
+
+// ============================================================
+// ЭКСПОРТ В PDF
+// ============================================================
+function bindExportPDF() {
+    document.getElementById('exportPDFBtn').onclick = function() {
+        if (allGroupsData.length === 0) {
+            showToast('❌ Нет данных для экспорта', 'error');
+            return;
+        }
+
+        var dateStr = new Date().toLocaleDateString('ru-RU');
+        var userName = currentUser ? (currentUser.name || currentUser.login || 'Пользователь') : 'Пользователь';
+
+        var pdfHtml = 
+            '<div class="pdf-content">' +
+                '<div class="pdf-header">' +
+                    '<div class="pdf-title">Архив студентов</div>' +
+                    '<div class="pdf-subtitle">Выпущенные группы</div>' +
+                    '<div class="pdf-info">Дата: ' + dateStr + ' | Экспортировал(а): ' + userName + '</div>' +
+                '</div>';
+
+        var yearMapPdf = {};
+        allGroupsData.forEach(function(g) {
+            var year = g.year || '—';
+            if (!yearMapPdf[year]) yearMapPdf[year] = [];
+            yearMapPdf[year].push(g);
+        });
+
+        var sortedYearsPdf = Object.keys(yearMapPdf).sort(function(a, b) {
+            if (a === '—') return 1;
+            if (b === '—') return -1;
+            return parseInt(b) - parseInt(a);
+        });
+
+        sortedYearsPdf.forEach(function(year) {
+            var yearGroups = yearMapPdf[year];
+            var ssoGroupsPdf = yearGroups.filter(function(g) { return g.type === 'sso'; }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+            var ptoGroupsPdf = yearGroups.filter(function(g) { return g.type === 'pto'; }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+            var allTypeGroups = ssoGroupsPdf.concat(ptoGroupsPdf);
+
+            pdfHtml += '<div class="pdf-section-title">📅 ' + year + ' год (' + yearGroups.length + ' групп)</div>';
+
+            allTypeGroups.forEach(function(g) {
+                var typeLabel = getTypeLabel(g.type);
+                var specialty = g.specialty ? (Array.isArray(g.specialty) ? g.specialty.join(', ') : g.specialty) : '—';
+                var period = g.date_start && g.date_end ? formatDate(g.date_start) + ' — ' + formatDate(g.date_end) : '';
+
+                pdfHtml += 
+                    '<div style="margin-bottom:8px;padding:6px 10px;border:1px solid #ddd;border-radius:4px;">' +
+                        '<div style="font-weight:700;font-size:13pt;">' + g.name + '</div>' +
+                        '<div style="font-size:11pt;color:#555;">' + typeLabel + (period ? ' • ' + period : '') + '</div>' +
+                        '<div style="font-size:11pt;color:#555;">' +
+                            '👨‍🎓 ' + g.studentCount + ' студентов' +
+                            (g.graduated > 0 ? ' • 🎓 ' + g.graduated : '') +
+                            (g.expelled > 0 ? ' • ❌ ' + g.expelled : '') +
+                            (g.academic > 0 ? ' • 📚 ' + g.academic : '') +
+                        '</div>' +
+                        '<div style="font-size:10pt;color:#666;">Специальность: ' + specialty + '</div>' +
+                    '</div>';
+            });
+        });
+
+        var totalStudents = 0;
+        allGroupsData.forEach(function(g) { totalStudents += g.studentCount; });
+
+        pdfHtml += 
+                '<div class="pdf-footer">' +
+                    'Всего групп: ' + allGroupsData.length + ' | Всего студентов: ' + totalStudents +
+                    '<br>Дата: ' + dateStr + ' | Экспортировал(а): ' + userName +
+                '</div>' +
+            '</div>';
+
+        var content = document.createElement('div');
+        content.innerHTML = pdfHtml;
+        content.style.cssText = 'padding: 20px; background: white;';
+
+        var opt = {
+            margin: [10, 10, 10, 10],
+            filename: 'Архив_студентов_' + dateStr.replace(/\./g, '-') + '.pdf',
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        html2pdf().set(opt).from(content).save().then(function() {
+            showToast('✅ Отчёт сохранён в PDF');
+        }).catch(function(error) {
+            showToast('❌ Ошибка создания PDF: ' + error.message, 'error');
+        });
+    };
+}
+
+// ============================================================
+// ЭКСПОРТ В DOC
+// ============================================================
+function bindExportDOC() {
+    document.getElementById('exportDOCBtn').onclick = function() {
+        if (allGroupsData.length === 0) {
+            showToast('❌ Нет данных для экспорта', 'error');
+            return;
+        }
+
+        var dateStr = new Date().toLocaleDateString('ru-RU');
+        var userName = currentUser ? (currentUser.name || currentUser.login || 'Пользователь') : 'Пользователь';
+
+        var docHtml = 
+            '<html xmlns:o=\'urn:schemas-microsoft-com:office:office\' xmlns:w=\'urn:schemas-microsoft-com:office:word\' xmlns=\'http://www.w3.org/TR/REC-html40\'>' +
+            '<head>' +
+                '<meta charset="utf-8">' +
+                '<title>Архив студентов</title>' +
+                '<style>' +
+                    'body { font-family: \'Times New Roman\', Times, serif; font-size: 12pt; margin: 40px; }' +
+                    '.header { text-align: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #000; }' +
+                    '.header .title { font-size: 18pt; font-weight: 700; text-transform: uppercase; }' +
+                    '.header .subtitle { font-size: 14pt; font-weight: 600; margin-top: 4px; }' +
+                    '.header .info { font-size: 11pt; margin-top: 4px; color: #555; }' +
+                    '.section-title { font-size: 13pt; font-weight: 700; margin-top: 12px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #ccc; }' +
+                    '.group-block { margin-bottom: 8px; padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; }' +
+                    '.group-name { font-weight: 700; font-size: 13pt; }' +
+                    '.group-meta { font-size: 11pt; color: #555; }' +
+                    '.group-students { font-size: 11pt; color: #555; }' +
+                    '.group-specialty { font-size: 10pt; color: #666; }' +
+                    '.footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid #000; text-align: center; font-size: 11pt; }' +
+                    '.total { font-weight: 700; margin-top: 8px; }' +
+                '</style>' +
+            '</head>' +
+            '<body>';
+
+        var yearMapDoc = {};
+        allGroupsData.forEach(function(g) {
+            var year = g.year || '—';
+            if (!yearMapDoc[year]) yearMapDoc[year] = [];
+            yearMapDoc[year].push(g);
+        });
+
+        var sortedYearsDoc = Object.keys(yearMapDoc).sort(function(a, b) {
+            if (a === '—') return 1;
+            if (b === '—') return -1;
+            return parseInt(b) - parseInt(a);
+        });
+
+        var groupsHtml = '';
+        sortedYearsDoc.forEach(function(year) {
+            var yearGroups = yearMapDoc[year];
+            var ssoGroupsDoc = yearGroups.filter(function(g) { return g.type === 'sso'; }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+            var ptoGroupsDoc = yearGroups.filter(function(g) { return g.type === 'pto'; }).sort(function(a, b) { return a.name.localeCompare(b.name); });
+            var allTypeGroupsDoc = ssoGroupsDoc.concat(ptoGroupsDoc);
+
+            groupsHtml += '<div class="section-title">📅 ' + year + ' год (' + yearGroups.length + ' групп)</div>';
+
+            allTypeGroupsDoc.forEach(function(g) {
+                var typeLabel = getTypeLabel(g.type);
+                var specialty = g.specialty ? (Array.isArray(g.specialty) ? g.specialty.join(', ') : g.specialty) : '—';
+                var period = g.date_start && g.date_end ? formatDate(g.date_start) + ' — ' + formatDate(g.date_end) : '';
+
+                groupsHtml += 
+                    '<div class="group-block">' +
+                        '<div class="group-name">' + g.name + '</div>' +
+                        '<div class="group-meta">' + typeLabel + (period ? ' • ' + period : '') + '</div>' +
+                        '<div class="group-students">' +
+                            '👨‍🎓 ' + g.studentCount + ' студентов' +
+                            (g.graduated > 0 ? ' • 🎓 ' + g.graduated : '') +
+                            (g.expelled > 0 ? ' • ❌ ' + g.expelled : '') +
+                            (g.academic > 0 ? ' • 📚 ' + g.academic : '') +
+                        '</div>' +
+                        '<div class="group-specialty">Специальность: ' + specialty + '</div>' +
+                    '</div>';
+            });
+        });
+
+        var totalStudents = 0;
+        allGroupsData.forEach(function(g) { totalStudents += g.studentCount; });
+
+        docHtml += 
+                '<div class="header">' +
+                    '<div class="title">Архив студентов</div>' +
+                    '<div class="subtitle">Выпущенные группы</div>' +
+                    '<div class="info">Дата: ' + dateStr + ' | Экспортировал(а): ' + userName + '</div>' +
+                '</div>' +
+                groupsHtml +
+                '<div class="footer">' +
+                    '<div class="total">Всего групп: ' + allGroupsData.length + ' | Всего студентов: ' + totalStudents + '</div>' +
+                    '<div style="margin-top:4px;">Дата: ' + dateStr + ' | Экспортировал(а): ' + userName + '</div>' +
+                '</div>' +
+            '</body>' +
+            '</html>';
+
+        var blob = new Blob(['\uFEFF' + docHtml], { type: 'application/msword;charset=utf-8' });
+        var filename = 'Архив_студентов_' + dateStr.replace(/\./g, '-') + '.doc';
+        saveAs(blob, filename);
+        showToast('✅ Отчёт сохранён в DOC');
+    };
+}
+
+// ============================================================
+// ОБРАБОТЧИКИ
+// ============================================================
+function bindPageHandlers() {
+    document.getElementById('typeFilter').addEventListener('change', loadGroups);
+    document.getElementById('yearFilter').addEventListener('change', loadGroups);
+    document.getElementById('searchInput').addEventListener('input', loadGroups);
+
+    document.getElementById('clearFiltersBtn').onclick = function() {
+        document.getElementById('typeFilter').value = 'all';
+        document.getElementById('yearFilter').value = 'all';
+        document.getElementById('searchInput').value = '';
+        loadGroups();
+    };
+
+    bindExportPDF();
+    bindExportDOC();
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+async function init() {
+    if (window.Session && typeof window.Session.init === 'function') {
+        try {
+            var sessionOk = await window.Session.init();
+            if (sessionOk === false) return;
+        } catch (e) {
+            console.warn('⚠️ Session.init() ошибка:', e);
+        }
+    }
+
+    sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Не удалось получить клиент Supabase');
+        showToast('❌ Ошибка подключения к базе данных', 'error');
+        return;
+    }
+
+    waitForHeaderAndSidebar(function() {
+        bindHeaderButtons();
+        bindPageHandlers();
+        
+        loadUser().then(function(ok) {
+            if (ok === false) return;
+            loadGroups();
+        });
+    });
+}
+
+function boot() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+}
+
+boot();
+</script>
+
+</body>
+</html>

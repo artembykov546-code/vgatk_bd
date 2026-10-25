@@ -1,0 +1,72 @@
+{
+  "name": "vgatk_bd",
+  "version": "1.0.0",
+  "description": "Колледж - Кадровая система",
+  "main": "electron/main.js",
+  "author": "vgatk_bd",
+  "license": "UNLICENSED",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:dev": "concurrently -k \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:build": "npm run build && electron-builder --win",
+    "electron:publish": "npm run build && electron-builder --win --publish always"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.2",
+    "bcryptjs": "^3.0.3"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "concurrently": "^9.1.0",
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8",
+    "electron-updater": "^6.3.9",
+    "serve": "^14.2.6",
+    "vite": "^5.4.21",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "by.vgatk.bd",
+    "productName": "vgatk_bd",
+    "directories": {
+      "output": "release2"
+    },
+    "files": [
+      "electron/**/*",
+      "dist/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "license": "build/license.txt",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "installerSidebar": "build/installerSidebar.bmp"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ВАШ_GITHUB_ЛОГИН",
+        "repo": "vgatk_bd"
+      }
+    ]
+  }
+}
