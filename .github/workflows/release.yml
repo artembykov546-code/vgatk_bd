@@ -27,17 +27,17 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Build and Publish Electron app
-        run: npx electron-builder --win --publish always
+      - name: Build Electron app (without publishing)
+        run: npx electron-builder --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Сохраняем файлы как артефакт на случай, если публикация не сработает
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
         with:
-          name: windows-installer
-          path: |
+          files: |
             release2/*.exe
-            release2/*.yml
             release2/*.blockmap
+            release2/latest.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
