@@ -277,6 +277,49 @@
             word-break: break-all;
         }
 
+        /* ===== КНОПКА СКАЧИВАНИЯ ПРИЛОЖЕНИЯ ===== */
+        .download-section {
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            padding: 24px;
+            border-radius: 16px;
+            border: 2px dashed #93C5FD;
+            text-align: center;
+            margin-bottom: 36px;
+            display: none; /* Скрыто по умолчанию, покажем только в браузере */
+        }
+        .download-section.visible {
+            display: block;
+        }
+        .download-section h3 {
+            font-size: 20px;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+        .download-section p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+        .btn-download {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--primary-light);
+            color: white;
+            padding: 12px 32px;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: var(--transition);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        .btn-download:hover {
+            background: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+        }
+
         /* ===== МОДАЛЬНОЕ ОКНО ЗАВЕРШЕНИЯ СЕССИИ ===== */
         .session-modal-overlay {
             display: none;
@@ -541,6 +584,15 @@
                 <span class="icon">⚙️</span>
                 <div class="label">Профиль</div>
                 <div class="desc"></div>
+            </a>
+        </div>
+
+        <!-- ===== СКАЧАТЬ ПРИЛОЖЕНИЕ ===== -->
+        <div class="download-section" id="downloadSection">
+            <h3>💻 Приложение для Windows</h3>
+            <p>Скачайте установщик, чтобы работать с базой данных без браузера.</p>
+            <a href="/downloads/vgatk_bd_Setup.exe" download class="btn-download">
+                📥 Скачать установщик (80 МБ)
             </a>
         </div>
 
@@ -899,6 +951,23 @@ window.__dashboard = {
 };
 
 console.log('✅ Дашборд готов к работе. Используйте window.__dashboard для отладки');
+
+// ============================================================
+// СКРЫТИЕ КНОПКИ СКАЧИВАНИЯ В ELECTRON
+// ============================================================
+(function() {
+    // Определяем, запущены ли мы в Electron
+    const isElectron = navigator.userAgent.toLowerCase().includes('electron');
+    const isAppProtocol = window.location.protocol === 'file:' || window.location.protocol === 'app:';
+    
+    // Если мы НЕ в Electron и НЕ по локальному протоколу — показываем кнопку
+    if (!isElectron && !isAppProtocol) {
+        const downloadSection = document.getElementById('downloadSection');
+        if (downloadSection) {
+            downloadSection.classList.add('visible');
+        }
+    }
+})();
 </script>
 
 </body>
