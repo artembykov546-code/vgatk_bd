@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Группы | vgatk_bd</title>
+    
+    <!-- ===== FAVICON ===== -->
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    
+    <!-- ===== ШРИФТЫ ===== -->
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    
+    <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
+    <link rel="stylesheet" href="/css/components.css">
+    
+    <!-- ===== SUPABASE ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- ===== Сессия ===== -->
+    <script src="/js/session.js"></script>
+    
+    <!-- ===== Наименование УО (Шапка) ===== -->
+    <script src="/js/header.js?v=2"></script>
+    
+    <!-- ===== Боковое меню ===== -->
+    <script src="/js/sidebar.js?v=2"></script>
+    
+    <style>
+        /* ===== ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ ГРУПП ===== */
+        .page-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .page-title small {
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ===== ПОИСК С ВЫПАДАЮЩИМ СПИСКОМ ===== */
+        .search-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .search-bar input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            transition: var(--transition);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* ===== ВЫПАДАЮЩИЙ СПИСОК РЕЗУЛЬТАТОВ ===== */
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: var(--shadow-modal);
+            margin-top: 2px;
+        }
+
+        .search-results.show {
+            display: block;
+            animation: slideUp 0.2s ease;
+        }
+
+        .search-results .result-group {
+            padding: 4px 0;
+        }
+
+        .search-results .result-group-title {
+            padding: 8px 16px 4px;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-main);
+        }
+
+        .search-results .result-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-bottom: 1px solid var(--border);
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .search-results .result-item:hover {
+            background: var(--bg-hover);
+        }
+
+        .search-results .result-item .avatar {
+            font-size: 28px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-main);
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .search-results .result-item .info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .search-results .result-item .info .name {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        .search-results .result-item .info .details {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .search-results .result-item .info .details .group-tag {
+            display: inline-block;
+            padding: 1px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 500;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            margin-right: 4px;
+        }
+
+        .search-results .result-item .status-badge-small {
+            font-size: 10px;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+
+        .search-results .result-item .status-badge-small.active {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .search-results .result-item .status-badge-small.academic {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .search-results .result-item .status-badge-small.expelled {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .search-results .result-item .status-badge-small.graduated {
+            background: #E2E8F0;
+            color: #475569;
+        }
+
+        .search-results .result-empty {
+            padding: 24px 16px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .search-results .result-empty .icon {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* ===== ГРУППЫ ===== */
+        .type-section {
+            margin-bottom: 32px;
+        }
+
+        .type-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .type-header .icon {
+            font-size: 28px;
+        }
+
+        .type-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .type-header .count {
+            font-size: 14px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.8);
+            padding: 2px 12px;
+            border-radius: 20px;
+        }
+
+        .year-block {
+            margin-bottom: 16px;
+        }
+
+        .year-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
+            border: 1px solid var(--border);
+        }
+
+        .year-header:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: var(--primary-light);
+        }
+
+        .year-header .year-label {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        .year-header .year-count {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .year-header .arrow {
+            font-size: 14px;
+            color: var(--text-muted);
+            transition: transform 0.3s;
+            margin-left: auto;
+        }
+
+        .year-header .arrow.open {
+            transform: rotate(90deg);
+        }
+
+        .year-groups {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 12px;
+            padding: 12px 0 12px 16px;
+        }
+
+        .year-groups.hidden {
+            display: none;
+        }
+
+        .year-groups.my-group-visible {
+            display: grid;
+        }
+
+        .group-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-lg);
+            padding: 16px 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .group-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--primary-light);
+        }
+
+        .group-card.my-group {
+            border: 2px solid var(--primary);
+            background: var(--bg-active);
+            position: relative;
+        }
+
+        .group-card.my-group::before {
+            content: '👤 Моя группа';
+            position: absolute;
+            top: -10px;
+            right: 12px;
+            background: var(--primary);
+            color: white;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 12px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .group-card .group-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .group-card .group-name:hover {
+            text-decoration: underline;
+        }
+
+        .group-card .group-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 4px 0 8px;
+        }
+
+        .group-card .group-students {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .group-card .group-footer {
+            margin-top: auto;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .group-card .group-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        /* ===== СПЕЦИАЛЬНОСТИ (ЗЕЛЁНЫМ) ===== */
+        .group-specialties {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin: 6px 0 4px;
+        }
+
+        .group-specialties .specialty-tag {
+            display: inline-block;
+            padding: 1px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #86EFAC;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-xl);
+            padding: 32px;
+            max-width: 450px;
+            width: 95%;
+            box-shadow: var(--shadow-modal);
+            animation: slideUp 0.3s ease;
+            border: 1px solid var(--border);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+
+        .modal-body {
+            padding: 8px 0 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 2px solid var(--border);
+        }
+
+        .modal-body .warning {
+            color: var(--danger);
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .modal-body .info {
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        /* ===== TOAST УВЕДОМЛЕНИЯ ===== */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .toast-notification {
+            padding: 14px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 500;
+            font-size: 14px;
+            box-shadow: var(--shadow-modal);
+            animation: slideUp 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast-success {
+            background: var(--success);
+        }
+
+        .toast-error {
+            background: var(--danger);
+        }
+
+        .toast-info {
+            background: var(--primary-light);
+        }
+
+        .toast-notification .toast-close {
+            cursor: pointer;
+            font-size: 18px;
+            opacity: 0.7;
+            transition: var(--transition);
+            background: none;
+            border: none;
+            color: white;
+            padding: 0 4px;
+            line-height: 1;
+        }
+
+        .toast-notification .toast-close:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .toast-notification .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 0 0 var(--border-radius) var(--border-radius);
+            animation: toastProgress 4s linear forwards;
+        }
+
+        @keyframes toastProgress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        /* ===== БЭЙДЖИ ТИПОВ ===== */
+        .badge-type {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-pto {
+            background: #DBEAFE;
+            color: #1E40AF;
+        }
+
+        .badge-sso {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .search-highlight {
+            background: #FEF3C7;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+    </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1E3A8A">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header"></header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar"></aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <div class="page-container">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📚 Группы <small>учебные группы</small></h1>
+            </div>
+            <button class="btn btn-success" id="createGroupBtn" style="display:none;">➕ Создать группу</button>
+        </div>
+
+        <!-- ===== ПОИСК С ВЫПАДАЮЩИМ СПИСКОМ ===== -->
+        <div class="search-wrapper">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="🔍 Поиск по ФИО учащегося..." autocomplete="off">
+                <button class="btn btn-secondary" id="clearSearchBtn">Сбросить</button>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+
+        <div id="groupsContainer">
+            <div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div>
+        </div>
+
+    </div>
+</main>
+
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">⚠️ Подтверждение удаления</h2>
+            <button class="modal-close" id="confirmModalClose">&times;</button>
+        </div>
+        <div class="modal-body" id="confirmModalBody">
+            <div class="warning">❗ Внимание!</div>
+            <div class="info" id="confirmMessage">Вы уверены, что хотите удалить эту группу?</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="confirmCancelBtn">Отмена</button>
+            <button class="btn btn-danger" id="confirmDeleteBtn">🗑️ Удалить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+
+let sb = null;
+let currentUser = null;
+let groupToDelete = null;
+let currentUserGroupIds = [];
+let currentUserEmployeeId = null;
+let canCreateGroup = false;
+let isAdmin = false;
+let isSuperAdmin = false;
+let allStudents = [];
+let searchTimeout = null;
+
+// ============================================================
+// ЖДЁМ ОТРИСОВКИ ШАПКИ (header.js / sidebar.js)
+// ============================================================
+function waitForHeaderAndSidebar(callback, attempts) {
+    attempts = attempts || 0;
+    var header = document.querySelector('header.header');
+    var sidebar = document.getElementById('sidebar');
+    var hasHeaderContent = header && (header.innerHTML.trim().length > 0 || header.children.length > 0);
+    var hasSidebarContent = sidebar && (sidebar.innerHTML.trim().length > 0 || sidebar.children.length > 0);
+
+    if (hasHeaderContent && hasSidebarContent) {
+        callback();
+        return;
+    }
+    if (attempts > 100) {
+        console.warn('⚠️ Шапка/сайдбар так и не отрисовались, продолжаем всё равно');
+        callback();
+        return;
+    }
+    setTimeout(function() { waitForHeaderAndSidebar(callback, attempts + 1); }, 100);
+}
+
+// ============================================================
+// ПОЛУЧЕНИЕ КЛИЕНТА SUPABASE
+// ============================================================
+function getSupabaseClient() {
+    if (window.Session && typeof window.Session.supabase === 'function') {
+        var client = window.Session.supabase();
+        if (client) return client;
+    }
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        return window.supabaseClient;
+    }
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        var client = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+        window.supabaseClient = client;
+        return client;
+    }
+    return null;
+}
+
+// ============================================================
+// TOAST УВЕДОМЛЕНИЯ
+// ============================================================
+
+function showToast(message, type, duration) {
+    type = type || 'success';
+    duration = duration || 4000;
+    
+    var existingContainer = document.querySelector('.toast-container');
+    if (!existingContainer) {
+        var container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    
+    var container = document.querySelector('.toast-container');
+    
+    var toast = document.createElement('div');
+    toast.className = 'toast-notification toast-' + type;
+    toast.innerHTML = 
+        '<span>' + message + '</span>' +
+        '<button class="toast-close" onclick="this.parentElement.remove()">×</button>' +
+        '<div class="toast-progress"></div>';
+    
+    container.appendChild(toast);
+    
+    setTimeout(function() {
+        if (toast.parentElement) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(20px)';
+            setTimeout(function() {
+                if (toast.parentElement) toast.remove();
+            }, 300);
+        }
+    }, duration);
+}
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ И ПРАВА
+// ============================================================
+
+async function loadUser() {
+    var user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        var savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return; }
+        try { currentUser = JSON.parse(savedUser); } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return;
+        }
+    } else {
+        currentUser = user;
+    }
+    
+    waitForHeaderAndSidebar(function() {
+        var nameEl = document.getElementById('userNameDisplay');
+        var roleEl = document.getElementById('userRoleDisplay');
+        if (nameEl) nameEl.textContent = currentUser.name || currentUser.full_name || currentUser.login;
+        var roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'master': 'Мастер ПО', 'viewer': 'Наблюдатель' };
+        if (roleEl) roleEl.textContent = roleMap[currentUser.role] || currentUser.role;
+    });
+
+    isSuperAdmin = currentUser.role === 'super_admin';
+    isAdmin = currentUser.role === 'admin';
+    canCreateGroup = isSuperAdmin || isAdmin;
+
+    document.getElementById('createGroupBtn').style.display = canCreateGroup ? 'inline-flex' : 'none';
+
+    // Получаем группы сотрудника
+    if (currentUser.role === 'teacher' || currentUser.role === 'master') {
+        currentUserEmployeeId = currentUser.employee_id || null;
+        if (currentUserEmployeeId && sb) {
+            var result = await sb
+                .from('employees')
+                .select('groups')
+                .eq('id', currentUserEmployeeId)
+                .single();
+            if (result.data && result.data.groups) {
+                currentUserGroupIds = result.data.groups;
+                console.log('📚 Группы пользователя:', currentUserGroupIds);
+            }
+        }
+    }
+}
+
+function bindHeaderButtons() {
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn && !logoutBtn.__bound) {
+        logoutBtn.__bound = true;
+        logoutBtn.onclick = function() {
+            if (window.Session && typeof window.Session.logout === 'function') {
+                window.Session.logout();
+            } else {
+                localStorage.removeItem('currentUser');
+                window.location.href = '/index.html';
+            }
+        };
+    }
+    var menuToggle = document.getElementById('menuToggle');
+    if (menuToggle && !menuToggle.__bound) {
+        menuToggle.__bound = true;
+        menuToggle.onclick = function() {
+            var sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('open');
+        };
+        if (window.innerWidth > 768) {
+            menuToggle.style.display = 'none';
+        } else {
+            menuToggle.style.display = 'inline-block';
+        }
+    }
+}
+
+// ============================================================
+// ФУНКЦИИ
+// ============================================================
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    var d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getTypeBadge(type) {
+    return type === 'sso' ? 'badge-sso' : 'badge-pto';
+}
+
+function getGroupYear(dateStart) {
+    if (!dateStart) return '—';
+    return new Date(dateStart).getFullYear();
+}
+
+function getStatusLabel(status) {
+    var map = {
+        'active': 'Активен',
+        'academic': 'Академ. отпуск',
+        'expelled': 'Отчислен',
+        'graduated': 'Выпущен'
+    };
+    return map[status] || status;
+}
+
+function getStatusBadgeClass(status) {
+    var map = {
+        'active': 'active',
+        'academic': 'academic',
+        'expelled': 'expelled',
+        'graduated': 'graduated'
+    };
+    return map[status] || 'active';
+}
+
+function highlightText(text, query) {
+    if (!query || !text) return text;
+    var regex = new RegExp('(' + query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+    return text.replace(regex, '<span class="search-highlight">$1</span>');
+}
+
+// ============================================================
+// ПОИСК С ВЫПАДАЮЩИМ СПИСКОМ
+// ============================================================
+
+async function performSearch(query) {
+    var resultsContainer = document.getElementById('searchResults');
+    
+    if (!query || query.length < 2) {
+        resultsContainer.classList.remove('show');
+        return;
+    }
+
+    if (!sb) {
+        resultsContainer.innerHTML = '<div class="result-empty"><span class="icon">❌</span><p>Ошибка подключения</p></div>';
+        resultsContainer.classList.add('show');
+        return;
+    }
+
+    try {
+        var result = await sb
+            .from('students')
+            .select('id, full_name, gender, status, group_id, groups:group_id (name, type)')
+            .ilike('full_name', '%' + query + '%')
+            .limit(20);
+
+        if (result.error) throw result.error;
+
+        var students = result.data;
+
+        if (!students || students.length === 0) {
+            resultsContainer.innerHTML = 
+                '<div class="result-empty">' +
+                    '<span class="icon">🔍</span>' +
+                    '<p>Ничего не найдено</p>' +
+                    '<p style="font-size:12px;color:var(--text-muted);">Попробуйте изменить запрос</p>' +
+                '</div>';
+            resultsContainer.classList.add('show');
+            return;
+        }
+
+        var html = '';
+        
+        var active = students.filter(function(s) { return s.status === 'active'; });
+        var academic = students.filter(function(s) { return s.status === 'academic'; });
+        var expelled = students.filter(function(s) { return s.status === 'expelled'; });
+        var graduated = students.filter(function(s) { return s.status === 'graduated'; });
+
+        function renderStudentGroup(title, studentsList, icon) {
+            if (studentsList.length === 0) return '';
+            var groupHtml = 
+                '<div class="result-group">' +
+                    '<div class="result-group-title">' + icon + ' ' + title + ' (' + studentsList.length + ')</div>';
+            studentsList.forEach(function(s) {
+                var genderIcon = s.gender === 'Мужской' ? '👨' : s.gender === 'Женский' ? '👩' : '👤';
+                var groupName = s.groups ? s.groups.name : 'Без группы';
+                var groupType = s.groups ? getTypeLabel(s.groups.type) : '';
+                var statusClass = getStatusBadgeClass(s.status);
+                var statusLabel = getStatusLabel(s.status);
+                
+                groupHtml += 
+                    '<a href="/students/profile.html?id=' + s.id + '" class="result-item">' +
+                        '<span class="avatar">' + genderIcon + '</span>' +
+                        '<div class="info">' +
+                            '<div class="name">' + highlightText(s.full_name, query) + '</div>' +
+                            '<div class="details">' +
+                                (groupType ? '<span class="group-tag">' + groupType + '</span>' : '') +
+                                groupName +
+                            '</div>' +
+                        '</div>' +
+                        '<span class="status-badge-small ' + statusClass + '">' + statusLabel + '</span>' +
+                    '</a>';
+            });
+            groupHtml += '</div>';
+            return groupHtml;
+        }
+
+        html += renderStudentGroup('Активные', active, '✅');
+        html += renderStudentGroup('Академ. отпуск', academic, '📚');
+        html += renderStudentGroup('Отчисленные', expelled, '❌');
+        html += renderStudentGroup('Выпускники', graduated, '🎓');
+
+        resultsContainer.innerHTML = html;
+        resultsContainer.classList.add('show');
+
+    } catch (error) {
+        console.error('❌ Ошибка поиска:', error);
+        resultsContainer.innerHTML = 
+            '<div class="result-empty">' +
+                '<span class="icon">❌</span>' +
+                '<p>Ошибка поиска</p>' +
+                '<p style="font-size:12px;color:var(--text-muted);">' + error.message + '</p>' +
+            '</div>';
+        resultsContainer.classList.add('show');
+    }
+}
+
+// ============================================================
+// ЗАГРУЗКА ГРУПП
+// ============================================================
+
+async function loadGroups() {
+    var container = document.getElementById('groupsContainer');
+
+    if (!sb) {
+        container.innerHTML = 
+            '<div class="empty-state">' +
+                '<span class="icon">❌</span>' +
+                '<p>Ошибка подключения к базе данных</p>' +
+            '</div>';
+        return;
+    }
+
+    try {
+        var result = await sb
+            .from('groups')
+            .select('*')
+            .eq('is_archived', false)
+            .order('name', { ascending: true });
+
+        if (result.error) throw result.error;
+
+        var groups = result.data;
+
+        if (!groups || groups.length === 0) {
+            container.innerHTML = 
+                '<div class="empty-state">' +
+                    '<span class="icon">📭</span>' +
+                    '<p>Нет групп</p>' +
+                    '<p style="font-size:13px;color:var(--text-muted);">Нажмите "Создать группу"</p>' +
+                '</div>';
+            return;
+        }
+
+        var studentsResult = await sb
+            .from('students')
+            .select('id, full_name, group_id, status');
+
+        if (studentsResult.error) throw studentsResult.error;
+
+        var students = studentsResult.data || [];
+
+        var studentsByGroup = {};
+        students.forEach(function(s) {
+            if (!studentsByGroup[s.group_id]) studentsByGroup[s.group_id] = [];
+            studentsByGroup[s.group_id].push(s);
+        });
+
+        // Сортируем группы: сначала мои группы, потом остальные по алфавиту
+        var myGroups = [];
+        var otherGroups = [];
+        
+        groups.forEach(function(g) {
+            if (currentUserGroupIds.includes(g.id)) {
+                myGroups.push(g);
+            } else {
+                otherGroups.push(g);
+            }
+        });
+
+        myGroups.sort(function(a, b) { return a.name.localeCompare(b.name); });
+        otherGroups.sort(function(a, b) { return a.name.localeCompare(b.name); });
+
+        var ptoMy = myGroups.filter(function(g) { return g.type === 'pto'; });
+        var ssoMy = myGroups.filter(function(g) { return g.type === 'sso'; });
+        var ptoOther = otherGroups.filter(function(g) { return g.type === 'pto'; });
+        var ssoOther = otherGroups.filter(function(g) { return g.type === 'sso'; });
+
+        var html = '';
+
+        function renderTypeSection(title, icon, groupsList, studentsByGroup, isMyGroups) {
+            isMyGroups = isMyGroups || false;
+            
+            if (groupsList.length === 0) {
+                return '';
+            }
+
+            var yearMap = {};
+            groupsList.forEach(function(g) {
+                var year = getGroupYear(g.date_start);
+                if (!yearMap[year]) yearMap[year] = [];
+                yearMap[year].push(g);
+            });
+
+            var sortedYears = Object.keys(yearMap).sort(function(a, b) { return b - a; });
+
+            var sectionHtml = 
+                '<div class="type-section">' +
+                    '<div class="type-header">' +
+                        '<span class="icon">' + icon + '</span>' +
+                        '<h2>' + title + '</h2>' +
+                        '<span class="count">' + groupsList.length + ' групп</span>' +
+                        (isMyGroups ? '<span style="font-size:12px;background:var(--primary);color:white;padding:2px 12px;border-radius:12px;margin-left:8px;">👤 Мои группы</span>' : '') +
+                    '</div>';
+
+            sortedYears.forEach(function(year) {
+                var yearGroups = yearMap[year];
+                yearGroups.sort(function(a, b) { return a.name.localeCompare(b.name); });
+                
+                var hasMyGroup = yearGroups.some(function(g) { return currentUserGroupIds.includes(g.id); });
+                var isDefaultOpen = hasMyGroup || isMyGroups;
+
+                sectionHtml += 
+                    '<div class="year-block">' +
+                        '<div class="year-header">' +
+                            '<span class="year-label">📅 ' + year + ' год</span>' +
+                            '<span class="year-count">(' + yearGroups.length + ' групп)</span>' +
+                            '<span class="arrow ' + (isDefaultOpen ? 'open' : '') + '">▶</span>' +
+                        '</div>' +
+                        '<div class="year-groups ' + (isDefaultOpen ? '' : 'hidden') + '">';
+
+                yearGroups.forEach(function(g) {
+                    var count = studentsByGroup[g.id] ? studentsByGroup[g.id].filter(function(s) { return s.status === 'active'; }).length : 0;
+                    var typeLabel = getTypeLabel(g.type);
+                    var typeBadge = getTypeBadge(g.type);
+                    var period = g.date_start && g.date_end ? formatDate(g.date_start) + ' — ' + formatDate(g.date_end) : '';
+                    var isMyGroup = currentUserGroupIds.includes(g.id);
+                    
+                    // СПЕЦИАЛЬНОСТИ
+                    var specialtiesHtml = '';
+                    if (g.specialty && Array.isArray(g.specialty) && g.specialty.length > 0) {
+                        specialtiesHtml = 
+                            '<div class="group-specialties">' +
+                                g.specialty.map(function(s) { return '<span class="specialty-tag">' + s + '</span>'; }).join('') +
+                            '</div>';
+                    }
+
+                    sectionHtml += 
+                        '<div class="group-card ' + (isMyGroup ? 'my-group' : '') + '">' +
+                            '<a href="/students/group.html?id=' + g.id + '" class="group-name">' + g.name + '</a>' +
+                            '<div class="group-meta">' +
+                                '<span class="badge-type ' + typeBadge + '">' + typeLabel + '</span>' +
+                                (period ? ' • ' + period : '') +
+                            '</div>' +
+                            specialtiesHtml +
+                            '<div class="group-students">👨‍🎓 ' + count + ' учащихся</div>' +
+                            '<div class="group-footer">' +
+                                '<span style="font-size:11px;color:var(--text-muted);">' + (g.qualification ? (Array.isArray(g.qualification) ? g.qualification.join(', ') : g.qualification) || '—' : '—') + '</span>' +
+                                '<div class="group-actions">' +
+                                    (canCreateGroup ? '<button class="btn btn-danger btn-xs delete-group-btn" data-id="' + g.id + '" data-name="' + g.name + '">🗑️</button>' : '') +
+                                '</div>' +
+                            '</div>' +
+                        '</div>';
+                });
+
+                sectionHtml += 
+                        '</div>' +
+                    '</div>';
+            });
+
+            sectionHtml += '</div>';
+            return sectionHtml;
+        }
+
+        if (ptoMy.length > 0) {
+            html += renderTypeSection('ПТО', '🔧', ptoMy, studentsByGroup, true);
+        }
+        
+        if (ssoMy.length > 0) {
+            html += renderTypeSection('ССО', '🎓', ssoMy, studentsByGroup, true);
+        }
+
+        if (ptoOther.length > 0) {
+            html += renderTypeSection('ПТО', '🔧', ptoOther, studentsByGroup, false);
+        }
+
+        if (ssoOther.length > 0) {
+            html += renderTypeSection('ССО', '🎓', ssoOther, studentsByGroup, false);
+        }
+
+        if (!html) {
+            html = 
+                '<div class="empty-state">' +
+                    '<span class="icon">📭</span>' +
+                    '<p>Нет групп</p>' +
+                    '<p style="font-size:13px;color:var(--text-muted);">Нажмите "Создать группу"</p>' +
+                '</div>';
+        }
+
+        container.innerHTML = html;
+
+        document.querySelectorAll('.year-header').forEach(function(header) {
+            header.onclick = function() {
+                var groupsBlock = header.nextElementSibling;
+                var arrow = header.querySelector('.arrow');
+                if (groupsBlock) {
+                    groupsBlock.classList.toggle('hidden');
+                    if (arrow) arrow.classList.toggle('open');
+                }
+            };
+        });
+
+        document.querySelectorAll('.delete-group-btn').forEach(function(btn) {
+            btn.onclick = function(e) {
+                e.stopPropagation();
+                var groupId = btn.dataset.id;
+                var groupName = btn.dataset.name;
+                showDeleteConfirm(groupId, groupName);
+            };
+        });
+
+    } catch (error) {
+        console.error('❌ Ошибка загрузки групп:', error);
+        container.innerHTML = 
+            '<div class="empty-state">' +
+                '<span class="icon">❌</span>' +
+                '<p>Ошибка загрузки</p>' +
+                '<p style="font-size:13px;color:var(--text-muted);">' + error.message + '</p>' +
+            '</div>';
+        showToast('❌ Ошибка загрузки групп: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ
+// ============================================================
+
+function showDeleteConfirm(groupId, groupName) {
+    groupToDelete = groupId;
+    document.getElementById('confirmMessage').textContent = 'Вы уверены, что хотите удалить группу "' + groupName + '"?';
+    document.getElementById('confirmModal').classList.add('active');
+}
+
+async function confirmDelete() {
+    if (!groupToDelete) return;
+
+    if (!sb) {
+        showToast('❌ Ошибка подключения к базе данных', 'error');
+        return;
+    }
+
+    try {
+        var checkResult = await sb
+            .from('students')
+            .select('id')
+            .eq('group_id', groupToDelete)
+            .eq('status', 'active');
+
+        if (checkResult.error) throw checkResult.error;
+
+        if (checkResult.data && checkResult.data.length > 0) {
+            showToast('❌ Нельзя удалить группу, в которой есть активные учащиеся (' + checkResult.data.length + ' чел.)', 'error');
+            closeConfirmModal();
+            return;
+        }
+
+        var deleteResult = await sb
+            .from('groups')
+            .delete()
+            .eq('id', groupToDelete);
+
+        if (deleteResult.error) throw deleteResult.error;
+
+        showToast('✅ Группа успешно удалена', 'success');
+        closeConfirmModal();
+        loadGroups();
+
+    } catch (error) {
+        console.error('❌ Ошибка удаления:', error);
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    }
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+    groupToDelete = null;
+}
+
+// ============================================================
+// ОБРАБОТЧИКИ
+// ============================================================
+
+function bindPageHandlers() {
+    document.getElementById('confirmDeleteBtn').onclick = confirmDelete;
+    document.getElementById('confirmCancelBtn').onclick = closeConfirmModal;
+    document.getElementById('confirmModalClose').onclick = closeConfirmModal;
+    document.getElementById('confirmModal').addEventListener('click', function(e) {
+        if (e.target === this) closeConfirmModal();
+    });
+
+    // Поиск с задержкой (debounce)
+    document.getElementById('searchInput').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        var query = this.value.trim();
+        
+        if (query.length < 2) {
+            document.getElementById('searchResults').classList.remove('show');
+            loadGroups();
+            return;
+        }
+        
+        searchTimeout = setTimeout(function() {
+            performSearch(query);
+        }, 300);
+    });
+
+    document.addEventListener('click', function(e) {
+        var wrapper = document.querySelector('.search-wrapper');
+        if (wrapper && !wrapper.contains(e.target)) {
+            document.getElementById('searchResults').classList.remove('show');
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.getElementById('searchResults').classList.remove('show');
+        }
+    });
+
+    document.getElementById('clearSearchBtn').onclick = function() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('searchResults').classList.remove('show');
+        loadGroups();
+    };
+
+    document.getElementById('createGroupBtn').onclick = function() {
+        window.location.href = '/students/create-group.html';
+    };
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+
+async function init() {
+    // 1. Инициализируем сессию
+    if (window.Session && typeof window.Session.init === 'function') {
+        try {
+            var sessionOk = await window.Session.init();
+            if (sessionOk === false) return;
+        } catch (e) {
+            console.warn('⚠️ Session.init() ошибка:', e);
+        }
+    }
+
+    // 2. Получаем клиент Supabase
+    sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Не удалось получить клиент Supabase');
+        showToast('❌ Ошибка подключения к базе данных', 'error');
+        return;
+    }
+
+    // 3. Ждём отрисовки шапки/сайдбара
+    waitForHeaderAndSidebar(function() {
+        bindHeaderButtons();
+        
+        loadUser().then(function() {
+            bindPageHandlers();
+            loadGroups();
+        });
+    });
+}
+
+function boot() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+}
+
+boot();
+</script>
+
+</body>
+</html>

@@ -751,10 +751,10 @@ async function loadUser() {
     var user = window.Session ? window.Session.getUser() : null;
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        if (!savedUser) { window.location.href = '/'; return false; }
         try { user = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return false;
         }
     }
@@ -777,7 +777,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -1523,7 +1523,7 @@ async function saveStudent() {
 
         showToast('✅ Студент ' + fullName + ' успешно добавлен!', 'success');
         setTimeout(function() { 
-            window.location.href = '/students/group.html?id=' + groupId; 
+            window.location.href = '/students/group?id=' + groupId; 
         }, 1000);
     } catch (error) {
         console.error('❌ Ошибка сохранения:', error);

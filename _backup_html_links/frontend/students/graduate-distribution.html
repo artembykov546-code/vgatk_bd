@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Распределение выпускников | vgatk_bd</title>
+    
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
+    
+    <!-- ===== SUPABASE ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- ===== Сессия ===== -->
+    <script src="/js/session.js"></script>
+    
+    <!-- ===== Наименование УО (Шапка) ===== -->
+    <script src="/js/header.js?v=2"></script>
+    
+    <!-- ===== Боковое меню ===== -->
+    <script src="/js/sidebar.js?v=2"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+        .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .info-card { background: var(--bg-card); padding: 16px 20px; border-radius: var(--border-radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 20px; }
+        .info-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .info-card .value { font-size: 16px; font-weight: 600; color: var(--primary); margin-top: 4px; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+
+        .table-container { overflow-x: auto; border-radius: var(--border-radius-lg); border: 1px solid var(--border); background: var(--bg-card); }
+        .table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: auto; }
+        .table thead { background: var(--bg-main); }
+        .table th { padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text-secondary); border-bottom: 2px solid var(--border); font-size: 12px; white-space: nowrap; }
+        .table td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .table tbody tr:hover { background: rgba(44, 62, 143, 0.04); }
+
+        .table .editable-input {
+            width: 100%;
+            border: none;
+            padding: 6px 8px;
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            background: transparent;
+            transition: var(--transition);
+            min-width: 60px;
+            box-sizing: border-box;
+        }
+        .table .editable-input:focus {
+            outline: none;
+            background: white;
+            box-shadow: 0 0 0 2px var(--primary-light);
+            border: 1px solid var(--primary-light);
+        }
+        .table .editable-input:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .table .student-name {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .btn-success { background: var(--success); color: white; border: none; }
+        .btn-success:hover { background: var(--success-dark); }
+        .btn-secondary { background: var(--bg-main); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-hover); }
+        .btn-primary { background: var(--primary); color: white; border: none; }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+
+        .toast-notification { position: fixed; top: 80px; right: 20px; padding: 16px 24px; border-radius: var(--border-radius); color: white; font-weight: 600; z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px; box-shadow: var(--shadow-modal); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-warning { background: #F59E0B; }
+        .toast-notification .toast-close { float: right; margin-left: 16px; cursor: pointer; font-size: 18px; opacity: 0.8; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        .form-actions { display: flex; gap: 12px; margin-top: 24px; padding-top: 20px; border-top: 2px solid var(--border); flex-wrap: wrap; }
+        .form-actions .btn { padding: 10px 24px; font-size: 14px; }
+
+        .signature-block {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .signature-block .signature-group { min-width: 250px; }
+        .signature-block .signature-group .signature-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+        .signature-block .signature-group .signature-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .signature-block .signature-group .signature-row .name { font-weight: 500; min-width: 150px; }
+        .signature-block .signature-group .signature-row .line { flex: 1; border-bottom: 1px solid #000; min-width: 100px; padding-bottom: 2px; }
+        .signature-block .signature-group .signature-row .label { font-size: 12px; color: var(--text-muted); }
+
+        #pdfContent { background: white; padding: 20px; }
+
+        .table td .editable-input[type="text"] { min-width: 80px; }
+        .table td:nth-child(1) { text-align: center; }
+
+        .btn:focus-visible { outline: 2px solid var(--primary-light); outline-offset: 2px; }
+
+        .text-muted { color: var(--text-muted); }
+        .text-success { color: var(--success-dark); }
+        .text-danger { color: var(--danger); }
+
+        @media print {
+            .no-print { display: none !important; }
+            .table-container { border: 1px solid #ccc; }
+            .table td, .table th { border-color: #ccc; }
+            body { background: white; }
+            .header, .sidebar, .page-header .header-actions { display: none !important; }
+            .page-container { max-width: 100%; padding: 20px; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+            .info-card { box-shadow: none; border: 1px solid #ccc; }
+            .table-container { border: 1px solid #ccc; }
+            #pdfContent { padding: 0; }
+            .signature-block .signature-row .line { border-bottom: 1px solid #000; }
+            .editable-input { border: none !important; background: transparent !important; }
+        }
+    </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1E3A8A">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header"></header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar"></aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <div class="page-container">
+
+        <div class="page-header no-print">
+            <div>
+                <h1 class="page-title">🎓 Распределение выпускников <small id="groupTitle">загрузка...</small></h1>
+            </div>
+            <div class="header-actions" id="headerActions">
+                <button class="btn btn-secondary" id="backBtn">← Назад</button>
+                <button class="btn btn-success" id="saveAllBtn">💾 Выпустить группу</button>
+                <button class="btn btn-primary" id="exportPdfBtn">📄 Экспорт в PDF</button>
+            </div>
+        </div>
+
+        <div id="pdfContent">
+            <div class="info-card" style="border: 1px solid #ddd;">
+                <div class="info-grid" id="groupInfoGrid">
+                    <div><div class="label">Группа</div><div class="value" id="groupName">—</div></div>
+                    <div><div class="label">Тип</div><div class="value" id="groupType">—</div></div>
+                    <div><div class="label">Всего студентов</div><div class="value" id="studentCount">0</div></div>
+                    <div><div class="label">Специальность</div><div class="value" id="specialtyName">—</div></div>
+                    <div><div class="label">Квалификация</div><div class="value" id="qualificationName">—</div></div>
+                </div>
+            </div>
+
+            <div class="table-container" style="border: 1px solid #ddd;">
+                <div style="padding:8px 12px;background:var(--bg-main);border-bottom:1px solid var(--border);font-size:13px;color:var(--text-muted);" class="no-print">
+                    📝 Укажите для каждого учащегося организацию, куда он направляется на работу (можно оставить пустым)
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width:45px;">№</th>
+                            <th style="min-width:180px;">ФИО</th>
+                            <th style="min-width:250px;">Наименование организации</th>
+                            <th style="min-width:200px;">Адрес организации</th>
+                            <th style="min-width:140px;">Примечание</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="5"><div class="empty-state"><span class="icon">📭</span><p>Нет учащихся для распределения</p></div></td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="signature-block" id="signatureBlock"></div>
+        </div>
+
+        <div class="form-actions no-print">
+            <button class="btn btn-secondary" id="backBtnBottom">← Назад</button>
+            <button class="btn btn-success" id="saveAllBtnBottom">💾 Выпустить группу</button>
+        </div>
+
+    </div>
+</main>
+
+<script>
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+
+var sb = null;
+var urlParams = new URLSearchParams(window.location.search);
+var groupId = urlParams.get('group_id');
+
+var currentUser = null;
+var currentGroup = null;
+var students = [];
+var staffData = { curators: [], masters: [] };
+
+// ============================================================
+// ЖДЁМ ОТРИСОВКИ ШАПКИ (header.js / sidebar.js)
+// ============================================================
+function waitForHeaderAndSidebar(callback, attempts) {
+    attempts = attempts || 0;
+    var header = document.querySelector('header.header');
+    var sidebar = document.getElementById('sidebar');
+    var hasHeaderContent = header && (header.innerHTML.trim().length > 0 || header.children.length > 0);
+    var hasSidebarContent = sidebar && (sidebar.innerHTML.trim().length > 0 || sidebar.children.length > 0);
+
+    if (hasHeaderContent && hasSidebarContent) {
+        callback();
+        return;
+    }
+    if (attempts > 100) {
+        console.warn('⚠️ Шапка/сайдбар так и не отрисовались, продолжаем всё равно');
+        callback();
+        return;
+    }
+    setTimeout(function() { waitForHeaderAndSidebar(callback, attempts + 1); }, 100);
+}
+
+// ============================================================
+// ПОЛУЧЕНИЕ КЛИЕНТА SUPABASE
+// ============================================================
+function getSupabaseClient() {
+    if (window.Session && typeof window.Session.supabase === 'function') {
+        var client = window.Session.supabase();
+        if (client) return client;
+    }
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        return window.supabaseClient;
+    }
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        var client = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+        window.supabaseClient = client;
+        return client;
+    }
+    return null;
+}
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ
+// ============================================================
+
+async function loadUser() {
+    var user = window.Session ? window.Session.getUser() : null;
+    
+    if (!user) {
+        var savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return; }
+        try { currentUser = JSON.parse(savedUser); } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return;
+        }
+    } else {
+        currentUser = user;
+    }
+    
+    waitForHeaderAndSidebar(function() {
+        var nameEl = document.getElementById('userNameDisplay');
+        var roleEl = document.getElementById('userRoleDisplay');
+        if (nameEl) nameEl.textContent = currentUser.name || currentUser.full_name || currentUser.login;
+        var roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'master': 'Мастер ПО', 'viewer': 'Наблюдатель' };
+        if (roleEl) roleEl.textContent = roleMap[currentUser.role] || currentUser.role;
+    });
+}
+
+function bindHeaderButtons() {
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn && !logoutBtn.__bound) {
+        logoutBtn.__bound = true;
+        logoutBtn.onclick = function() {
+            if (window.Session && typeof window.Session.logout === 'function') {
+                window.Session.logout();
+            } else {
+                localStorage.removeItem('currentUser');
+                window.location.href = '/index.html';
+            }
+        };
+    }
+    var menuToggle = document.getElementById('menuToggle');
+    if (menuToggle && !menuToggle.__bound) {
+        menuToggle.__bound = true;
+        menuToggle.onclick = function() {
+            var sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('open');
+        };
+        if (window.innerWidth > 768) {
+            menuToggle.style.display = 'none';
+        } else {
+            menuToggle.style.display = 'inline-block';
+        }
+    }
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type) {
+    type = type || 'success';
+    var existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'toast-notification toast-' + type;
+    toast.innerHTML = '<span class="toast-close" onclick="this.parentElement.remove()">×</span>' + msg;
+    document.body.appendChild(toast);
+    setTimeout(function() { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+// ============================================================
+// ЗАГРУЗКА ДАННЫХ
+// ============================================================
+
+async function loadStaff() {
+    if (!sb) return { curators: [], masters: [] };
+    var result = await sb
+        .from('employees')
+        .select('id, full_name, category, groups')
+        .eq('is_hidden', false);
+    if (!result.data) return { curators: [], masters: [] };
+    var employees = result.data;
+    return {
+        curators: employees.filter(function(e) {
+            return e.category === 'teachers' && Array.isArray(e.groups) && e.groups.includes(groupId);
+        }).map(function(e) { return e.full_name; }),
+        masters: employees.filter(function(e) {
+            return e.category === 'masters' && Array.isArray(e.groups) && e.groups.includes(groupId);
+        }).map(function(e) { return e.full_name; })
+    };
+}
+
+async function loadData() {
+    if (!sb) {
+        showToast('❌ Ошибка подключения к базе данных', 'error');
+        return;
+    }
+    if (!groupId) { showToast('❌ ID группы не указан', 'error'); return; }
+    
+    try {
+        var groupResult = await sb
+            .from('groups')
+            .select('*')
+            .eq('id', groupId)
+            .single();
+        
+        var group = groupResult.data;
+        currentGroup = group;
+        document.getElementById('groupTitle').textContent = 'группа ' + group.name;
+        document.getElementById('groupName').textContent = group.name;
+        document.getElementById('groupType').textContent = group.type === 'sso' ? 'ССО' : 'ПТО';
+        document.getElementById('specialtyName').textContent = (group.specialty || []).join(', ') || '—';
+        document.getElementById('qualificationName').textContent = (group.qualification || []).join(', ') || '—';
+
+        staffData = await loadStaff();
+
+        var studentsResult = await sb
+            .from('students')
+            .select('*')
+            .eq('group_id', groupId)
+            .eq('status', 'active')
+            .order('full_name');
+        
+        students = studentsResult.data || [];
+        document.getElementById('studentCount').textContent = students.length;
+
+        renderTable();
+        renderSignatures();
+
+    } catch (e) { 
+        console.error(e); 
+        showToast('❌ Ошибка загрузки', 'error'); 
+    }
+}
+
+// ============================================================
+// РЕНДЕРИНГ
+// ============================================================
+
+function renderTable() {
+    var tbody = document.getElementById('tableBody');
+    if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><span class="icon">📭</span><p>Нет активных учащихся для распределения</p></div></td></tr>';
+        return;
+    }
+    var html = '';
+    students.forEach(function(s, i) {
+        html += 
+            '<tr data-student-id="' + s.id + '">' +
+                '<td>' + (i+1) + '.</td>' +
+                '<td><span class="student-name">' + s.full_name + '</span></td>' +
+                '<td><input type="text" class="editable-input" data-field="organization" placeholder="Название организации..." data-student="' + s.id + '" style="width:100%;border:none;padding:6px 8px;border-radius:var(--border-radius);font-size:13px;background:transparent;min-width:60px;box-sizing:border-box;"></td>' +
+                '<td><input type="text" class="editable-input" data-field="address" placeholder="Адрес организации..." data-student="' + s.id + '" style="width:100%;border:none;padding:6px 8px;border-radius:var(--border-radius);font-size:13px;background:transparent;min-width:60px;box-sizing:border-box;"></td>' +
+                '<td><input type="text" class="editable-input" data-field="notes" placeholder="Примечание..." data-student="' + s.id + '" style="width:100%;border:none;padding:6px 8px;border-radius:var(--border-radius);font-size:13px;background:transparent;min-width:60px;box-sizing:border-box;"></td>' +
+            '</tr>';
+    });
+    tbody.innerHTML = html;
+
+    document.querySelectorAll('.editable-input').forEach(function(input) {
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var inputs = Array.from(document.querySelectorAll('.editable-input'));
+                var idx = inputs.indexOf(this);
+                if (idx < inputs.length - 1) {
+                    inputs[idx + 1].focus();
+                } else {
+                    document.getElementById('saveAllBtn').focus();
+                }
+            }
+        });
+    });
+}
+
+function renderSignatures() {
+    var block = document.getElementById('signatureBlock');
+    var groupType = currentGroup ? currentGroup.type : 'sso';
+    var html = '';
+    var people = groupType === 'pto' ? staffData.masters : staffData.curators;
+    var title = groupType === 'pto' ? '🔧 Мастера ПО' : '👨‍🏫 Кураторы';
+    if (people.length) {
+        html += '<div class="signature-group"><div class="signature-title">' + title + ':</div>';
+        people.forEach(function(p) {
+            html += '<div class="signature-row"><span class="name">' + p + '</span><span class="line"></span><span class="label">подпись</span></div>';
+        });
+        html += '</div>';
+    } else {
+        html += '<div class="signature-group"><div class="signature-title">' + title + ':</div>' +
+            '<div class="signature-row"><span class="name">__________________</span><span class="line"></span><span class="label">подпись</span></div></div>';
+    }
+    block.innerHTML = html;
+}
+
+// ============================================================
+// ВЫПУСК ГРУППЫ С СОХРАНЕНИЕМ РАСПРЕДЕЛЕНИЯ
+// ============================================================
+
+async function saveAndGraduate() {
+    if (students.length === 0) {
+        showToast('❌ Нет учащихся для выпуска', 'error');
+        return;
+    }
+
+    if (!sb) {
+        sb = getSupabaseClient();
+        if (!sb) {
+            showToast('❌ Ошибка подключения к базе данных', 'error');
+            return;
+        }
+    }
+
+    var btn = document.getElementById('saveAllBtn');
+    var btnBottom = document.getElementById('saveAllBtnBottom');
+    btn.innerHTML = '⏳ Выпуск...';
+    btn.disabled = true;
+    btnBottom.innerHTML = '⏳ Выпуск...';
+    btnBottom.disabled = true;
+
+    var graduated = 0;
+    var distributed = 0;
+    var errors = [];
+
+    try {
+        var rows = document.querySelectorAll('#tableBody tr[data-student-id]');
+        var currentYear = new Date().getFullYear();
+        var groupName = currentGroup.name;
+
+        console.log('🚀 Начинаем выпуск группы:', groupName);
+        console.log('📊 Количество студентов:', students.length);
+
+        for (var ri = 0; ri < rows.length; ri++) {
+            var row = rows[ri];
+            var studentId = row.dataset.studentId;
+            var orgInput = row.querySelector('[data-field="organization"]');
+            var addrInput = row.querySelector('[data-field="address"]');
+            var notesInput = row.querySelector('[data-field="notes"]');
+            
+            var organization = orgInput ? orgInput.value.trim() || null : null;
+            var address = addrInput ? addrInput.value.trim() || null : null;
+            var notes = notesInput ? notesInput.value.trim() || null : null;
+
+            var student = students.find(function(s) { return s.id === studentId; });
+            if (!student) {
+                console.warn('⚠️ Студент не найден:', studentId);
+                continue;
+            }
+
+            console.log('📝 Обработка студента:', student.full_name);
+
+            var graduateData = {
+                student_id: studentId,
+                full_name: student.full_name,
+                group_id: groupId,
+                group_name: groupName,
+                type: currentGroup.type,
+                birth_date: student.birth_date || null,
+                phone: student.phone || null,
+                citizenship: student.citizenship || null,
+                school: student.school || null,
+                school_year: student.school_year || null,
+                school_class: student.school_class || null,
+                avg_grade: student.avg_grade || null,
+                gender: student.gender || null,
+                address_reg: student.address_reg || null,
+                address_live: student.address_live || null,
+                address_region: student.address_region || null,
+                address_district: student.address_district || null,
+                address_locality: student.address_locality || null,
+                accounting_type: student.accounting_type || [],
+                addresses: student.addresses || [],
+                target_training: student.target_training || false,
+                target_customer: student.target_customer || null,
+                target_contract: student.target_contract || null,
+                target_years: student.target_years || null,
+                lives_in_dorm: student.lives_in_dorm || false,
+                dorm_block: student.dorm_block || null,
+                dorm_check_in: student.dorm_check_in || null,
+                dorm_check_out: student.dorm_check_out || null,
+                grade_1_sem1: student.grade_1_sem1 || null,
+                grade_1_sem2: student.grade_1_sem2 || null,
+                grade_1_year: student.grade_1_year || null,
+                grade_2_sem1: student.grade_2_sem1 || null,
+                grade_2_sem2: student.grade_2_sem2 || null,
+                grade_2_year: student.grade_2_year || null,
+                grade_3_sem1: student.grade_3_sem1 || null,
+                grade_3_sem2: student.grade_3_sem2 || null,
+                grade_3_year: student.grade_3_year || null,
+                grade_4_sem1: student.grade_4_sem1 || null,
+                grade_4_sem2: student.grade_4_sem2 || null,
+                grade_4_year: student.grade_4_year || null,
+                graduation_year: String(currentYear),
+                graduated_at: new Date().toISOString(),
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            };
+
+            var gradResult = await sb
+                .from('graduates')
+                .insert([graduateData]);
+
+            if (gradResult.error) {
+                console.error('❌ Ошибка добавления в graduates:', gradResult.error);
+                errors.push(student.full_name + ': ' + gradResult.error.message);
+                continue;
+            }
+            graduated++;
+
+            if (organization) {
+                var distData = {
+                    group_id: groupId,
+                    student_id: studentId,
+                    full_name: student.full_name,
+                    organization_name: organization,
+                    address: address || null,
+                    notes: notes || null,
+                    has_target_contract: false,
+                    is_redistributed: false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                console.log('📤 Сохранение распределения:', JSON.stringify(distData, null, 2));
+
+                var distResult = await sb
+                    .from('graduate_distributions')
+                    .insert([distData])
+                    .select();
+
+                if (distResult.error) {
+                    console.error('❌ Ошибка сохранения распределения:', distResult.error);
+                    errors.push(student.full_name + ' (распределение): ' + distResult.error.message);
+                } else {
+                    distributed++;
+                    console.log('✅ Распределение сохранено:', distResult.data);
+                }
+            }
+
+            var deleteResult = await sb
+                .from('students')
+                .delete()
+                .eq('id', studentId);
+
+            if (deleteResult.error) {
+                console.error('❌ Ошибка удаления из students:', deleteResult.error);
+                errors.push(student.full_name + ' (удаление): ' + deleteResult.error.message);
+            }
+        }
+
+        var groupError = await sb
+            .from('groups')
+            .update({ 
+                is_archived: true,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', groupId);
+
+        if (groupError.error) {
+            console.warn('⚠️ Ошибка архивации группы:', groupError.error);
+        }
+
+        console.log('📊 ИТОГИ:');
+        console.log('✅ Выпущено:', graduated);
+        console.log('✅ Распределено:', distributed);
+        console.log('❌ Ошибки:', errors);
+
+        var message = '✅ Группа выпущена! Выпущено ' + graduated + ' учащихся';
+        if (distributed > 0) {
+            message += ', распределено ' + distributed;
+        }
+        if (errors.length > 0) {
+            message += ' ⚠️ Ошибки: ' + errors.length;
+            showToast(message, 'warning');
+        } else {
+            showToast(message, 'success');
+        }
+
+        setTimeout(function() {
+            window.location.href = '/graduates/group.html?id=' + groupId;
+        }, 2000);
+
+    } catch (error) {
+        console.error('❌ Ошибка выпуска:', error);
+        showToast('❌ Ошибка: ' + error.message, 'error');
+    } finally {
+        btn.innerHTML = '💾 Выпустить группу';
+        btn.disabled = false;
+        btnBottom.innerHTML = '💾 Выпустить группу';
+        btnBottom.disabled = false;
+    }
+}
+
+// ============================================================
+// ОБРАБОТЧИКИ
+// ============================================================
+
+function bindPageHandlers() {
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            saveAndGraduate();
+        }
+    });
+
+    document.getElementById('saveAllBtn').onclick = saveAndGraduate;
+    document.getElementById('saveAllBtnBottom').onclick = saveAndGraduate;
+
+    document.getElementById('backBtn').onclick = function() {
+        window.location.href = '/students/group.html?id=' + groupId;
+    };
+    document.getElementById('backBtnBottom').onclick = function() {
+        window.location.href = '/students/group.html?id=' + groupId;
+    };
+
+    document.getElementById('exportPdfBtn').onclick = function() {
+        if (!currentGroup) {
+            showToast('❌ Нет данных для экспорта', 'error');
+            return;
+        }
+        var btn = this;
+        btn.innerHTML = '⏳ ...';
+        btn.disabled = true;
+        var el = document.getElementById('pdfContent');
+        html2pdf().set({
+            margin: [10,10,10,10],
+            filename: 'Распределение_' + (currentGroup ? currentGroup.name : 'группа') + '.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        }).from(el).save().then(function() {
+            btn.innerHTML = '📄 Экспорт в PDF';
+            btn.disabled = false;
+            showToast('✅ PDF готов');
+        }).catch(function(err) { 
+            console.error(err);
+            btn.innerHTML = '📄 Экспорт в PDF'; 
+            btn.disabled = false; 
+            showToast('❌ Ошибка PDF', 'error');
+        });
+    };
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+
+async function init() {
+    console.log('🔧 Инициализация страницы...');
+    
+    if (window.Session && typeof window.Session.init === 'function') {
+        try {
+            var sessionOk = await window.Session.init();
+            if (sessionOk === false) return;
+        } catch (e) {
+            console.warn('⚠️ Session.init() ошибка:', e);
+        }
+    }
+
+    sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Не удалось получить клиент Supabase');
+        showToast('❌ Ошибка подключения к базе данных', 'error');
+        return;
+    }
+
+    waitForHeaderAndSidebar(function() {
+        bindHeaderButtons();
+        bindPageHandlers();
+        
+        loadUser().then(function() {
+            loadData().then(function() {
+                console.log('✅ Инициализация завершена');
+            });
+        });
+    });
+}
+
+function boot() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+}
+
+boot();
+</script>
+
+</body>
+</html>

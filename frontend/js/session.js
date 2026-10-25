@@ -86,7 +86,7 @@
                     <span class="modal-icon">🔒</span>
                     <h2 class="modal-title">Сессия завершена</h2>
                     <p class="modal-desc">${reason || 'Ваша сессия была завершена.'}</p>
-                    <button class="btn-login" onclick="window.location.href='/index.html'">🔑 Войти заново</button>
+                    <button class="btn-login" onclick="window.location.href='/'">🔑 Войти заново</button>
                 </div>
             </div>
         `;
@@ -288,7 +288,7 @@
     function logout() {
         localStorage.removeItem('currentUser');
         stopAutoRefresh();
-        window.location.href = '/index.html';
+        window.location.href = '/';
     }
 
     // ============================================================
@@ -320,7 +320,7 @@
         
         const user = loadUser();
         if (!user) {
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return false;
         }
         

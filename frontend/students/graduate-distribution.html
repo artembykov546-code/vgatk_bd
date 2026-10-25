@@ -268,10 +268,10 @@ async function loadUser() {
     
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return; }
+        if (!savedUser) { window.location.href = '/'; return; }
         try { currentUser = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
     } else {
@@ -296,7 +296,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -636,7 +636,7 @@ async function saveAndGraduate() {
         }
 
         setTimeout(function() {
-            window.location.href = '/graduates/group.html?id=' + groupId;
+            window.location.href = '/graduates/group?id=' + groupId;
         }, 2000);
 
     } catch (error) {
@@ -666,10 +666,10 @@ function bindPageHandlers() {
     document.getElementById('saveAllBtnBottom').onclick = saveAndGraduate;
 
     document.getElementById('backBtn').onclick = function() {
-        window.location.href = '/students/group.html?id=' + groupId;
+        window.location.href = '/students/group?id=' + groupId;
     };
     document.getElementById('backBtnBottom').onclick = function() {
-        window.location.href = '/students/group.html?id=' + groupId;
+        window.location.href = '/students/group?id=' + groupId;
     };
 
     document.getElementById('exportPdfBtn').onclick = function() {

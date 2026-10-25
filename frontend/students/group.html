@@ -146,7 +146,7 @@
                 <h1 class="page-title" id="groupTitle">📚 Группа <small id="groupSubtitle">загрузка...</small></h1>
             </div>
             <div class="header-actions" id="headerActions">
-                <a href="/students/index.html" class="btn btn-secondary">← Назад</a>
+                <a href="/students/" class="btn btn-secondary">← Назад</a>
                 <button class="btn btn-success btn-export-pdf" id="exportPDFBtn">📄 PDF</button>
                 <button class="btn btn-warning" id="editGroupBtn" style="display:none;">✏️ Редактировать</button>
                 <button class="btn btn-success" id="addStudentBtn" style="display:none;">➕ Добавить</button>
@@ -364,10 +364,10 @@ async function loadUser() {
     
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return; }
+        if (!savedUser) { window.location.href = '/'; return; }
         try { currentUser = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
     } else {
@@ -392,7 +392,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -551,7 +551,7 @@ async function checkEditRights(staff) {
 async function loadGroup() {
     var groupContent = document.getElementById('groupContent');
     if (!groupId) {
-        groupContent.innerHTML = '<div class="error-state"><span class="icon">❌</span><h3>ID группы не указан</h3><a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a></div>';
+        groupContent.innerHTML = '<div class="error-state"><span class="icon">❌</span><h3>ID группы не указан</h3><a href="/students/" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a></div>';
         return;
     }
 
@@ -561,7 +561,7 @@ async function loadGroup() {
         
         var group = groupResult.data;
         if (!group) {
-            groupContent.innerHTML = '<div class="error-state"><span class="icon">❌</span><h3>Группа не найдена</h3><a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a></div>';
+            groupContent.innerHTML = '<div class="error-state"><span class="icon">❌</span><h3>Группа не найдена</h3><a href="/students/" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a></div>';
             return;
         }
 
@@ -664,29 +664,29 @@ async function loadStudents() {
             if (hasEditRights) {
                 if (s.status === 'active') {
                     actionsHtml = 
-                        '<a href="/students/profile.html?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>' +
-                        '<a href="/students/edit-student.html?id=' + s.id + '" class="btn btn-warning btn-xs" title="Редактировать">✏️</a>' +
+                        '<a href="/students/profile?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>' +
+                        '<a href="/students/edit-student?id=' + s.id + '" class="btn btn-warning btn-xs" title="Редактировать">✏️</a>' +
                         '<button class="btn btn-danger btn-xs" onclick="deleteStudent(\'' + s.id + '\')" title="Удалить">🗑️</button>';
                 } else if (s.status === 'academic') {
                     actionsHtml = 
-                        '<a href="/students/profile.html?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>' +
-                        '<a href="/students/edit-student.html?id=' + s.id + '" class="btn btn-warning btn-xs" title="Редактировать">✏️</a>' +
+                        '<a href="/students/profile?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>' +
+                        '<a href="/students/edit-student?id=' + s.id + '" class="btn btn-warning btn-xs" title="Редактировать">✏️</a>' +
                         '<span style="font-size:10px;color:var(--text-muted);">📚 В академе</span>';
                 } else if (s.status === 'graduated') {
                     actionsHtml = '<span style="font-size:10px;color:var(--text-muted);">🎓 Выпущен</span>';
                 } else {
                     actionsHtml = 
-                        '<a href="/students/profile.html?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>' +
+                        '<a href="/students/profile?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>' +
                         '<span style="font-size:10px;color:var(--text-muted);">❌ Неактивен</span>';
                 }
             } else {
-                actionsHtml = '<a href="/students/profile.html?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>';
+                actionsHtml = '<a href="/students/profile?id=' + s.id + '" class="btn btn-info btn-xs" title="Просмотр">👁️</a>';
             }
 
             html += 
                 '<tr>' +
                     '<td>' + (i + 1) + '</td>' +
-                    '<td><a href="/students/profile.html?id=' + s.id + '" class="student-link">' + s.full_name + '</a>' + genderBadge + '</td>' +
+                    '<td><a href="/students/profile?id=' + s.id + '" class="student-link">' + s.full_name + '</a>' + genderBadge + '</td>' +
                     '<td>' + (s.birth_date ? formatDate(s.birth_date) : '—') + '</td>' +
                     '<td>' + (s.birth_date ? calculateAge(s.birth_date) : '—') + '</td>' +
                     '<td>' + (s.phone || '—') + '</td>' +
@@ -1109,7 +1109,7 @@ function bindGraduateButton() {
             return;
         }
 
-        window.location.href = '/students/graduate-distribution.html?group_id=' + groupId;
+        window.location.href = '/students/graduate-distribution?group_id=' + groupId;
     };
 }
 
@@ -1125,7 +1125,7 @@ function bindPageHandlers() {
 
     document.getElementById('addStudentBtn').onclick = function() {
         if (!groupId || !hasEditRights) return;
-        window.location.href = '/students/add-student.html?group_id=' + groupId;
+        window.location.href = '/students/add-student?group_id=' + groupId;
     };
 
     bindExportPDF();

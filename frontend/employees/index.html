@@ -631,7 +631,7 @@ async function init() {
     // 3. Получаем пользователя
     var savedUser = localStorage.getItem('currentUser');
     if (!savedUser) {
-        window.location.href = '/index.html';
+        window.location.href = '/';
         return;
     }
     
@@ -645,7 +645,7 @@ async function init() {
         
         if (userResult.error || !userResult.data) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
 
@@ -653,7 +653,7 @@ async function init() {
         if (userResult.data.active_session_id && userResult.data.active_session_id !== deviceSessionId) {
             localStorage.removeItem('currentUser');
             showToast('❌ Сессия завершена на другом устройстве', 'error');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
 
@@ -701,7 +701,7 @@ async function init() {
     } catch (e) {
         console.error('Ошибка инициализации:', e);
         localStorage.removeItem('currentUser');
-        window.location.href = '/index.html';
+        window.location.href = '/';
     }
 }
 
@@ -717,7 +717,7 @@ function bindHeaderButtons() {
             var userId = currentUser?.id;
             if (userId) invalidateUserSession(userId);
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
         };
     }
     var menuToggle = document.getElementById('menuToggle');
@@ -1368,7 +1368,7 @@ async function checkSessionOnLoad() {
         if (result.data.active_session_id && result.data.active_session_id !== deviceSessionId) {
             localStorage.removeItem('currentUser');
             showToast('❌ Сессия завершена на другом устройстве', 'error');
-            setTimeout(function() { window.location.href = '/index.html'; }, 1500);
+            setTimeout(function() { window.location.href = '/'; }, 1500);
         }
     } catch (error) {
         console.error('Ошибка проверки сессии:', error);
@@ -1380,7 +1380,7 @@ async function checkSessionOnLoad() {
 // ============================================================
 document.getElementById('lockLogoutBtn').onclick = function() {
     localStorage.removeItem('currentUser');
-    window.location.href = '/index.html';
+    window.location.href = '/';
 };
 
 // ============================================================

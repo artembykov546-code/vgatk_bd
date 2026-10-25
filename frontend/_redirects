@@ -1,31 +1,40 @@
-# Все запросы перенаправляем на index.html (SPA)
-/*    /index.html    200
+# ---- Конкретные пути (порядок важен: от частного к общему) ----
 
-# Явные пути без .html
-/dashboard    /dashboard.html    200
-/students    /students/index.html    200
-/students/create-group    /students/create-group.html    200
-/students/add-student    /students/add-student.html    200
-/students/edit-student    /students/edit-student.html    200
-/students/group    /students/group.html    200
-/students/profile    /students/profile.html    200
-/students/add-parent    /students/add-parent.html    200
-/students/add-sibling    /students/add-sibling.html    200
-/students/graduate-distribution    /students/graduate-distribution.html    200
-/graduates    /graduates/index.html    200
-/graduates/group    /graduates/group.html    200
-/graduates/distribution    /graduates/distribution.html    200
-/graduates/expelled    /graduates/expelled.html    200
-/graduates/academic    /graduates/academic.html    200
-/employees    /employees/index.html    200
-/reports    /reports/index.html    200
-/profile    /profile/index.html    200
-/invites    /invites/index.html    200
-/register    /register/index.html    200
-/admin    /admin/index.html    200
-/admin/logs    /admin/logs.html    200
-/admin/positions    /admin/positions.html    200
-/admin/settings    /admin/settings.html    200
+# Студенты
+/students                          /students/index.html                          200
+/students/create-group             /students/create-group.html                   200
+/students/add-student              /students/add-student.html                    200
+/students/edit-student             /students/edit-student.html                   200
+/students/group                    /students/group.html                          200
+/students/profile                  /students/profile.html                        200
+/students/add-parent               /students/add-parent.html                     200
+/students/add-sibling              /students/add-sibling.html                    200
+/students/graduate-distribution    /students/graduate-distribution.html          200
 
-# 404
-/404    /index.html    404
+# Выпускники
+/graduates                         /graduates/index.html                         200
+/graduates/group                   /graduates/group.html                         200
+/graduates/distribution            /graduates/distribution.html                  200
+/graduates/expelled                /graduates/expelled.html                      200
+/graduates/academic                /graduates/academic.html                      200
+
+# Сотрудники / отчёты / профиль / приглашения / регистрация / поддержка
+/employees                         /employees/index.html                         200
+/reports                           /reports/index.html                           200
+/profile                           /profile/index.html                           200
+/invites                           /invites/index.html                           200
+/register                          /register/index.html                          200
+/support                           /support/index.html                           200
+
+# Админ
+/admin                             /admin/index.html                             200
+/admin/logs                        /admin/logs.html                              200
+/admin/positions                   /admin/positions.html                         200
+/admin/settings                    /admin/settings.html                          200
+
+# Дашборд и главная
+/dashboard                         /dashboard.html                               200
+/                                  /index.html                                   200
+
+# ---- Фолбэк: всё, что не нашли — отдать главную со статусом 404 ----
+/*                                 /index.html                                   404

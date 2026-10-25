@@ -416,14 +416,14 @@ async function loadUser() {
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
         if (!savedUser) {
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
         try {
             currentUser = JSON.parse(savedUser);
         } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
     } else {
@@ -491,7 +491,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -897,7 +897,7 @@ function bindExpelButton() {
 
                 closeModal();
                 showToast('✅ Учащийся ' + fullStudent.full_name + ' отчислен и перемещён в архив', 'success');
-                window.location.href = '/students/group.html?id=' + fullStudent.group_id;
+                window.location.href = '/students/group?id=' + fullStudent.group_id;
 
             } catch (error) {
                 console.error('❌ Ошибка отчисления:', error);
@@ -1050,7 +1050,7 @@ function bindAcademicButton() {
 
                 closeModal();
                 showToast('✅ Учащийся ' + fullStudent.full_name + ' отправлен в академический отпуск', 'success');
-                window.location.href = '/students/group.html?id=' + fullStudent.group_id;
+                window.location.href = '/students/group?id=' + fullStudent.group_id;
 
             } catch (error) {
                 console.error('❌ Ошибка отправки в академ. отпуск:', error);
@@ -1193,7 +1193,7 @@ function bindRestoreButton() {
 
                 closeModal();
                 showToast('✅ Учащийся ' + student.full_name + ' восстановлен в группу!', 'success');
-                window.location.href = '/students/profile.html?id=' + insertResult.data.id;
+                window.location.href = '/students/profile?id=' + insertResult.data.id;
 
             } catch (error) {
                 console.error('❌ Ошибка восстановления:', error);
@@ -1247,9 +1247,9 @@ function bindDeleteButton() {
             showToast('✅ Учащийся "' + student.full_name + '" полностью удалён из базы данных', 'success');
             setTimeout(function() {
                 if (student.group_id) {
-                    window.location.href = '/students/group.html?id=' + student.group_id;
+                    window.location.href = '/students/group?id=' + student.group_id;
                 } else {
-                    window.location.href = '/students/index.html';
+                    window.location.href = '/students/';
                 }
             }, 1500);
 
@@ -1275,7 +1275,7 @@ async function loadStudent() {
                 '<span class="icon">❌</span>' +
                 '<h3>ID учащегося не указан</h3>' +
                 '<p style="color:var(--text-muted);">Перейдите из списка учащихся</p>' +
-                '<a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>' +
+                '<a href="/students/" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>' +
             '</div>';
         return;
     }
@@ -1298,7 +1298,7 @@ async function loadStudent() {
                     '<span class="icon">❌</span>' +
                     '<h3>Учащийся не найден</h3>' +
                     '<p style="color:var(--text-muted);">Учащийся с ID ' + studentId + ' не существует</p>' +
-                    '<a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>' +
+                    '<a href="/students/" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>' +
                 '</div>';
             return;
         }
@@ -1597,7 +1597,7 @@ async function loadStudent() {
                 '<div class="item" style="grid-column:1/-1;">' +
                     '<span class="label">📚 Группа</span>' +
                     '<span class="value">' +
-                        '<a href="/students/group.html?id=' + student.group_id + '" style="color:var(--primary-light);font-weight:600;text-decoration:none;">' + groupName + '</a>' +
+                        '<a href="/students/group?id=' + student.group_id + '" style="color:var(--primary-light);font-weight:600;text-decoration:none;">' + groupName + '</a>' +
                     '</span>' +
                 '</div>' : '') +
             '</div>';
@@ -1612,7 +1612,7 @@ async function loadStudent() {
                 '<span class="icon">❌</span>' +
                 '<h3>Ошибка загрузки</h3>' +
                 '<p style="color:var(--text-muted);">' + error.message + '</p>' +
-                '<a href="/students/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>' +
+                '<a href="/students/" class="btn btn-primary" style="margin-top:16px;">Вернуться к группам</a>' +
             '</div>';
     }
 }
@@ -2235,7 +2235,7 @@ function bindEditButton() {
             showToast('❌ Вы не можете редактировать эту группу', 'error');
             return;
         }
-        window.location.href = '/students/edit-student.html?id=' + studentId;
+        window.location.href = '/students/edit-student?id=' + studentId;
     };
 }
 
@@ -2245,7 +2245,7 @@ function bindEditButton() {
 
 function bindBackButton() {
     document.getElementById('backBtn').onclick = async function() {
-        if (!studentId) { window.location.href = '/students/index.html'; return; }
+        if (!studentId) { window.location.href = '/students/'; return; }
         var result = await sb
             .from('students')
             .select('group_id')
@@ -2253,9 +2253,9 @@ function bindBackButton() {
             .single();
 
         if (result.data && result.data.group_id) {
-            window.location.href = '/students/group.html?id=' + result.data.group_id;
+            window.location.href = '/students/group?id=' + result.data.group_id;
         } else {
-            window.location.href = '/students/index.html';
+            window.location.href = '/students/';
         }
     };
 }
