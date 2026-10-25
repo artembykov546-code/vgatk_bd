@@ -1,6 +1,6 @@
 {
   "name": "vgatk_bd",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "База данных учащихся",
   "main": "electron/main.js",
   "author": "vgatk_bd",
@@ -15,14 +15,14 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
-    "bcryptjs": "^3.0.3"
+    "bcryptjs": "^3.0.3",
+    "electron-updater": "^6.8.11"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^9.1.0",
     "electron": "^33.2.0",
     "electron-builder": "^25.1.8",
-    "electron-updater": "^6.8.11",
     "serve": "^14.2.6",
     "vite": "^5.4.21",
     "wait-on": "^8.0.1"
