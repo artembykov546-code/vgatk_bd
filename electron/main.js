@@ -26,33 +26,72 @@ let mainWindow = null;
 // ЛОГИКА АВТООБНОВЛЕНИЯ
 // ============================================================
 function setupAutoUpdater() {
-  // Настраиваем, куда обращаться за обновлениями
+  if (!app.isPackaged) {
+    console.log('⚠️ Режим разработки: проверка обновлений отключена.');
+    return;
+  }
+
+  // ⚠️ ОТКЛЮЧАЕМ автоматическое скачивание — сначала спрашиваем пользователя
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  // Провайдер — GitHub Releases
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'artembykov546-code',
     repo: 'vgatk_bd'
   });
 
-  // Проверяем обновления при запуске (только в собранном приложении)
-  if (!app.isPackaged) {
-    console.log('⚠️ Режим разработки: проверка обновлений отключена.');
-    return;
-  }
-
-  autoUpdater.checkForUpdatesAndNotify();
-
-  // Если обновление найдено
-  autoUpdater.on('update-available', (info) => {
-    console.log('Доступно обновление:', info.version);
+  // --- СОБЫТИЯ ---
+  autoUpdater.on('checking-for-update', () => {
+    console.log('[updater] Проверка обновлений...');
   });
 
-  // Если обновление скачано
+  autoUpdater.on('update-available', (info) => {
+    console.log('[updater] Доступно обновление:', info.version);
+
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Доступно обновление',
+      message: `Вышла новая версия ${info.version}.`,
+      detail: `У вас установлена версия ${app.getVersion()}.\n\nСкачать и установить обновление сейчас?`,
+      buttons: ['Обновить', 'Позже'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true
+    }).then((result) => {
+      if (result.response === 0) {
+        // Пользователь согласился — скачиваем
+        console.log('[updater] Пользователь согласился — начинаю скачивание...');
+        autoUpdater.downloadUpdate();
+      } else {
+        console.log('[updater] Пользователь отложил обновление.');
+      }
+    });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    console.log('[updater] Обновлений нет — версия актуальна.');
+  });
+
+  autoUpdater.on('download-progress', (progress) => {
+    // Прогресс в консоль (пользователю не показываем)
+    const pct = progress.percent.toFixed(1);
+    console.log(`[updater] Скачано ${pct}% (${progress.transferred}/${progress.total} байт)`);
+  });
+
   autoUpdater.on('update-downloaded', (info) => {
-    dialog.showMessageBox({
+    console.log('[updater] Обновление скачано:', info.version);
+
+    dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Обновление готово',
-      message: `Новая версия ${info.version} загружена. Перезапустить приложение сейчас, чтобы применить обновление?`, // ✅ ИСПРАВЛЕНЫ КАВЫЧКИ
-      buttons: ['Перезапустить', 'Позже']
+      message: `Версия ${info.version} скачана.`,
+      detail: 'Перезапустить приложение сейчас, чтобы применить обновление?',
+      buttons: ['Перезапустить', 'Позже'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true
     }).then((result) => {
       if (result.response === 0) {
         autoUpdater.quitAndInstall();
@@ -60,10 +99,19 @@ function setupAutoUpdater() {
     });
   });
 
-  // Обработка ошибок
   autoUpdater.on('error', (err) => {
-    console.error('Ошибка обновления:', err);
+    console.error('[updater] Ошибка:', err);
+    // Не показываем ошибку пользователю — сеть может быть временно недоступна.
+    // Показываем только если это фатально при скачивании (не в начале проверки).
   });
+
+  // --- ЗАПУСК ПРОВЕРКИ ---
+  // Небольшая задержка, чтобы окно успело открыться
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error('[updater] checkForUpdates error:', err);
+    });
+  }, 3000);
 }
 
 function createWindow() {
