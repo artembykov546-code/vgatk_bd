@@ -225,8 +225,8 @@ async function loadUser() {
     var user = window.Session ? window.Session.getUser() : null;
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return false; }
-        try { user = JSON.parse(savedUser); } catch (e) { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; return false; }
+        if (!savedUser) { window.location.href = '/'; return false; }
+        try { user = JSON.parse(savedUser); } catch (e) { localStorage.removeItem('currentUser'); window.location.href = '/'; return false; }
     }
     currentUser = user;
 
@@ -256,7 +256,7 @@ function bindHeaderButtons() {
         logoutBtn.__bound = true;
         logoutBtn.onclick = function() {
             if (window.Session && typeof window.Session.logout === 'function') { window.Session.logout(); }
-            else { localStorage.removeItem('currentUser'); window.location.href = '/index.html'; }
+            else { localStorage.removeItem('currentUser'); window.location.href = '/'; }
         };
     }
     var menuToggle = document.getElementById('menuToggle');
@@ -410,7 +410,7 @@ function renderInvites() {
         if (isRegistered) { statusClass = 'registered'; statusLabel = '🔐 Зарегистрирован'; }
         else if (isUsed) { statusClass = 'used'; statusLabel = '✅ Использован'; }
 
-        var registrationUrl = window.location.origin + '/register/index.html?code=' + invite.invite_code;
+        var registrationUrl = window.location.origin + '/register/?code=' + invite.invite_code;
         var codeHtml = '';
         var actionsHtml = '';
         var categoryDisplay = categoryLabels[invite.category] || invite.category || 'Другие';
@@ -485,7 +485,7 @@ function exportToPDF() {
 
     var cardsHtml = '';
     filtered.forEach(function(invite) {
-        var registrationUrl = window.location.origin + '/register/index.html?code=' + invite.invite_code;
+        var registrationUrl = window.location.origin + '/register/?code=' + invite.invite_code;
         cardsHtml +=
             '<div class="pdf-cut-card">' +
                 '<div class="pdf-card-name">' + invite.full_name + '</div>' +

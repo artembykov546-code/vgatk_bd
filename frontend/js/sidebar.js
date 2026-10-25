@@ -13,16 +13,16 @@
     function getSidebarHTML(activePage) {
         const items = [
             { label: 'Главное', type: 'label' },
-            { href: '/dashboard.html', icon: '🏠', text: 'Главная', key: 'dashboard' },
-            { href: '/employees/index.html', icon: '👨‍🏫', text: 'Сотрудники', key: 'employees' },
-            { href: '/students/index.html', icon: '👨‍🎓', text: 'Учащиеся', key: 'students' },
-            { href: '/graduates/index.html', icon: '🎓', text: 'Выпускники', key: 'graduates' },
-            { href: '/reports/index.html', icon: '📊', text: 'Отчёты', key: 'reports' },
+            { href: '/dashboard', icon: '🏠', text: 'Главная', key: 'dashboard' },
+            { href: '/employees/', icon: '👨‍🏫', text: 'Сотрудники', key: 'employees' },
+            { href: '/students/', icon: '👨‍🎓', text: 'Учащиеся', key: 'students' },
+            { href: '/graduates/', icon: '🎓', text: 'Выпускники', key: 'graduates' },
+            { href: '/reports/', icon: '📊', text: 'Отчёты', key: 'reports' },
             
             { label: 'Система', type: 'label', style: 'margin-top:12px;' },
-            { href: '/invites/index.html', icon: '📨', text: 'Пригласительные<br>коды', key: 'invites' },
-            { href: '/support/index.html', icon: '✉️', text: 'Обратная<br>связь', key: 'support' },
-            { href: '/profile/index.html', icon: '⚙️', text: 'Профиль', key: 'profile' }
+            { href: '/invites/', icon: '📨', text: 'Пригласительные<br>коды', key: 'invites' },
+            { href: '/support/', icon: '✉️', text: 'Обратная<br>связь', key: 'support' },
+            { href: '/profile/', icon: '⚙️', text: 'Профиль', key: 'profile' }
         ];
 
         let html = '<ul class="sidebar-nav">';

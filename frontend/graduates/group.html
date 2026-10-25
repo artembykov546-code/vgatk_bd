@@ -179,7 +179,7 @@
                 <h1 class="page-title">👁️ Просмотр группы <small id="groupTitle">загрузка...</small></h1>
             </div>
             <div class="header-actions" id="headerActions">
-                <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+                <a href="/graduates/" class="btn btn-secondary">← Назад к архиву</a>
                 <a href="#" id="distributionLink" class="btn btn-primary">📊 Распределение</a>
                 <button class="btn btn-success" id="exportPdfBtn">📄 Экспорт в PDF</button>
             </div>
@@ -232,7 +232,7 @@
         </div>
 
         <div class="form-actions no-print">
-            <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+            <a href="/graduates/" class="btn btn-secondary">← Назад к архиву</a>
             <button class="btn btn-success" id="exportPdfBtnBottom">📄 Экспорт в PDF</button>
         </div>
 
@@ -330,10 +330,10 @@ async function loadUser() {
     var user = window.Session ? window.Session.getUser() : null;
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        if (!savedUser) { window.location.href = '/'; return false; }
         try { user = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return false;
         }
     }
@@ -357,7 +357,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -476,7 +476,7 @@ async function loadGroupData() {
                     '<span class="icon">❌</span>' +
                     '<h3>ID группы не указан</h3>' +
                     '<p style="color:var(--text-muted);">Перейдите из списка групп</p>' +
-                    '<a href="/graduates/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>' +
+                    '<a href="/graduates/" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>' +
                 '</div>' +
             '</td></tr>';
         return;
@@ -502,7 +502,7 @@ async function loadGroupData() {
                         '<span class="icon">❌</span>' +
                         '<h3>Группа не найдена</h3>' +
                         '<p style="color:var(--text-muted);">Группа с ID ' + groupId + ' не существует</p>' +
-                        '<a href="/graduates/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>' +
+                        '<a href="/graduates/" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>' +
                     '</div>' +
                 '</td></tr>';
             return;
@@ -566,7 +566,7 @@ async function loadGroupData() {
         renderTable(graduatesList, distributionsMap);
 
         // 6. Устанавливаем ссылку на распределение
-        document.getElementById('distributionLink').href = '/graduates/distribution.html?group_id=' + groupId;
+        document.getElementById('distributionLink').href = '/graduates/distribution?group_id=' + groupId;
 
         showToast('✅ Загружено ' + graduatesList.length + ' выпускников', 'success');
 
@@ -578,7 +578,7 @@ async function loadGroupData() {
                     '<span class="icon">❌</span>' +
                     '<h3>Ошибка загрузки</h3>' +
                     '<p style="color:var(--text-muted);">' + error.message + '</p>' +
-                    '<a href="/graduates/index.html" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>' +
+                    '<a href="/graduates/" class="btn btn-primary" style="margin-top:16px;">Вернуться к архиву</a>' +
                 '</div>' +
             '</td></tr>';
         showToast('❌ Ошибка загрузки: ' + error.message, 'error');

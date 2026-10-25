@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Проверяем авторизацию с проверкой сессии
     const isAuth = await checkAuth();
     if (isAuth) {
-        navigateTo('/dashboard.html');
+        navigateTo('/dashboard');
         return;
     }
 
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         registerLink.addEventListener('click', function(e) {
             e.preventDefault();
             console.log('🔗 Переход на страницу регистрации...');
-            navigateTo('/register/index.html');
+            navigateTo('/register/');
         });
     }
 });
@@ -414,7 +414,7 @@ function loginSuccess(user, fullName) {
     localStorage.setItem('currentUser', JSON.stringify(userData));
     
     console.log('✅ Вход выполнен, перенаправление на dashboard...');
-    navigateTo('/dashboard.html');
+    navigateTo('/dashboard');
 }
 
 async function handleChangePassword() {

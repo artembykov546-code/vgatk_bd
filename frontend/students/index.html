@@ -766,10 +766,10 @@ async function loadUser() {
     
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return; }
+        if (!savedUser) { window.location.href = '/'; return; }
         try { currentUser = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
     } else {
@@ -816,7 +816,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -944,7 +944,7 @@ async function performSearch(query) {
                 var statusLabel = getStatusLabel(s.status);
                 
                 groupHtml += 
-                    '<a href="/students/profile.html?id=' + s.id + '" class="result-item">' +
+                    '<a href="/students/profile?id=' + s.id + '" class="result-item">' +
                         '<span class="avatar">' + genderIcon + '</span>' +
                         '<div class="info">' +
                             '<div class="name">' + highlightText(s.full_name, query) + '</div>' +
@@ -1112,7 +1112,7 @@ async function loadGroups() {
 
                     sectionHtml += 
                         '<div class="group-card ' + (isMyGroup ? 'my-group' : '') + '">' +
-                            '<a href="/students/group.html?id=' + g.id + '" class="group-name">' + g.name + '</a>' +
+                            '<a href="/students/group?id=' + g.id + '" class="group-name">' + g.name + '</a>' +
                             '<div class="group-meta">' +
                                 '<span class="badge-type ' + typeBadge + '">' + typeLabel + '</span>' +
                                 (period ? ' • ' + period : '') +
@@ -1299,7 +1299,7 @@ function bindPageHandlers() {
     };
 
     document.getElementById('createGroupBtn').onclick = function() {
-        window.location.href = '/students/create-group.html';
+        window.location.href = '/students/create-group';
     };
 }
 

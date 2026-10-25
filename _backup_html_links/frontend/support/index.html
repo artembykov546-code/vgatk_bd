@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Обратная связь | vgatk_bd</title>
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/components.css">
+    
+    <!-- ===== SUPABASE ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- ===== СЕССИЯ, ШАПКА, САЙДБАР ===== -->
+    <script src="/js/session.js"></script>
+    <script src="/js/header.js?v=2"></script>
+    <script src="/js/sidebar.js?v=2"></script>
+
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+
+        .support-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            gap: 20px;
+        }
+        @media (max-width: 1200px) {
+            .support-grid { grid-template-columns: 280px 1fr; }
+            .support-grid > .support-card:nth-child(3) { grid-column: 1 / -1; }
+        }
+        @media (max-width: 800px) {
+            .support-grid { grid-template-columns: 1fr; }
+        }
+
+        .support-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+        .support-card h2 {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .support-card h2 .badge-count {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: var(--bg-main);
+            padding: 2px 10px;
+            border-radius: 12px;
+        }
+
+        .support-field {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 12px 0 6px;
+        }
+        .support-field:first-of-type { margin-top: 0; }
+
+        .support-input,
+        .support-card textarea,
+        .support-card select {
+            width: 100%;
+            box-sizing: border-box;
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            padding: 10px 14px;
+            font: inherit;
+            font-size: 14px;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            transition: var(--transition);
+        }
+        .support-input:focus,
+        .support-card textarea:focus,
+        .support-card select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+        .support-card textarea {
+            min-height: 110px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .support-btn {
+            border: none;
+            border-radius: var(--border-radius);
+            background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+            color: white;
+            padding: 10px 20px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .support-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+        }
+        .support-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .support-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        .support-item {
+            width: 100%;
+            text-align: left;
+            background: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: var(--border-radius);
+            padding: 12px 14px;
+            cursor: pointer;
+            color: inherit;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .support-item:hover {
+            border-color: var(--primary-light);
+            background: var(--bg-hover);
+        }
+        .support-item.active {
+            border-color: var(--primary);
+            background: var(--bg-active);
+        }
+        .support-item b {
+            display: block;
+            color: var(--primary);
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        .support-item .support-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .support-muted { color: var(--text-muted); font-size: 13px; }
+
+        .support-thread {
+            max-height: 40vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 12px 0;
+        }
+        .support-reply {
+            background: var(--bg-main);
+            padding: 12px 14px;
+            border-radius: var(--border-radius);
+            white-space: pre-wrap;
+            font-size: 14px;
+            border-left: 3px solid var(--border);
+        }
+        .support-reply.mine {
+            background: #DBEAFE;
+            border-left-color: var(--primary-light);
+        }
+        .support-reply .reply-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .support-notice {
+            padding: 12px 16px;
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            border-radius: var(--border-radius);
+            color: #1E40AF;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .support-notice.hidden { display: none; }
+
+        .support-status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .support-status-open { background: #FEF3C7; color: #92400E; }
+        .support-status-in_progress { background: #DBEAFE; color: #1E40AF; }
+        .support-status-postponed { background: #F3F4F6; color: #6B7280; }
+        .support-status-answered { background: #D1FAE5; color: #065F46; }
+        .support-status-resolved { background: #D1FAE5; color: #065F46; }
+        .support-status-closed { background: #F3F4F6; color: #6B7280; }
+
+        .support-hidden { display: none !important; }
+
+        .notification-item {
+            padding: 10px 12px;
+            background: var(--bg-main);
+            border-radius: var(--border-radius);
+            margin-bottom: 8px;
+            font-size: 13px;
+            border-left: 3px solid var(--border);
+        }
+        .notification-item.unread {
+            background: #DBEAFE;
+            border-left-color: var(--primary-light);
+        }
+        .notification-item b {
+            display: block;
+            color: var(--primary);
+            font-size: 13px;
+            margin-bottom: 2px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon { font-size: 48px; display: block; margin-bottom: 12px; }
+        
+        .toast-notification {
+            position: fixed; top: 80px; right: 20px; padding: 14px 20px;
+            border-radius: var(--border-radius); color: white; font-weight: 500;
+            z-index: 9999; animation: slideUp 0.3s ease; max-width: 400px;
+            box-shadow: var(--shadow-modal); font-size: 14px;
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close {
+            float: right; margin-left: 16px; cursor: pointer;
+            font-size: 18px; opacity: 0.8;
+        }
+        .toast-notification .toast-close:hover { opacity: 1; }
+    </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1E3A8A">
+</head>
+<body>
+
+    <!-- ===== HEADER (рендерится через header.js) ===== -->
+    <header class="header"></header>
+
+    <!-- ===== SIDEBAR (рендерится через sidebar.js) ===== -->
+    <aside class="sidebar" id="sidebar"></aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="main-content">
+        <!-- Кнопку #menuToggle создает sidebar.js автоматически -->
+
+        <div class="page-container">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">✉️ Обратная связь <small>обращения и ответы</small></h1>
+                </div>
+            </div>
+
+            <div id="notice" class="support-notice hidden"></div>
+
+            <div class="support-grid">
+                <!-- ЛЕВАЯ КОЛОНКА: Новое обращение + Уведомления -->
+                <div>
+                    <div class="support-card">
+                        <h2>Новое обращение</h2>
+                        <label class="support-field" for="subject">Тема</label>
+                        <input class="support-input" id="subject" maxlength="200" placeholder="Кратко опишите тему">
+
+                        <label class="support-field" for="body">Сообщение</label>
+                        <textarea id="body" maxlength="10000" placeholder="Подробно опишите проблему или вопрос..."></textarea>
+
+                        <button class="support-btn" id="send">📤 Отправить обращение</button>
+                    </div>
+
+                    <div class="support-card" style="margin-top:16px;">
+                        <h2>Уведомления <span id="unreadCount" class="badge-count"></span></h2>
+                        <div id="notifications" class="support-muted">Загрузка…</div>
+                    </div>
+                </div>
+
+                <!-- СРЕДНЯЯ КОЛОНКА: Список обращений -->
+                <div class="support-card">
+                    <h2>
+                        <span>📋 Обращения</span>
+                        <span id="adminTools" class="support-hidden">
+                            <select id="filter" style="width:auto;font-size:12px;padding:4px 8px;">
+                                <option value="all">Все статусы</option>
+                                <option value="open">Новые</option>
+                                <option value="in_progress">В работе</option>
+                                <option value="postponed">Отложено</option>
+                                <option value="answered">Есть ответ</option>
+                                <option value="resolved">Исполнено</option>
+                                <option value="closed">Закрыто</option>
+                            </select>
+                        </span>
+                    </h2>
+                    <div id="messages" class="support-list"></div>
+                </div>
+
+                <!-- ПРАВАЯ КОЛОНКА: Переписка -->
+                <div class="support-card">
+                    <h2>💬 Переписка</h2>
+                    <div id="thread" class="support-thread support-muted">Выберите обращение из списка слева.</div>
+
+                    <form id="replyForm" class="support-hidden">
+                        <textarea id="replyText" maxlength="10000" placeholder="Введите ответ..."></textarea>
+                        <button class="support-btn" type="submit">📨 Отправить ответ</button>
+                    </form>
+
+                    <div id="statusControl" class="support-hidden" style="margin-top:12px;">
+                        <label class="support-field">Статус обращения</label>
+                        <select id="statusSelect">
+                            <option value="open">🆕 Новое</option>
+                            <option value="in_progress">🔄 В работе</option>
+                            <option value="postponed">⏸️ Отложено</option>
+                            <option value="answered">💬 Есть ответ</option>
+                            <option value="resolved">✅ Исполнено</option>
+                            <option value="closed">🔒 Закрыто</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script>
+// ============================================================
+// КОНФИГУРАЦИЯ
+// ============================================================
+const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
+
+let db = null;
+let admin = false;
+let selected = null;
+let rows = [];
+let notificationsData = [];
+let currentUser = null;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ============================================================
+// УВЕДОМЛЕНИЕ (INLINE)
+// ============================================================
+function note(text, type = 'info') {
+    const el = $('notice');
+    el.textContent = text;
+    el.classList.remove('hidden');
+    el.style.background = type === 'error' ? '#FEE2E2' : '#EFF6FF';
+    el.style.color = type === 'error' ? '#991B1B' : '#1E40AF';
+    el.style.borderColor = type === 'error' ? '#FECACA' : '#BFDBFE';
+    setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(message, type = 'success') {
+    const existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.innerHTML = `<span class="toast-close" onclick="this.parentElement.remove()">×</span>${message}`;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => { if (toast.parentElement) toast.remove(); }, 5000);
+}
+
+// ============================================================
+// СТАТУСЫ
+// ============================================================
+const STATUS_LABELS = {
+    'open': '🆕 Новое',
+    'in_progress': '🔄 В работе',
+    'postponed': '⏸️ Отложено',
+    'answered': '💬 Есть ответ',
+    'resolved': '✅ Исполнено',
+    'closed': '🔒 Закрыто'
+};
+
+function statusName(s) { return STATUS_LABELS[s] || s; }
+function statusClass(s) { return 'support-status-' + (s || 'open'); }
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+async function init() {
+    // 1. Проверяем сессию
+    if (window.Session) {
+        const isValid = await window.Session.check();
+        if (!isValid) return;
+        db = window.Session.supabase();
+        currentUser = window.Session.getUser();
+    }
+
+    // 2. Если Session не сработал, создаем клиент вручную
+    if (!db) {
+        console.warn('⚠️ Supabase клиент не получен из Session, создаем локально');
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        try {
+            currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+        } catch { currentUser = null; }
+    }
+
+    if (!currentUser?.id) {
+        window.location.href = '/index.html';
+        return;
+    }
+
+    admin = ['admin', 'super_admin'].includes(currentUser.role);
+
+    // 3. Настройка UI
+    $('adminTools').classList.toggle('support-hidden', !admin);
+
+    // 4. Загрузка данных
+    await load();
+    await loadNotifications();
+    subscribeRealtime();
+}
+
+// ============================================================
+// REALTIME ПОДПИСКИ
+// ============================================================
+function subscribeRealtime() {
+    if (!db || !currentUser?.id) return;
+
+    db.channel('support-updates-' + currentUser.id)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages' }, () => load())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_replies' }, () => {
+            load();
+            loadNotifications();
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'support_notifications', filter: 'user_id=eq.' + currentUser.id }, () => loadNotifications())
+        .subscribe();
+}
+
+// ============================================================
+// ЗАГРУЗКА ОБРАЩЕНИЙ
+// ============================================================
+async function load() {
+    try {
+        let q = db.from('support_messages').select('*').order('updated_at', { ascending: false });
+
+        if (!admin) {
+            q = q.eq('sender_user_id', currentUser.id);
+        }
+
+        const f = $('filter').value;
+        if (admin && f !== 'all') {
+            q = q.eq('status', f);
+        }
+
+        const r = await q;
+        if (r.error) throw r.error;
+        rows = r.data || [];
+        drawMessages();
+    } catch (e) {
+        console.error('Ошибка загрузки обращений:', e);
+        note('Ошибка загрузки: ' + (e.message || e), 'error');
+    }
+}
+
+// ============================================================
+// ОТРИСОВКА СПИСКА ОБРАЩЕНИЙ
+// ============================================================
+function drawMessages() {
+    const box = $('messages');
+    box.innerHTML = '';
+
+    if (!rows.length) {
+        box.innerHTML = '<div class="empty-state"><span class="icon">📭</span><p>Обращений пока нет</p></div>';
+        return;
+    }
+
+    rows.forEach(m => {
+        const btn = document.createElement('button');
+        btn.className = 'support-item' + (selected === m.id ? ' active' : '');
+        btn.innerHTML = `
+            <b>${esc(m.subject)}</b>
+            <div class="support-meta">
+                <span class="support-status-badge ${statusClass(m.status)}">${esc(statusName(m.status))}</span>
+                <span>${new Date(m.created_at).toLocaleString('ru-RU')}</span>
+            </div>
+        `;
+        btn.onclick = () => openMessage(m.id);
+        box.appendChild(btn);
+    });
+}
+
+// ============================================================
+// ОТКРЫТИЕ ОБРАЩЕНИЯ
+// ============================================================
+async function openMessage(id) {
+    selected = id;
+    drawMessages();
+
+    const m = rows.find(x => x.id === id);
+    if (!m) return;
+
+    try {
+        const r = await db.from('support_replies').select('*').eq('message_id', id).order('created_at');
+        if (r.error) throw r.error;
+
+        const replies = r.data || [];
+
+        let threadHtml = `
+            <div class="support-reply">
+                <b>${esc(m.subject)}</b>
+                <div style="margin-top:6px;">${esc(m.body)}</div>
+                <div class="reply-meta">${new Date(m.created_at).toLocaleString('ru-RU')}</div>
+            </div>
+        `;
+
+        replies.forEach(x => {
+            const isMine = x.sender_user_id === currentUser.id;
+            const senderLabel = isMine ? 'Вы' : (admin ? 'Пользователь' : 'Администратор');
+            threadHtml += `
+                <div class="support-reply ${isMine ? 'mine' : ''}">
+                    ${esc(x.body)}
+                    <div class="reply-meta">${new Date(x.created_at).toLocaleString('ru-RU')} · ${senderLabel}</div>
+                </div>
+            `;
+        });
+
+        $('thread').innerHTML = threadHtml;
+        $('replyForm').classList.remove('support-hidden');
+        $('statusControl').classList.toggle('support-hidden', !admin);
+        $('statusSelect').value = m.status || 'open';
+
+        // Отмечаем уведомления как прочитанные
+        await db.from('support_notifications').update({ is_read: true }).eq('user_id', currentUser.id).eq('message_id', id);
+    } catch (e) {
+        console.error('Ошибка загрузки переписки:', e);
+        note('Ошибка загрузки переписки: ' + (e.message || e), 'error');
+    }
+}
+
+// ============================================================
+// ОТПРАВКА НОВОГО ОБРАЩЕНИЯ
+// ============================================================
+$('send').onclick = async () => {
+    const subject = $('subject').value.trim();
+    const body = $('body').value.trim();
+
+    if (!subject || !body) {
+        note('Заполните тему и сообщение.', 'error');
+        return;
+    }
+
+    const btn = $('send');
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Отправка...';
+
+    try {
+        const r = await db.from('support_messages').insert({
+            sender_user_id: currentUser.id,
+            subject,
+            body
+        }).select().single();
+
+        if (r.error) throw r.error;
+
+        $('subject').value = '';
+        $('body').value = '';
+        showToast('✅ Обращение отправлено!', 'success');
+
+        await load();
+        await openMessage(r.data.id);
+    } catch (e) {
+        console.error('Ошибка отправки:', e);
+        note('Ошибка отправки: ' + (e.message || e), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '📤 Отправить обращение';
+    }
+};
+
+// ============================================================
+// ОТПРАВКА ОТВЕТА
+// ============================================================
+$('replyForm').onsubmit = async (e) => {
+    e.preventDefault();
+
+    const body = $('replyText').value.trim();
+    if (!body || !selected) return;
+
+    const btn = $('replyForm').querySelector('.support-btn');
+    btn.disabled = true;
+
+    try {
+        const m = rows.find(x => x.id === selected);
+
+        const r = await db.from('support_replies').insert({
+            message_id: selected,
+            sender_user_id: currentUser.id,
+            body
+        }).select().single();
+
+        if (r.error) throw r.error;
+
+        const next = admin ? 'answered' : 'in_progress';
+        await db.from('support_messages').update({
+            status: next,
+            updated_at: new Date().toISOString()
+        }).eq('id', selected);
+
+        // Уведомление получателю
+        const recipient = admin ? m.sender_user_id : m.recipient_user_id;
+        if (recipient) {
+            await db.from('support_notifications').insert({
+                user_id: recipient,
+                message_id: selected,
+                reply_id: r.data.id,
+                kind: 'reply',
+                title: 'Новый ответ по обращению',
+                body: body.slice(0, 500)
+            });
+        }
+
+        $('replyText').value = '';
+        await load();
+        await openMessage(selected);
+        showToast('✅ Ответ отправлен!', 'success');
+    } catch (e) {
+        console.error('Ошибка отправки ответа:', e);
+        note('Ошибка: ' + (e.message || e), 'error');
+    } finally {
+        btn.disabled = false;
+    }
+};
+
+// ============================================================
+// СМЕНА СТАТУСА (только админ)
+// ============================================================
+$('statusSelect').onchange = async () => {
+    if (!admin || !selected) return;
+
+    try {
+        const m = rows.find(x => x.id === selected);
+        const status = $('statusSelect').value;
+
+        const r = await db.from('support_messages').update({
+            status,
+            updated_at: new Date().toISOString()
+        }).eq('id', selected);
+
+        if (r.error) throw r.error;
+
+        const recipient = m.sender_user_id;
+        if (recipient) {
+            await db.from('support_notifications').insert({
+                user_id: recipient,
+                message_id: selected,
+                kind: 'status',
+                title: 'Изменён статус обращения',
+                body: 'Новый статус: ' + statusName(status)
+            });
+        }
+
+        await load();
+        showToast('✅ Статус обновлён', 'success');
+    } catch (e) {
+        console.error('Ошибка смены статуса:', e);
+        note('Ошибка: ' + (e.message || e), 'error');
+    }
+};
+
+// ============================================================
+// УВЕДОМЛЕНИЯ
+// ============================================================
+async function loadNotifications() {
+    try {
+        const r = await db.from('support_notifications')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false })
+            .limit(15);
+
+        if (r.error) throw r.error;
+
+        notificationsData = r.data || [];
+        const unread = notificationsData.filter(x => !x.is_read).length;
+
+        $('unreadCount').textContent = unread ? unread + ' новых' : '';
+
+        if (!notificationsData.length) {
+            $('notifications').innerHTML = '<div class="support-muted">Уведомлений нет</div>';
+            return;
+        }
+
+        $('notifications').innerHTML = notificationsData.map(x => `
+            <div class="notification-item ${!x.is_read ? 'unread' : ''}">
+                <b>${esc(x.title)}</b>
+                <div>${esc(x.body)}</div>
+                <div class="support-muted" style="font-size:11px;margin-top:2px;">
+                    ${new Date(x.created_at).toLocaleString('ru-RU')}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error('Ошибка загрузки уведомлений:', e);
+        $('notifications').innerHTML = '<div class="support-muted">Уведомления недоступны. Выполните миграцию support_messages.sql</div>';
+    }
+}
+
+// ============================================================
+// ФИЛЬТР
+// ============================================================
+$('filter').onchange = load;
+
+// ============================================================
+// ЗАПУСК
+// ============================================================
+init();
+</script>
+
+</body>
+</html>

@@ -83,7 +83,7 @@
                     window.Session.logout();
                 } else {
                     localStorage.removeItem('currentUser');
-                    window.location.href = '/index.html';
+                    window.location.href = '/';
                 }
             });
         }

@@ -736,10 +736,10 @@ async function loadUser() {
     var user = window.Session ? window.Session.getUser() : null;
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return; }
+        if (!savedUser) { window.location.href = '/'; return; }
         try { currentUser = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return;
         }
     } else {
@@ -763,7 +763,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -1381,7 +1381,7 @@ async function loadStudentData() {
         console.error('❌ ID учащегося не указан в URL');
         document.getElementById('studentNameDisplay').textContent = 'ID не указан';
         showToast('❌ ID учащегося не указан в URL', 'error');
-        setTimeout(function() { window.location.href = '/students/index.html'; }, 2000);
+        setTimeout(function() { window.location.href = '/students/'; }, 2000);
         return;
     }
 
@@ -1402,7 +1402,7 @@ async function loadStudentData() {
         if (!student) {
             console.error('❌ Учащийся не найден, ID:', studentId);
             showToast('❌ Учащийся не найден', 'error');
-            setTimeout(function() { window.location.href = '/students/index.html'; }, 1500);
+            setTimeout(function() { window.location.href = '/students/'; }, 1500);
             return;
         }
 
@@ -1886,7 +1886,7 @@ async function saveStudent() {
         console.log('✅ Все данные сохранены!');
         showToast('✅ Данные учащегося обновлены!', 'success');
         setTimeout(function() {
-            window.location.href = '/students/profile.html?id=' + studentId;
+            window.location.href = '/students/profile?id=' + studentId;
         }, 1000);
 
     } catch (error) {

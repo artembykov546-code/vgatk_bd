@@ -1,0 +1,2074 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Отчёты | vgatk_bd</title>
+
+    <!-- ===== FAVICON ===== -->
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
+    <!-- ===== ШРИФТЫ ===== -->
+    <link href="https://fonts.googleapis.com/css2?family=Lobster&display=swap" rel="stylesheet">
+
+    <!-- ===== ЕДИНЫЙ ФАЙЛ ДИЗАЙНА ===== -->
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- ===== SUPABASE ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- ===== Сессия ===== -->
+    <script src="/js/session.js"></script>
+
+    <!-- ===== Наименование УО (Шапка) ===== -->
+    <script src="/js/header.js?v=2"></script>
+
+    <!-- ===== Боковое меню ===== -->
+    <script src="/js/sidebar.js?v=2"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <style>
+        .page-container { max-width: 1400px; margin: 0 auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+        .page-title { font-size: 24px; font-weight: 700; color: var(--primary); }
+        .page-title small { font-weight: 400; font-size: 14px; color: var(--text-muted); }
+
+        .report-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .report-card {
+            background: var(--bg-card);
+            padding: 6px 10px;
+            border-radius: var(--border-radius);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .report-card:hover {
+            border-color: var(--primary-light);
+            transform: translateY(-2px);
+        }
+        .report-card.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        .report-card .icon {
+            font-size: 14px;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .filters-panel {
+            background: var(--bg-card);
+            padding: 10px 14px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 6px 10px;
+        }
+        .filters-panel .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .filters-panel .filter-group label {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .filters-panel .filter-group select {
+            padding: 4px 6px;
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 11px;
+            background: var(--bg-card);
+        }
+        .filters-panel .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary-light);
+        }
+        .filters-panel .filter-group input {
+            padding: 4px 6px;
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 11px;
+            background: var(--bg-card);
+        }
+        .filters-panel .filter-group input:focus {
+            outline: none;
+            border-color: var(--primary-light);
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+            align-items: center;
+        }
+        .export-buttons .btn {
+            padding: 6px 14px;
+            font-size: 12px;
+        }
+        .btn-export-doc {
+            background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+            color: white;
+        }
+        .btn-export-doc:hover {
+            background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%);
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            font-family: 'Times New Roman', Times, serif;
+            table-layout: auto;
+            min-width: 100%;
+        }
+        .table thead {
+            background: var(--bg-main);
+        }
+        .table th {
+            padding: 6px 10px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            position: sticky;
+            top: 0;
+            background: var(--bg-main);
+            white-space: nowrap;
+            word-break: keep-all;
+        }
+        .table td {
+            padding: 5px 10px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            font-size: 12px;
+            font-family: 'Times New Roman', Times, serif;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 200px;
+            white-space: normal;
+            line-height: 1.3;
+        }
+        .table tbody tr:hover {
+            background: rgba(44, 62, 143, 0.04);
+        }
+
+        .report-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            padding: 8px 14px;
+            background: var(--bg-main);
+            border-radius: var(--border-radius);
+            margin-top: 8px;
+            font-size: 12px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .report-stats .stat-item {
+            display: flex;
+            gap: 4px;
+        }
+        .report-stats .stat-item .label {
+            color: var(--text-muted);
+        }
+        .report-stats .stat-item .value {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .chart-container {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+        .chart-container .chart-wrapper {
+            max-width: 450px;
+            margin: 0 auto;
+            max-height: 320px;
+        }
+        .chart-container h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        .chart-container .chart-note {
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+
+        .toast-notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideUp 0.3s ease;
+            max-width: 400px;
+            box-shadow: var(--shadow-modal);
+        }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--danger); }
+        .toast-notification .toast-close {
+            float: right;
+            margin-left: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+        .empty-state .icon {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: var(--bg-card);
+            border-radius: var(--border-radius-xl);
+            padding: 24px;
+            max-width: 700px;
+            width: 95%;
+            max-height: 92vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-modal);
+            animation: slideUp 0.3s ease;
+            border: 1px solid var(--border);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 16px;
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: var(--transition);
+            line-height: 1;
+        }
+        .modal-close:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+        .modal-body {
+            padding: 8px 0 16px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 2px solid var(--border);
+        }
+        .modal .form-group {
+            margin-bottom: 12px;
+        }
+        .modal .form-label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+        .modal .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: var(--border-radius);
+            font-size: 13px;
+            transition: var(--transition);
+            background: var(--bg-card);
+            box-sizing: border-box;
+            font-family: 'Times New Roman', Times, serif;
+        }
+        .modal .form-control:focus {
+            outline: none;
+            border-color: var(--primary-light);
+            box-shadow: 0 0 0 4px rgba(44, 62, 143, 0.1);
+        }
+        .modal .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .modal .pdf-preview {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--border);
+            max-height: 280px;
+            overflow-y: auto;
+            font-size: 11px;
+            font-family: 'Times New Roman', Times, serif;
+            white-space: pre-wrap;
+        }
+
+        /* Стили для PDF */
+        .pdf-content {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            padding: 6px;
+            background: white;
+            color: #000;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .pdf-content .pdf-header {
+            text-align: center;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 2px solid #000;
+        }
+        .pdf-content .pdf-header .pdf-title {
+            font-size: 16pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .pdf-content .pdf-header .pdf-subtitle {
+            font-size: 14pt;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+        .pdf-content .pdf-header .pdf-info {
+            font-size: 11pt;
+            margin-top: 2px;
+            color: #555;
+        }
+        .pdf-content .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10pt;
+            margin-top: 4px;
+            table-layout: auto;
+        }
+        .pdf-content .pdf-table th {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            background: #e9ecef;
+            text-align: left;
+            font-weight: 700;
+            font-size: 9.5pt;
+            word-break: keep-all;
+            white-space: nowrap;
+        }
+        .pdf-content .pdf-table td {
+            border: 1px solid #000;
+            padding: 2px 4px;
+            font-size: 9pt;
+            word-wrap: break-word;
+            word-break: break-word;
+            max-width: 120px;
+            white-space: normal;
+            line-height: 1.2;
+        }
+        .pdf-content .pdf-footer {
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px solid #000;
+            font-size: 11pt;
+        }
+    </style>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1E3A8A">
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="header"></header>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar"></aside>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+    <div class="page-container">
+
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">📊 Отчёты <small>генерация официальных отчётов</small></h1>
+            </div>
+        </div>
+
+        <div class="report-selector" id="reportSelector">
+            <div class="report-card active" data-report="students"><span class="icon">👨‍🎓</span>Учащиеся</div>
+            <div class="report-card" data-report="groups"><span class="icon">📚</span>Группы</div>
+            <div class="report-card" data-report="graduates"><span class="icon">🎓</span>Выпускники</div>
+            <div class="report-card" data-report="expelled"><span class="icon">❌</span>Отчисленные</div>
+            <div class="report-card" data-report="academic"><span class="icon">📚</span>Академ. отпуск</div>
+            <div class="report-card" data-report="citizenship"><span class="icon">🌍</span>По гражданству</div>
+            <div class="report-card" data-report="address"><span class="icon">📍</span>По адресам</div>
+            <div class="report-card" data-report="dormitory"><span class="icon">🏠</span>Проживают в общежитии</div>
+            <div class="report-card" data-report="accounting"><span class="icon">📋</span>По учёту</div>
+            <div class="report-card" data-report="age"><span class="icon">📅</span>По возрасту</div>
+            <div class="report-card" data-report="gender"><span class="icon">🧑‍🤝‍🧑</span>По полу</div>
+            <div class="report-card" data-report="by_groups"><span class="icon">📁</span>По группам</div>
+            <div class="report-card" data-report="statistics"><span class="icon">📊</span>Статистика</div>
+            <div class="report-card" data-report="underage"><span class="icon">🧒</span>Несовершеннолетние</div>
+            <div class="report-card" data-report="adult"><span class="icon">👨</span>Совершеннолетние</div>
+            <div class="report-card" data-report="target_training"><span class="icon">🎯</span>Целевая подготовка</div>
+            <div class="report-card" data-report="avg_grade_school"><span class="icon">🏫</span>Ср.балл со школы</div>
+            <div class="report-card" data-report="avg_grade_college"><span class="icon">📊</span>Ср.балл в колледже</div>
+        </div>
+
+        <div class="filters-panel" id="filtersPanel"></div>
+
+        <div class="export-buttons">
+            <button class="btn btn-success" id="exportPDFBtn">📄 PDF</button>
+            <button class="btn btn-export-doc" id="exportDOCBtn">📝 DOC</button>
+        </div>
+
+        <div class="chart-container" id="chartContainer" style="display:none;">
+            <h3 id="chartTitle">📊 Распределение данных</h3>
+            <div class="chart-wrapper"><canvas id="statsChart"></canvas></div>
+            <div class="chart-note" id="chartNote">* Диаграмма отображает распределение данных</div>
+        </div>
+
+        <div class="table-container">
+            <table class="table">
+                <thead id="reportThead">
+                    <tr>
+                        <th colspan="10" style="text-align:center;padding:20px;">Выберите отчёт</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTbody">
+                    <tr>
+                        <td colspan="10">
+                            <div class="empty-state"><span class="icon">📊</span><p>Выберите отчёт для просмотра</p></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="report-stats" id="reportStats">
+            <div class="stat-item"><span class="label">Всего записей:</span><span class="value" id="totalRecords">0</span></div>
+            <div class="stat-item"><span class="label">Дата отчёта:</span><span class="value" id="reportDate">—</span></div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ===== МОДАЛЬНОЕ ОКНО PDF ===== -->
+<div class="modal-overlay" id="pdfModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h2 class="modal-title">📄 Экспорт в PDF</h2>
+            <button class="modal-close" id="pdfModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Заголовок отчёта</label>
+                <input type="text" class="form-control" id="pdfTitle" value="ОТЧЁТ">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Подзаголовок</label>
+                <input type="text" class="form-control" id="pdfSubtitle" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Должность руководителя</label>
+                <input type="text" class="form-control" id="pdfDirectorPosition" value="Директор">
+            </div>
+            <div class="form-group">
+                <label class="form-label">ФИО руководителя</label>
+                <input type="text" class="form-control" id="pdfDirectorName" value="">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Предпросмотр</label>
+                <div class="pdf-preview" id="pdfPreview">Здесь будет предпросмотр вашего отчёта...</div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="pdfCancelBtn">Отмена</button>
+            <button class="btn btn-success" id="pdfGenerateBtn">📄 Сгенерировать PDF</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ============================================================
+var sb = null;
+var currentUser = null;
+var currentReport = 'students';
+var reportData = [];
+var reportColumns = [];
+var chartInstance = null;
+var allGroups = [];
+var allGraduationYears = [];
+var ageFilterOptions = { all: [], underage: [], adult: [] };
+
+var COLLEGE_NAME = 'Учреждение образования "Витебский государственный аграрно-технический колледж"';
+var REGIONS = ['Брестская', 'Витебская', 'Гомельская', 'Гродненская', 'Минская', 'Могилёвская'];
+var SETTLEMENT_TYPES = ['г.', 'гп', 'аг.', 'д.', 'пгт'];
+
+var REPORTS = {
+    students: { label: 'Учащиеся', icon: '👨‍🎓', columns: ['№ п/п', 'ФИО', 'Группа', 'Дата рождения', 'Возраст', 'Телефон', 'Гражданство', 'Пол'], filters: ['type', 'group', 'citizenship', 'gender'] },
+    groups: { label: 'Группы', icon: '📚', columns: ['№ п/п', 'Название', 'Тип', 'Дата начала', 'Дата окончания', 'Студентов'], filters: ['type'] },
+    graduates: { label: 'Выпускники', icon: '🎓', columns: ['№ п/п', 'ФИО', 'Группа', 'Тип', 'Год выпуска', 'Наименование организации', 'Адрес организации', 'Примечание', 'Телефон'], filters: ['type', 'graduation_year', 'group'] },
+    expelled: { label: 'Отчисленные', icon: '❌', columns: ['№ п/п', 'ФИО', 'Группа', 'Дата отчисления', 'Приказ', 'Статья', 'Телефон'], filters: ['group', 'type'] },
+    academic: { label: 'Академ. отпуск', icon: '📚', columns: ['№ п/п', 'ФИО', 'Группа', 'Дата начала', 'Приказ', 'Причина', 'Телефон'], filters: ['group', 'type'] },
+    citizenship: { label: 'По гражданству', icon: '🌍', columns: ['№ п/п', 'ФИО', 'Группа', 'Гражданство', 'Телефон'], filters: ['type', 'group', 'citizenship'] },
+    address: { label: 'По адресам', icon: '📍', columns: ['№ п/п', 'ФИО', 'Группа', 'Тип адреса', 'Область', 'Район', 'Нас. пункт', 'Адрес'], filters: ['type', 'group', 'region', 'district', 'settlement_type', 'city', 'address_type'] },
+    dormitory: { label: 'Проживают в общежитии', icon: '🏠', columns: ['№ п/п', 'ФИО', 'Группа', 'Пол', 'Блок/комната', 'Дата заселения', 'Телефон'], filters: ['type', 'group'] },
+    accounting: { label: 'По учёту', icon: '📋', columns: ['№ п/п', 'ФИО', 'Группа', 'Вид учёта', 'Дата постановки', 'Дата снятия', 'Статус учёта'], filters: ['type', 'group', 'accounting_type'] },
+    age: { label: 'По возрасту', icon: '📅', columns: ['№ п/п', 'ФИО', 'Группа', 'Дата рождения', 'Возраст', 'Телефон'], filters: ['type', 'group'] },
+    gender: { label: 'По полу', icon: '🧑‍🤝‍🧑', columns: ['№ п/п', 'ФИО', 'Группа', 'Пол'], filters: ['type', 'group', 'gender'] },
+    by_groups: { label: 'По группам', icon: '📁', columns: ['№ п/п', 'Группа', 'Учащийся', 'Статус'], filters: ['type', 'group'] },
+    statistics: { label: 'Статистика', icon: '📊', columns: ['№ п/п', 'Показатель', 'Значение', 'Примечание'], filters: [] },
+    underage: { label: 'Несовершеннолетние', icon: '🧒', columns: ['№ п/п', 'ФИО', 'Группа', 'Дата рождения', 'Возраст', 'Телефон'], filters: ['type', 'group', 'age'] },
+    adult: { label: 'Совершеннолетние (18+)', icon: '👨', columns: ['№ п/п', 'ФИО', 'Группа', 'Дата рождения', 'Возраст', 'Телефон'], filters: ['type', 'group', 'age'] },
+    target_training: { label: 'Целевая подготовка', icon: '🎯', columns: ['№ п/п', 'ФИО', 'Группа', 'Заказчик', '№ договора', 'Срок отработки', 'Телефон'], filters: ['type', 'group'] },
+    avg_grade_school: { label: 'Ср.балл со школы', icon: '🏫', columns: ['№ п/п', 'ФИО', 'Группа', 'Школа', 'Ср.балл аттестата', 'Год выпуска'], filters: ['type', 'group'] },
+    avg_grade_college: { label: 'Ср.балл в колледже', icon: '📊', columns: ['№ п/п', 'Категория', 'Наименование', 'Курс', 'Средний балл', 'Студентов', 'Примечание'], filters: ['type', 'course', 'group'] }
+};
+
+// ============================================================
+// ЖДЁМ ОТРИСОВКИ ШАПКИ (header.js / sidebar.js)
+// ============================================================
+function waitForHeaderAndSidebar(callback, attempts) {
+    attempts = attempts || 0;
+    var header = document.querySelector('header.header');
+    var sidebar = document.getElementById('sidebar');
+    var hasHeaderContent = header && (header.innerHTML.trim().length > 0 || header.children.length > 0);
+    var hasSidebarContent = sidebar && (sidebar.innerHTML.trim().length > 0 || sidebar.children.length > 0);
+
+    if (hasHeaderContent && hasSidebarContent) {
+        callback();
+        return;
+    }
+    if (attempts > 100) {
+        console.warn('⚠️ Шапка/сайдбар так и не отрисовались, продолжаем всё равно');
+        callback();
+        return;
+    }
+    setTimeout(function() { waitForHeaderAndSidebar(callback, attempts + 1); }, 100);
+}
+
+// ============================================================
+// ПОЛУЧЕНИЕ КЛИЕНТА SUPABASE
+// ============================================================
+function getSupabaseClient() {
+    if (window.Session && typeof window.Session.supabase === 'function') {
+        var client = window.Session.supabase();
+        if (client) return client;
+    }
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        return window.supabaseClient;
+    }
+    if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        var client = window.supabase.createClient(
+            'https://selbolepupendprhixas.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE'
+        );
+        window.supabaseClient = client;
+        return client;
+    }
+    return null;
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(message, type) {
+    type = type || 'success';
+    var existing = document.querySelector('.toast-notification');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.className = 'toast-notification toast-' + type;
+    toast.innerHTML = '<span class="toast-close" onclick="this.parentElement.remove()">×</span>' + message;
+    document.body.appendChild(toast);
+    setTimeout(function() { if (toast.parentElement) toast.remove(); }, 4000);
+}
+
+// ============================================================
+// ПОЛЬЗОВАТЕЛЬ
+// ============================================================
+async function loadUser() {
+    var user = window.Session ? window.Session.getUser() : null;
+    if (!user) {
+        var savedUser = localStorage.getItem('currentUser');
+        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        try { user = JSON.parse(savedUser); } catch (e) {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/index.html';
+            return false;
+        }
+    }
+    currentUser = user;
+
+    waitForHeaderAndSidebar(function() {
+        var nameEl = document.getElementById('userNameDisplay');
+        var roleEl = document.getElementById('userRoleDisplay');
+        if (nameEl) nameEl.textContent = user.full_name || user.name || user.login;
+        var roleMap = { 'super_admin': 'Супер-Админ', 'admin': 'Администратор', 'teacher': 'Преподаватель', 'master': 'Мастер ПО', 'viewer': 'Наблюдатель' };
+        if (roleEl) roleEl.textContent = roleMap[user.role] || user.role;
+        document.getElementById('pdfDirectorName').value = user.full_name || user.name || '__________________';
+    });
+    return true;
+}
+
+function bindHeaderButtons() {
+    var logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn && !logoutBtn.__bound) {
+        logoutBtn.__bound = true;
+        logoutBtn.onclick = function() {
+            if (window.Session && typeof window.Session.logout === 'function') {
+                window.Session.logout();
+            } else {
+                localStorage.removeItem('currentUser');
+                window.location.href = '/index.html';
+            }
+        };
+    }
+    var menuToggle = document.getElementById('menuToggle');
+    if (menuToggle && !menuToggle.__bound) {
+        menuToggle.__bound = true;
+        menuToggle.onclick = function() {
+            var sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.toggle('open');
+        };
+        if (window.innerWidth > 768) {
+            menuToggle.style.display = 'none';
+        } else {
+            menuToggle.style.display = 'inline-block';
+        }
+    }
+}
+
+// ============================================================
+// ФУНКЦИИ ФОРМАТИРОВАНИЯ
+// ============================================================
+function formatDateForReport(dateStr) {
+    if (!dateStr) return '—';
+    var d = new Date(dateStr);
+    return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function calcAge(birthDate) {
+    if (!birthDate) return '—';
+    var birth = new Date(birthDate);
+    var today = new Date();
+    var age = today.getFullYear() - birth.getFullYear();
+    if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+    return age;
+}
+
+function getStatusText(status) {
+    if (status === 'active') return 'Активен';
+    if (status === 'expelled') return 'Отчислен';
+    if (status === 'academic') return 'Академ. отпуск';
+    if (status === 'graduated') return 'Выпущен';
+    return status || '—';
+}
+
+function getTypeLabel(type) {
+    return type === 'sso' ? 'ССО' : 'ПТО';
+}
+
+function getCourseFromGroupName(groupName) {
+    if (!groupName) return '—';
+    var match = groupName.match(/^(\d+)/);
+    if (match) {
+        var num = parseInt(match[1]);
+        if (num >= 1 && num <= 4) return num + ' курс';
+        return '—';
+    }
+    return '—';
+}
+
+function getCourseNumberFromGroupName(groupName) {
+    if (!groupName) return 0;
+    var match = groupName.match(/^(\d+)/);
+    if (match) {
+        var num = parseInt(match[1]);
+        if (num >= 1 && num <= 4) return num;
+        return 0;
+    }
+    return 0;
+}
+
+// ============================================================
+// ЗАГРУЗКА СПРАВОЧНИКОВ
+// ============================================================
+async function loadGraduationYears() {
+    try {
+        var result = await sb
+            .from('graduates')
+            .select('graduation_year')
+            .not('graduation_year', 'is', null)
+            .order('graduation_year', { ascending: false });
+
+        if (result.error) throw result.error;
+
+        var years = {};
+        (result.data || []).forEach(function(item) {
+            if (item.graduation_year) years[String(item.graduation_year)] = true;
+        });
+        allGraduationYears = Object.keys(years).sort(function(a, b) { return parseInt(b) - parseInt(a); });
+    } catch (error) {
+        console.error('❌ Ошибка загрузки годов выпуска:', error);
+    }
+}
+
+async function loadAgeFilterOptions() {
+    try {
+        var result = await sb
+            .from('students')
+            .select('birth_date')
+            .not('birth_date', 'is', null)
+            .eq('status', 'active');
+
+        if (result.error) throw result.error;
+
+        var ages = {};
+        (result.data || []).forEach(function(s) {
+            if (s.birth_date) {
+                var age = calcAge(s.birth_date);
+                if (age !== '—') ages[age] = true;
+            }
+        });
+        var allAges = Object.keys(ages).map(Number).sort(function(a, b) { return a - b; });
+        var underageAges = allAges.filter(function(a) { return a >= 0 && a < 18; });
+        var adultAges = allAges.filter(function(a) { return a >= 18; });
+
+        ageFilterOptions = {
+            all: allAges,
+            underage: underageAges,
+            adult: adultAges
+        };
+    } catch (error) {
+        console.error('❌ Ошибка загрузки возрастов:', error);
+    }
+}
+
+async function loadGroupsFilter() {
+    try {
+        var result = await sb
+            .from('groups')
+            .select('id, name, type, is_archived')
+            .order('name');
+        if (result.error) throw result.error;
+        allGroups = result.data || [];
+    } catch (error) {
+        console.error('❌ Ошибка загрузки групп:', error);
+    }
+}
+
+// ============================================================
+// РЕНДЕРИНГ ФИЛЬТРОВ
+// ============================================================
+async function renderFilters(reportKey) {
+    var panel = document.getElementById('filtersPanel');
+    var report = REPORTS[reportKey];
+    if (!report) return;
+    var html = '';
+
+    if (reportKey === 'underage' || reportKey === 'adult') {
+        await loadAgeFilterOptions();
+    }
+
+    var filterOrder = ['type', 'group', 'course', 'age', 'citizenship', 'gender', 'region', 'district', 'settlement_type', 'city', 'address_type', 'accounting_type', 'graduation_year'];
+
+    filterOrder.forEach(function(filterKey) {
+        if (report.filters.indexOf(filterKey) === -1) return;
+        switch (filterKey) {
+            case 'type':
+                html += '<div class="filter-group"><label>Тип</label><select id="filterType"><option value="all">Все</option><option value="sso">ССО</option><option value="pto">ПТО</option></select></div>';
+                break;
+            case 'group':
+                html += '<div class="filter-group"><label>Группа</label><select id="filterGroup"><option value="all">Все группы</option></select></div>';
+                break;
+            case 'course':
+                html += '<div class="filter-group"><label>Курс</label><select id="filterCourse"><option value="all">Все курсы</option><option value="1">1 курс</option><option value="2">2 курс</option><option value="3">3 курс</option><option value="4">4 курс</option></select></div>';
+                break;
+            case 'age':
+                html += '<div class="filter-group"><label>Возраст</label><select id="filterAge"><option value="all">Все возрасты</option>';
+                var ageOptions = [];
+                if (reportKey === 'underage') {
+                    ageOptions = ageFilterOptions.underage || [];
+                    if (ageOptions.length === 0) html += '<option value="all" selected>Нет несовершеннолетних</option>';
+                } else if (reportKey === 'adult') {
+                    ageOptions = ageFilterOptions.adult || [];
+                    if (ageOptions.length === 0) html += '<option value="all" selected>Нет совершеннолетних</option>';
+                } else {
+                    ageOptions = ageFilterOptions.all || [];
+                }
+                ageOptions.forEach(function(age) {
+                    html += '<option value="' + age + '">' + age + ' лет</option>';
+                });
+                html += '</select></div>';
+                break;
+            case 'citizenship':
+                html += '<div class="filter-group"><label>Гражданство</label><select id="filterCitizenship"><option value="all">Все</option><option value="РБ">🇧🇾 РБ</option><option value="РФ">🇷🇺 РФ</option><option value="Другое">Другое</option></select></div>';
+                break;
+            case 'gender':
+                html += '<div class="filter-group"><label>Пол</label><select id="filterGender"><option value="all">Все</option><option value="Мужской">Мужской</option><option value="Женский">Женский</option></select></div>';
+                break;
+            case 'region':
+                html += '<div class="filter-group"><label>Область</label><select id="filterRegion"><option value="all">Все области</option>';
+                REGIONS.forEach(function(r) { html += '<option value="' + r + '">' + r + '</option>'; });
+                html += '</select></div>';
+                break;
+            case 'district':
+                html += '<div class="filter-group"><label>Район</label><select id="filterDistrict"><option value="all">Все районы</option></select></div>';
+                break;
+            case 'settlement_type':
+                html += '<div class="filter-group"><label>Тип нас. пункта</label><select id="filterSettlementType"><option value="all">Все типы</option>';
+                SETTLEMENT_TYPES.forEach(function(t) { html += '<option value="' + t + '">' + t + '</option>'; });
+                html += '</select></div>';
+                break;
+            case 'city':
+                html += '<div class="filter-group"><label>Населенный пункт</label><select id="filterCity"><option value="all">Все населённые пункты</option></select></div>';
+                break;
+            case 'address_type':
+                html += '<div class="filter-group"><label>Тип адреса</label><select id="filterAddressType"><option value="all">Все</option><option value="регистрации">Регистрация</option><option value="проживания">Проживание</option></select></div>';
+                break;
+            case 'accounting_type':
+                html += '<div class="filter-group"><label>Вид учёта</label><select id="filterAccounting"><option value="all">Все</option><option value="КДН">КДН</option><option value="ИДН">ИДН</option><option value="СОП">СОП</option><option value="НГЗ">НГЗ</option><option value="сирота">Сирота</option><option value="опека">Опека</option></select></div>';
+                break;
+            case 'graduation_year':
+                html += '<div class="filter-group"><label>Год выпуска</label><select id="filterGradYear"><option value="all">Все годы</option>';
+                allGraduationYears.forEach(function(y) { html += '<option value="' + y + '">' + y + '</option>'; });
+                html += '</select></div>';
+                break;
+        }
+    });
+
+    panel.innerHTML = html;
+    await updateGroupFilter();
+
+    document.querySelectorAll('.filters-panel select').forEach(function(select) {
+        select.addEventListener('change', generateReport);
+    });
+
+    var typeFilter = document.getElementById('filterType');
+    if (typeFilter) {
+        typeFilter.addEventListener('change', function() {
+            updateGroupFilter();
+            generateReport();
+        });
+    }
+
+    var courseFilter = document.getElementById('filterCourse');
+    if (courseFilter) {
+        courseFilter.addEventListener('change', function() {
+            updateGroupFilter();
+            generateReport();
+        });
+    }
+}
+
+async function updateGroupFilter() {
+    var select = document.getElementById('filterGroup');
+    if (!select) return;
+    var typeFilter = document.getElementById('filterType') ? document.getElementById('filterType').value : 'all';
+    var courseFilter = document.getElementById('filterCourse') ? document.getElementById('filterCourse').value : 'all';
+
+    var filteredGroups = allGroups;
+
+    if (currentReport === 'graduates' || currentReport === 'expelled' || currentReport === 'academic') {
+        filteredGroups = filteredGroups.filter(function(g) { return g.is_archived === true; });
+    } else {
+        filteredGroups = filteredGroups.filter(function(g) { return g.is_archived !== true; });
+    }
+
+    if (typeFilter !== 'all') {
+        filteredGroups = filteredGroups.filter(function(g) { return g.type === typeFilter; });
+    }
+    if (courseFilter !== 'all') {
+        var courseNum = parseInt(courseFilter);
+        filteredGroups = filteredGroups.filter(function(g) { return getCourseNumberFromGroupName(g.name) === courseNum; });
+    }
+
+    var currentValue = select.value;
+    select.innerHTML = '<option value="all">Все группы</option>';
+    filteredGroups.forEach(function(g) {
+        select.innerHTML += '<option value="' + g.id + '">' + g.name + ' (' + getTypeLabel(g.type) + ')</option>';
+    });
+    select.value = currentValue;
+}
+
+// ============================================================
+// ПОЛУЧЕНИЕ ЗНАЧЕНИЙ ФИЛЬТРОВ
+// ============================================================
+function getFilterValues() {
+    function getVal(id) {
+        var el = document.getElementById(id);
+        return el ? el.value : 'all';
+    }
+    return {
+        type: getVal('filterType'),
+        group: getVal('filterGroup'),
+        course: getVal('filterCourse'),
+        age: getVal('filterAge'),
+        citizenship: getVal('filterCitizenship'),
+        gender: getVal('filterGender'),
+        region: getVal('filterRegion'),
+        district: getVal('filterDistrict'),
+        settlement_type: getVal('filterSettlementType'),
+        city: getVal('filterCity'),
+        address_type: getVal('filterAddressType'),
+        accounting_type: getVal('filterAccounting'),
+        graduation_year: getVal('filterGradYear')
+    };
+}
+
+// ============================================================
+// РЕНДЕРИНГ ТАБЛИЦЫ
+// ============================================================
+function renderTable(data, columns) {
+    var thead = document.getElementById('reportThead');
+    var tbody = document.getElementById('reportTbody');
+    if (!data || data.length === 0) {
+        thead.innerHTML = '<tr><th colspan="' + columns.length + '" style="text-align:center;padding:20px;">Нет данных</th></tr>';
+        tbody.innerHTML = '<tr><td colspan="' + columns.length + '"><div class="empty-state"><span class="icon">📭</span><p>Нет данных</p></div></td></tr>';
+        document.getElementById('totalRecords').textContent = '0';
+        return;
+    }
+    thead.innerHTML = '<tr>' + columns.map(function(c) { return '<th>' + c + '</th>'; }).join('') + '</tr>';
+    var html = '';
+    data.forEach(function(row, i) {
+        html += '<tr>';
+        columns.forEach(function(c) {
+            var val = row[c] || '—';
+            if (c === '№ п/п') val = i + 1;
+            if (typeof val === 'string' && val.length > 50) {
+                val = val.substring(0, 47) + '...';
+            }
+            html += '<td>' + val + '</td>';
+        });
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+    document.getElementById('totalRecords').textContent = data.length;
+}
+
+// ============================================================
+// ПОЛУЧЕНИЕ ДАННЫХ ДЛЯ ОТЧЁТОВ
+// ============================================================
+
+async function getStudentsReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name, type)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    if (f.citizenship !== 'all') q = q.eq('citizenship', f.citizenship);
+    if (f.gender !== 'all') q = q.eq('gender', f.gender);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    return (result.data || []).map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—',
+            'Возраст': s.birth_date ? calcAge(s.birth_date) : '—',
+            'Телефон': s.phone || '—',
+            'Гражданство': s.citizenship || '—',
+            'Пол': s.gender || '—'
+        };
+    });
+}
+
+async function getGroupsReport(f) {
+    var q = sb.from('groups').select('*');
+    if (f.type !== 'all') q = q.eq('type', f.type);
+    q = q.eq('is_archived', false);
+    var result = await q;
+    if (result.error) throw result.error;
+    var groups = result.data || [];
+    var out = [];
+    for (var i = 0; i < groups.length; i++) {
+        var g = groups[i];
+        var countResult = await sb.from('students')
+            .select('*', { count: 'exact', head: true })
+            .eq('group_id', g.id)
+            .eq('status', 'active');
+        out.push({
+            'Название': g.name,
+            'Тип': getTypeLabel(g.type),
+            'Дата начала': g.date_start || '—',
+            'Дата окончания': g.date_end || '—',
+            'Студентов': countResult.count || 0
+        });
+    }
+    return out;
+}
+
+async function getGraduatesReport(f) {
+    var q = sb.from('graduates').select('*');
+    if (f.type !== 'all') q = q.eq('type', f.type);
+    if (f.graduation_year !== 'all') q = q.eq('graduation_year', f.graduation_year);
+
+    var result = await q;
+    if (result.error) throw result.error;
+    var graduates = result.data || [];
+
+    var graduateIds = graduates.map(function(g) { return g.student_id; }).filter(Boolean);
+    var distributionsMap = {};
+    if (graduateIds.length > 0) {
+        var distResult = await sb.from('graduate_distributions').select('*').in('student_id', graduateIds);
+        if (!distResult.error && distResult.data) {
+            distResult.data.forEach(function(d) {
+                distributionsMap[d.student_id] = d;
+            });
+        }
+    }
+
+    var filtered = graduates;
+    if (f.group !== 'all') {
+        var group = allGroups.find(function(g) { return g.id === f.group; });
+        if (group) {
+            filtered = filtered.filter(function(g) { return g.group_name === group.name; });
+        }
+    }
+
+    return filtered.map(function(g) {
+        var dist = distributionsMap[g.student_id];
+        return {
+            'ФИО': g.full_name,
+            'Группа': g.group_name || '—',
+            'Тип': getTypeLabel(g.type),
+            'Год выпуска': g.graduation_year || '—',
+            'Наименование организации': dist && dist.organization_name ? dist.organization_name : 'Не распределён',
+            'Адрес организации': dist && dist.address ? dist.address : '—',
+            'Примечание': dist && dist.notes ? dist.notes : '—',
+            'Телефон': g.phone || '—'
+        };
+    });
+}
+
+async function getExpelledReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name, type)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    var result = await q;
+    if (result.error) throw result.error;
+    var filtered = (result.data || []).filter(function(s) { return s.status === 'expelled'; });
+    return filtered.map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Дата отчисления': s.expulsion_date ? formatDateForReport(s.expulsion_date) : '—',
+            'Приказ': s.expulsion_order || '—',
+            'Статья': s.expulsion_article || '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getAcademicReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name, type)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    var result = await q;
+    if (result.error) throw result.error;
+    var filtered = (result.data || []).filter(function(s) { return s.status === 'academic'; });
+    return filtered.map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Дата начала': s.academic_leave_date ? formatDateForReport(s.academic_leave_date) : '—',
+            'Приказ': s.academic_leave_order || '—',
+            'Причина': s.academic_leave_reason || '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getCitizenshipReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    if (f.citizenship !== 'all') q = q.eq('citizenship', f.citizenship);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    return (result.data || []).map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Гражданство': s.citizenship || '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getAddressReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    var filtered = result.data || [];
+    if (f.region !== 'all') filtered = filtered.filter(function(s) { return s.address_region === f.region; });
+    if (f.district !== 'all') filtered = filtered.filter(function(s) { return s.address_district === f.district; });
+    if (f.settlement_type !== 'all') filtered = filtered.filter(function(s) { return s.address_settlement_type === f.settlement_type; });
+    if (f.city !== 'all') filtered = filtered.filter(function(s) { return s.address_locality === f.city; });
+    return filtered.map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Тип адреса': f.address_type === 'регистрации' ? 'Регистрация' : (f.address_type === 'проживания' ? 'Проживание' : 'Оба'),
+            'Область': s.address_region || '—',
+            'Район': s.address_district || '—',
+            'Нас. пункт': s.address_locality || '—',
+            'Адрес': f.address_type === 'регистрации' ? (s.address_reg || '—') : (s.address_live || '—')
+        };
+    });
+}
+
+async function getDormitoryReport(f) {
+    var q = sb.from('students').select('*, groups!inner(name,type)').eq('status', 'active').eq('lives_in_dorm', true);
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    var result = await q;
+    if (result.error) throw result.error;
+    return (result.data || []).map(function(s) {
+        return {
+            'ФИО': s.full_name || '—',
+            'Группа': s.groups ? s.groups.name : '—',
+            'Пол': s.gender || '—',
+            'Блок/комната': s.dorm_room || s.dormitory_room || s.dorm_block || '—',
+            'Дата заселения': formatDateForReport(s.dorm_check_in || s.dorm_move_in) || '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getAccountingReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    var filtered = result.data || [];
+    if (f.accounting_type !== 'all') {
+        filtered = filtered.filter(function(s) { return s.accounting_type && s.accounting_type.indexOf(f.accounting_type) !== -1; });
+    }
+    var out = [];
+    filtered.forEach(function(s) {
+        var types = s.accounting_type || [];
+        types.forEach(function(type) {
+            var accountingData = (s.accounting_data || []).find(function(item) { return item.type === type; });
+            out.push({
+                'ФИО': s.full_name,
+                'Группа': s.groups ? s.groups.name : '—',
+                'Вид учёта': type,
+                'Дата постановки': accountingData && accountingData.start ? formatDateForReport(accountingData.start) : '—',
+                'Дата снятия': accountingData && accountingData.end ? formatDateForReport(accountingData.end) : '—',
+                'Статус учёта': accountingData && accountingData.end ? 'Снят' : 'Активен'
+            });
+        });
+    });
+    return out;
+}
+
+async function getAgeReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    return (result.data || []).map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—',
+            'Возраст': s.birth_date ? calcAge(s.birth_date) : '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getGenderReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    if (f.gender !== 'all') q = q.eq('gender', f.gender);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    return (result.data || []).map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Пол': s.gender || '—'
+        };
+    });
+}
+
+async function getByGroupsReport(f) {
+    var q = sb.from('groups').select('id, name, type, is_archived, students:students(id, full_name, status)');
+    if (f.type !== 'all') q = q.eq('type', f.type);
+    var result = await q;
+    if (result.error) throw result.error;
+    var filteredGroups = (result.data || []).filter(function(g) { return g.is_archived !== true; });
+    if (f.group !== 'all') {
+        filteredGroups = filteredGroups.filter(function(g) { return g.id === f.group; });
+    }
+    var out = [];
+    filteredGroups.forEach(function(g) {
+        var students = g.students || [];
+        students.forEach(function(s) {
+            if (s.status !== 'active') return;
+            out.push({ 'Группа': g.name, 'Учащийся': s.full_name, 'Статус': 'Активен' });
+        });
+    });
+    return out;
+}
+
+async function getStatisticsReport(f) {
+    var studentsRes = await sb.from('students').select('*', { count: 'exact' }).eq('status', 'active');
+    var groupsRes = await sb.from('groups').select('*', { count: 'exact' }).eq('is_archived', false);
+    var graduatesRes = await sb.from('graduates').select('*', { count: 'exact' });
+
+    var genderRes = await sb.from('students').select('gender').not('gender', 'is', null).eq('status', 'active');
+    var maleCount = (genderRes.data || []).filter(function(g) { return g.gender === 'Мужской'; }).length;
+    var femaleCount = (genderRes.data || []).filter(function(g) { return g.gender === 'Женский'; }).length;
+
+    var ageRes = await sb.from('students').select('birth_date').not('birth_date', 'is', null).eq('status', 'active');
+    var under18 = 0, age18_20 = 0, age21_25 = 0, age25plus = 0;
+    (ageRes.data || []).forEach(function(s) {
+        var age = calcAge(s.birth_date);
+        if (age < 18) under18++;
+        else if (age >= 18 && age <= 20) age18_20++;
+        else if (age >= 21 && age <= 25) age21_25++;
+        else if (age > 25) age25plus++;
+    });
+
+    var accountingRes = await sb.from('students').select('accounting_type').not('accounting_type', 'is', null).eq('status', 'active');
+    var accountingCount = {};
+    (accountingRes.data || []).forEach(function(s) {
+        if (s.accounting_type) {
+            s.accounting_type.forEach(function(type) {
+                accountingCount[type] = (accountingCount[type] || 0) + 1;
+            });
+        }
+    });
+
+    var stats = [
+        { 'Показатель': 'Всего учащихся (активных)', 'Значение': studentsRes.count || 0, 'Примечание': '' },
+        { 'Показатель': 'Всего групп (активных)', 'Значение': groupsRes.count || 0, 'Примечание': '' },
+        { 'Показатель': 'Всего выпускников', 'Значение': graduatesRes.count || 0, 'Примечание': '' },
+        { 'Показатель': 'Мужской пол', 'Значение': maleCount, 'Примечание': '' },
+        { 'Показатель': 'Женский пол', 'Значение': femaleCount, 'Примечание': '' },
+        { 'Показатель': 'До 18 лет', 'Значение': under18, 'Примечание': '' },
+        { 'Показатель': '18-20 лет', 'Значение': age18_20, 'Примечание': '' },
+        { 'Показатель': '21-25 лет', 'Значение': age21_25, 'Примечание': '' },
+        { 'Показатель': 'Старше 25 лет', 'Значение': age25plus, 'Примечание': '' }
+    ];
+    Object.keys(accountingCount).forEach(function(type) {
+        stats.push({ 'Показатель': 'Учёт: ' + type, 'Значение': accountingCount[type], 'Примечание': '' });
+    });
+    return stats;
+}
+
+async function getUnderageReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    var filtered = (result.data || []).filter(function(s) {
+        if (!s.birth_date) return false;
+        return calcAge(s.birth_date) < 18;
+    });
+    if (f.age !== 'all') {
+        var ageNum = parseInt(f.age);
+        filtered = filtered.filter(function(s) { return calcAge(s.birth_date) === ageNum; });
+    }
+    return filtered.map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—',
+            'Возраст': s.birth_date ? calcAge(s.birth_date) : '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getAdultReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    var filtered = (result.data || []).filter(function(s) {
+        if (!s.birth_date) return false;
+        return calcAge(s.birth_date) >= 18;
+    });
+    if (f.age !== 'all') {
+        var ageNum = parseInt(f.age);
+        filtered = filtered.filter(function(s) { return calcAge(s.birth_date) === ageNum; });
+    }
+    return filtered.map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Дата рождения': s.birth_date ? formatDateForReport(s.birth_date) : '—',
+            'Возраст': s.birth_date ? calcAge(s.birth_date) : '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getTargetTrainingReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name, type)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    var filtered = (result.data || []).filter(function(s) { return s.target_training === true; });
+    return filtered.map(function(s) {
+        return {
+            'ФИО': s.full_name,
+            'Группа': s.groups ? s.groups.name : '—',
+            'Заказчик': s.target_customer || '—',
+            '№ договора': s.target_contract || '—',
+            'Срок отработки': s.target_years ? s.target_years + ' лет' : '—',
+            'Телефон': s.phone || '—'
+        };
+    });
+}
+
+async function getAvgGradeSchoolReport(f) {
+    var q = sb.from('students').select('*, groups!inner (name, type)');
+    if (f.group !== 'all') q = q.eq('group_id', f.group);
+    if (f.type !== 'all') q = q.eq('groups.type', f.type);
+    q = q.eq('status', 'active');
+    var result = await q;
+    if (result.error) throw result.error;
+    return (result.data || [])
+        .filter(function(s) { return s.avg_grade !== null && s.avg_grade !== undefined; })
+        .map(function(s) {
+            return {
+                'ФИО': s.full_name,
+                'Группа': s.groups ? s.groups.name : '—',
+                'Школа': s.school || '—',
+                'Ср.балл аттестата': s.avg_grade || '—',
+                'Год выпуска': s.school_year || '—'
+            };
+        });
+}
+
+async function getAvgGradeCollegeReport(f) {
+    var result = [];
+    var typeFilter = f.type;
+    var courseFilter = f.course;
+    var groupFilter = f.group;
+
+    var groupsQuery = sb.from('groups').select('id, name, type, date_start');
+    if (typeFilter !== 'all') groupsQuery = groupsQuery.eq('type', typeFilter);
+    groupsQuery = groupsQuery.eq('is_archived', false);
+    var groupsResult = await groupsQuery;
+    if (groupsResult.error) throw groupsResult.error;
+
+    var filteredGroups = groupsResult.data || [];
+    if (courseFilter !== 'all') {
+        var courseNum = parseInt(courseFilter);
+        filteredGroups = filteredGroups.filter(function(g) { return getCourseNumberFromGroupName(g.name) === courseNum; });
+    }
+    if (groupFilter !== 'all') {
+        filteredGroups = filteredGroups.filter(function(g) { return g.id === groupFilter; });
+    }
+
+    var studentsQuery = sb.from('students').select('*, groups!inner (name, type)').eq('status', 'active');
+    var allStudentsData = [];
+
+    if (groupFilter !== 'all') {
+        var studentsRes = await studentsQuery.eq('group_id', groupFilter);
+        allStudentsData = studentsRes.data || [];
+    } else if (typeFilter !== 'all') {
+        var studentsRes2 = await studentsQuery.eq('groups.type', typeFilter);
+        allStudentsData = studentsRes2.data || [];
+    } else {
+        var studentsRes3 = await studentsQuery;
+        allStudentsData = studentsRes3.data || [];
+    }
+
+    if (filteredGroups.length > 0 && groupFilter === 'all') {
+        var groupIds = filteredGroups.map(function(g) { return g.id; });
+        allStudentsData = allStudentsData.filter(function(s) { return groupIds.indexOf(s.group_id) !== -1; });
+    }
+
+    if (groupFilter === 'all' && courseFilter === 'all' && typeFilter === 'all') {
+        var valid = allStudentsData.filter(function(s) { return s.avg_grade !== null && s.avg_grade !== undefined; });
+        if (valid.length > 0) {
+            var sum = 0;
+            valid.forEach(function(s) { sum += parseFloat(s.avg_grade); });
+            var avg = sum / valid.length;
+            result.push({
+                'Категория': 'По колледжу',
+                'Наименование': 'Общий средний балл',
+                'Курс': '—',
+                'Средний балл': avg.toFixed(2),
+                'Студентов': valid.length,
+                'Примечание': ''
+            });
+        }
+    }
+
+    if (groupFilter === 'all') {
+        var groupMap = {};
+        allStudentsData.forEach(function(s) {
+            var gid = s.group_id;
+            if (!groupMap[gid]) groupMap[gid] = [];
+            if (s.avg_grade !== null && s.avg_grade !== undefined) {
+                groupMap[gid].push(parseFloat(s.avg_grade));
+            }
+        });
+        var groupIdsList = Object.keys(groupMap);
+        for (var gi = 0; gi < groupIdsList.length; gi++) {
+            var gid = groupIdsList[gi];
+            var grades = groupMap[gid];
+            if (grades.length === 0) continue;
+            var gsum = 0;
+            grades.forEach(function(g) { gsum += g; });
+            var gavg = gsum / grades.length;
+            var group = filteredGroups.find(function(gr) { return gr.id === gid; });
+            result.push({
+                'Категория': 'По группе',
+                'Наименование': group ? group.name : 'Группа',
+                'Курс': getCourseFromGroupName(group ? group.name : ''),
+                'Средний балл': gavg.toFixed(2),
+                'Студентов': grades.length,
+                'Примечание': group ? getTypeLabel(group.type) : ''
+            });
+        }
+    }
+
+    if (groupFilter === 'all' && courseFilter === 'all') {
+        var courseMap = {};
+        allStudentsData.forEach(function(s) {
+            var course = getCourseFromGroupName(s.groups ? s.groups.name : '');
+            if (!courseMap[course]) courseMap[course] = [];
+            if (s.avg_grade !== null && s.avg_grade !== undefined) {
+                courseMap[course].push(parseFloat(s.avg_grade));
+            }
+        });
+        var courses = Object.keys(courseMap).filter(function(c) { return c !== '—'; });
+        for (var ci = 0; ci < courses.length; ci++) {
+            var course = courses[ci];
+            var cgrades = courseMap[course];
+            if (cgrades.length === 0) continue;
+            var csum = 0;
+            cgrades.forEach(function(g) { csum += g; });
+            var cavg = csum / cgrades.length;
+            var firstWithType = allStudentsData.find(function(s) { return s.groups && s.groups.type; });
+            var ctype = firstWithType && firstWithType.groups ? firstWithType.groups.type : '';
+            result.push({
+                'Категория': 'По курсу',
+                'Наименование': getTypeLabel(ctype) + ' (' + course + ')',
+                'Курс': course,
+                'Средний балл': cavg.toFixed(2),
+                'Студентов': cgrades.length,
+                'Примечание': ''
+            });
+        }
+    }
+
+    if (groupFilter === 'all' && courseFilter === 'all') {
+        var typeMap = {};
+        allStudentsData.forEach(function(s) {
+            var type = s.groups ? s.groups.type : '';
+            if (!typeMap[type]) typeMap[type] = [];
+            if (s.avg_grade !== null && s.avg_grade !== undefined) {
+                typeMap[type].push(parseFloat(s.avg_grade));
+            }
+        });
+        var types = Object.keys(typeMap);
+        for (var ti = 0; ti < types.length; ti++) {
+            var type = types[ti];
+            var tgrades = typeMap[type];
+            if (tgrades.length === 0) continue;
+            var tsum = 0;
+            tgrades.forEach(function(g) { tsum += g; });
+            var tavg = tsum / tgrades.length;
+            result.push({
+                'Категория': 'По типу',
+                'Наименование': getTypeLabel(type),
+                'Курс': '—',
+                'Средний балл': tavg.toFixed(2),
+                'Студентов': tgrades.length,
+                'Примечание': ''
+            });
+        }
+    }
+
+    if (groupFilter !== 'all') {
+        var grp = filteredGroups.find(function(g) { return g.id === groupFilter; });
+        var students = allStudentsData.filter(function(s) {
+            return s.group_id === groupFilter && s.avg_grade !== null && s.avg_grade !== undefined;
+        });
+        if (students.length > 0) {
+            var sum2 = 0;
+            students.forEach(function(s) { sum2 += parseFloat(s.avg_grade); });
+            var avg2 = sum2 / students.length;
+            result.push({
+                'Категория': 'По группе (детально)',
+                'Наименование': (grp ? grp.name : 'Группа') + ' - средний',
+                'Курс': getCourseFromGroupName(grp ? grp.name : ''),
+                'Средний балл': avg2.toFixed(2),
+                'Студентов': students.length,
+                'Примечание': ''
+            });
+            students.sort(function(a, b) { return a.full_name.localeCompare(b.full_name); });
+            students.forEach(function(s) {
+                result.push({
+                    'Категория': 'Учащийся',
+                    'Наименование': s.full_name,
+                    'Курс': '—',
+                    'Средний балл': parseFloat(s.avg_grade).toFixed(2),
+                    'Студентов': 1,
+                    'Примечание': ''
+                });
+            });
+        }
+    }
+
+    var order = { 'По колледжу': 1, 'По типу': 2, 'По группе': 3, 'По курсу': 4, 'По группе (детально)': 5, 'Учащийся': 6 };
+    return result.sort(function(a, b) {
+        return (order[a['Категория']] || 9) - (order[b['Категория']] || 9);
+    });
+}
+
+// ============================================================
+// ДИАГРАММА
+// ============================================================
+function renderChart(data, reportKey) {
+    var container = document.getElementById('chartContainer');
+    var title = document.getElementById('chartTitle');
+    var note = document.getElementById('chartNote');
+
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    container.style.display = 'none';
+
+    var showCharts = ['avg_grade_school', 'avg_grade_college', 'statistics', 'expelled', 'academic', 'graduates'];
+    if (showCharts.indexOf(reportKey) === -1) return;
+    if (!data || data.length === 0) { container.style.display = 'none'; return; }
+
+    var labels = [], values = [], chartType = 'doughnut';
+    var chartLabel = 'Значение';
+
+    if (reportKey === 'avg_grade_school') {
+        var sorted = data.slice().sort(function(a, b) {
+            return parseFloat(b['Ср.балл аттестата']) - parseFloat(a['Ср.балл аттестата']);
+        });
+        var display = sorted.slice(0, 20);
+        labels = display.map(function(item) {
+            var name = item['ФИО'] || '—';
+            return name.length > 18 ? name.substring(0, 16) + '…' : name;
+        });
+        values = display.map(function(item) { return parseFloat(item['Ср.балл аттестата']) || 0; });
+        chartType = 'bar';
+        chartLabel = 'Средний балл аттестата';
+        title.textContent = '🏫 Распределение среднего балла аттестата';
+        note.textContent = '* Отображены ' + display.length + ' учащихся с наивысшим баллом';
+    } else if (reportKey === 'avg_grade_college') {
+        var numeric = data.filter(function(item) { return !isNaN(item['Средний балл']) && item['Средний балл'] > 0; });
+        if (numeric.length === 0) { container.style.display = 'none'; return; }
+        var display2 = numeric.slice(0, 15);
+        labels = display2.map(function(item) {
+            var name = item['Наименование'] || '—';
+            return name.length > 20 ? name.substring(0, 18) + '…' : name;
+        });
+        values = display2.map(function(item) { return parseFloat(item['Средний балл']) || 0; });
+        chartType = 'doughnut';
+        chartLabel = 'Средний балл';
+        title.textContent = '📊 Распределение среднего балла в колледже';
+        note.textContent = '* Отображены ' + display2.length + ' категорий с наивысшим баллом';
+    } else if (reportKey === 'statistics') {
+        var numeric2 = data.filter(function(item) { return !isNaN(item['Значение']) && item['Значение'] > 0; });
+        if (numeric2.length === 0) { container.style.display = 'none'; return; }
+        labels = numeric2.map(function(item) { return item['Показатель']; });
+        values = numeric2.map(function(item) { return item['Значение']; });
+        chartType = 'doughnut';
+        chartLabel = 'Значение';
+        title.textContent = '📊 Статистика';
+        note.textContent = '* Данные отображаются в виде круговой диаграммы';
+    } else if (reportKey === 'expelled') {
+        var groupMap = {};
+        data.forEach(function(item) {
+            var group = item['Группа'] || '—';
+            if (!groupMap[group]) groupMap[group] = 0;
+            groupMap[group]++;
+        });
+        var sorted2 = Object.keys(groupMap).map(function(k) { return [k, groupMap[k]]; }).sort(function(a, b) { return b[1] - a[1]; });
+        labels = sorted2.map(function(x) { return x[0]; });
+        values = sorted2.map(function(x) { return x[1]; });
+        chartType = 'doughnut';
+        chartLabel = 'Количество отчисленных';
+        title.textContent = '❌ Распределение отчисленных по группам';
+        note.textContent = '* Всего отчисленных: ' + data.length;
+    } else if (reportKey === 'academic') {
+        var groupMap2 = {};
+        data.forEach(function(item) {
+            var group = item['Группа'] || '—';
+            if (!groupMap2[group]) groupMap2[group] = 0;
+            groupMap2[group]++;
+        });
+        var sorted3 = Object.keys(groupMap2).map(function(k) { return [k, groupMap2[k]]; }).sort(function(a, b) { return b[1] - a[1]; });
+        labels = sorted3.map(function(x) { return x[0]; });
+        values = sorted3.map(function(x) { return x[1]; });
+        chartType = 'doughnut';
+        chartLabel = 'Количество в академ. отпуске';
+        title.textContent = '📚 Распределение студентов в академ. отпуске по группам';
+        note.textContent = '* Всего в академ. отпуске: ' + data.length;
+    } else if (reportKey === 'graduates') {
+        var orgMap = {};
+        data.forEach(function(item) {
+            var org = item['Наименование организации'] || 'Не распределён';
+            if (!orgMap[org]) orgMap[org] = 0;
+            orgMap[org]++;
+        });
+        var sorted4 = Object.keys(orgMap).map(function(k) { return [k, orgMap[k]]; }).sort(function(a, b) { return b[1] - a[1]; });
+        labels = sorted4.map(function(x) { return x[0]; });
+        values = sorted4.map(function(x) { return x[1]; });
+        chartType = 'doughnut';
+        chartLabel = 'Количество выпускников';
+        title.textContent = '📊 Распределение выпускников по организациям';
+        note.textContent = '* Всего выпускников: ' + data.length;
+    }
+
+    if (labels.length === 0) { container.style.display = 'none'; return; }
+
+    container.style.display = 'block';
+    var ctx = document.getElementById('statsChart').getContext('2d');
+    var colors = ['#2C3E8F', '#27AE60', '#F39C12', '#E74C3C', '#3498DB', '#9B59B6', '#1ABC9C', '#E67E22', '#7F8C8D', '#2ECC71', '#E74C3C', '#3498DB', '#F1C40F', '#8E44AD', '#2C3E50'];
+
+    chartInstance = new Chart(ctx, {
+        type: chartType,
+        data: {
+            labels: labels,
+            datasets: [{
+                label: chartLabel,
+                data: values,
+                backgroundColor: colors.slice(0, values.length),
+                borderColor: '#ffffff',
+                borderWidth: chartType === 'bar' ? 1 : 2,
+                borderRadius: chartType === 'bar' ? 4 : 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: chartType === 'doughnut',
+                    position: 'bottom',
+                    labels: { font: { size: 10 }, padding: 8, boxWidth: 12 }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            if (chartType === 'bar') {
+                                return '' + context.parsed.y;
+                            }
+                            var total = context.dataset.data.reduce(function(a, b) { return a + b; }, 0);
+                            return context.label + ': ' + context.parsed + ' (' + ((context.parsed / total) * 100).toFixed(1) + '%)';
+                        }
+                    }
+                }
+            },
+            scales: chartType === 'bar' ? {
+                y: { beginAtZero: true, title: { display: true, text: chartLabel } },
+                x: { ticks: { font: { size: 9 } } }
+            } : undefined
+        }
+    });
+}
+
+// ============================================================
+// ГЕНЕРАЦИЯ ОТЧЁТА
+// ============================================================
+async function generateReport() {
+    var tbody = document.getElementById('reportTbody');
+    tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><span class="icon">⏳</span><p>Загрузка...</p></div></td></tr>';
+    try {
+        var filters = getFilterValues();
+        var data = [], columns = [];
+        switch (currentReport) {
+            case 'students': data = await getStudentsReport(filters); columns = REPORTS.students.columns; break;
+            case 'groups': data = await getGroupsReport(filters); columns = REPORTS.groups.columns; break;
+            case 'graduates': data = await getGraduatesReport(filters); columns = REPORTS.graduates.columns; break;
+            case 'expelled': data = await getExpelledReport(filters); columns = REPORTS.expelled.columns; break;
+            case 'academic': data = await getAcademicReport(filters); columns = REPORTS.academic.columns; break;
+            case 'citizenship': data = await getCitizenshipReport(filters); columns = REPORTS.citizenship.columns; break;
+            case 'address': data = await getAddressReport(filters); columns = REPORTS.address.columns; break;
+            case 'dormitory': data = await getDormitoryReport(filters); columns = REPORTS.dormitory.columns; break;
+            case 'accounting': data = await getAccountingReport(filters); columns = REPORTS.accounting.columns; break;
+            case 'age': data = await getAgeReport(filters); columns = REPORTS.age.columns; break;
+            case 'gender': data = await getGenderReport(filters); columns = REPORTS.gender.columns; break;
+            case 'by_groups': data = await getByGroupsReport(filters); columns = REPORTS.by_groups.columns; break;
+            case 'statistics': data = await getStatisticsReport(filters); columns = REPORTS.statistics.columns; break;
+            case 'underage': data = await getUnderageReport(filters); columns = REPORTS.underage.columns; break;
+            case 'adult': data = await getAdultReport(filters); columns = REPORTS.adult.columns; break;
+            case 'target_training': data = await getTargetTrainingReport(filters); columns = REPORTS.target_training.columns; break;
+            case 'avg_grade_school': data = await getAvgGradeSchoolReport(filters); columns = REPORTS.avg_grade_school.columns; break;
+            case 'avg_grade_college': data = await getAvgGradeCollegeReport(filters); columns = REPORTS.avg_grade_college.columns; break;
+            default: data = []; columns = ['Нет данных'];
+        }
+        reportData = data;
+        reportColumns = columns;
+        renderTable(data, columns);
+        document.getElementById('reportDate').textContent = new Date().toLocaleDateString('ru-RU');
+        renderChart(data, currentReport);
+    } catch (error) {
+        console.error('❌ Ошибка:', error);
+        tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><span class="icon">❌</span><p>' + error.message + '</p></div></td></tr>';
+        showToast('❌ Ошибка загрузки: ' + error.message, 'error');
+    }
+}
+
+// ============================================================
+// ПРЕДПРОСМОТР PDF
+// ============================================================
+function updatePdfPreview() {
+    var preview = document.getElementById('pdfPreview');
+    var title = document.getElementById('pdfTitle').value || 'ОТЧЁТ';
+    var subtitle = document.getElementById('pdfSubtitle').value || '';
+    var dateStr = new Date().toLocaleDateString('ru-RU');
+    var reportName = REPORTS[currentReport] ? REPORTS[currentReport].label : currentReport;
+    var directorPosition = document.getElementById('pdfDirectorPosition').value || 'Директор';
+    var directorName = document.getElementById('pdfDirectorName').value || '__________________';
+
+    var previewHtml = COLLEGE_NAME + '\n';
+    previewHtml += '==================================================\n';
+    previewHtml += title + '\n';
+    if (subtitle) previewHtml += subtitle + '\n';
+    previewHtml += '==================================================\n';
+    previewHtml += 'Отчёт: ' + reportName + '\n';
+    previewHtml += 'Дата: ' + dateStr + '\n';
+    previewHtml += '----------------------------------------\n';
+    previewHtml += 'Всего записей: ' + reportData.length + '\n';
+    previewHtml += '----------------------------------------\n';
+
+    if (reportData.length > 0 && reportColumns.length > 0) {
+        var header = reportColumns.join(' | ');
+        previewHtml += header + '\n';
+        previewHtml += '-'.repeat(Math.min(header.length, 80)) + '\n';
+        reportData.slice(0, 10).forEach(function(row, i) {
+            var cells = reportColumns.map(function(c) {
+                var val = row[c] || '—';
+                if (c === '№ п/п') val = i + 1;
+                return String(val);
+            });
+            previewHtml += cells.join(' | ') + '\n';
+        });
+        if (reportData.length > 10) {
+            previewHtml += '\n... и ещё ' + (reportData.length - 10) + ' записей\n';
+        }
+    }
+
+    previewHtml += '\n----------------------------------------\n';
+    previewHtml += directorPosition + ' учреждения образования: ' + directorName + '\n';
+    previewHtml += 'Дата: ' + dateStr;
+
+    preview.textContent = previewHtml;
+}
+
+// ============================================================
+// ЭКСПОРТ В PDF
+// ============================================================
+function generatePDF() {
+    var title = document.getElementById('pdfTitle').value || 'ОТЧЁТ';
+    var subtitle = document.getElementById('pdfSubtitle').value || '';
+    var dateStr = new Date().toLocaleDateString('ru-RU');
+    var directorPosition = document.getElementById('pdfDirectorPosition').value || 'Директор';
+    var directorName = document.getElementById('pdfDirectorName').value || '__________________';
+
+    var tableHtml = '<table class="pdf-table"><thead><tr>';
+    reportColumns.forEach(function(c) {
+        tableHtml += '<th>' + c + '</th>';
+    });
+    tableHtml += '</tr></thead><tbody>';
+    reportData.forEach(function(row, i) {
+        tableHtml += '<tr>';
+        reportColumns.forEach(function(c) {
+            var val = row[c] || '—';
+            if (c === '№ п/п') val = i + 1;
+            tableHtml += '<td>' + val + '</td>';
+        });
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+
+    var content = document.createElement('div');
+    content.innerHTML =
+        '<div class="pdf-content">' +
+            '<div class="pdf-header">' +
+                '<div class="pdf-title">' + title + '</div>' +
+                (subtitle ? '<div class="pdf-subtitle">' + subtitle + '</div>' : '') +
+                '<div class="pdf-info">Дата: ' + dateStr + '</div>' +
+            '</div>' +
+            tableHtml +
+            '<div class="pdf-footer">' +
+                '<div><strong>Всего записей: ' + reportData.length + '</strong></div>' +
+                '<div style="margin-top:4px;">' + directorPosition + ' учреждения образования: ' + directorName + '</div>' +
+                '<div style="margin-top:2px;">Дата: ' + dateStr + '</div>' +
+            '</div>' +
+        '</div>';
+
+    var opt = {
+        margin: [4, 4, 4, 4],
+        filename: 'Отчёт_' + currentReport + '_' + dateStr.replace(/\./g, '-') + '.pdf',
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    document.getElementById('pdfModal').classList.remove('active');
+
+    html2pdf().set(opt).from(content).save().then(function() {
+        showToast('✅ Отчёт сохранён в PDF');
+    }).catch(function(error) {
+        showToast('❌ Ошибка создания PDF: ' + error.message, 'error');
+    });
+}
+
+// ============================================================
+// ЭКСПОРТ В DOC
+// ============================================================
+function exportToDOC() {
+    if (!reportData || reportData.length === 0) {
+        showToast('❌ Нет данных для экспорта', 'error');
+        return;
+    }
+
+    var dateStr = new Date().toLocaleDateString('ru-RU');
+    var reportName = REPORTS[currentReport] ? REPORTS[currentReport].label : currentReport;
+    var directorPosition = document.getElementById('pdfDirectorPosition').value || 'Директор';
+    var directorName = document.getElementById('pdfDirectorName').value || '__________________';
+    var userName = currentUser ? (currentUser.full_name || currentUser.name || 'Пользователь') : 'Пользователь';
+
+    var docHtml = 
+        '<html xmlns:o=\'urn:schemas-microsoft-com:office:office\' xmlns:w=\'urn:schemas-microsoft-com:office:word\' xmlns=\'http://www.w3.org/TR/REC-html40\'>' +
+        '<head>' +
+            '<meta charset="utf-8">' +
+            '<title>Отчёт</title>' +
+            '<style>' +
+                'body { font-family: \'Times New Roman\', Times, serif; font-size: 12pt; margin: 40px; }' +
+                '.header { text-align: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #000; }' +
+                '.header .title { font-size: 16pt; font-weight: 700; text-transform: uppercase; }' +
+                '.header .subtitle { font-size: 14pt; font-weight: 600; margin-top: 4px; }' +
+                '.header .info { font-size: 11pt; margin-top: 4px; }' +
+                '.footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid #000; text-align: center; font-size: 11pt; }' +
+                'table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11pt; }' +
+                'th { border: 1px solid #000; padding: 4px 8px; background: #e9ecef; font-weight: 700; text-align: left; }' +
+                'td { border: 1px solid #000; padding: 4px 8px; }' +
+            '</style>' +
+        '</head>' +
+        '<body>' +
+            '<div class="header">' +
+                '<div class="title">' + COLLEGE_NAME + '</div>' +
+                '<div class="subtitle">' + reportName + '</div>' +
+                '<div class="info">Дата: ' + dateStr + '</div>' +
+            '</div>' +
+            '<table>' +
+                '<thead><tr>';
+
+    reportColumns.forEach(function(c) {
+        docHtml += '<th>' + c + '</th>';
+    });
+    docHtml += '</tr></thead><tbody>';
+
+    reportData.forEach(function(row, i) {
+        docHtml += '<tr>';
+        reportColumns.forEach(function(c) {
+            var val = row[c] || '—';
+            if (c === '№ п/п') val = i + 1;
+            docHtml += '<td>' + val + '</td>';
+        });
+        docHtml += '</tr>';
+    });
+
+    docHtml += 
+                '</tbody>' +
+            '</table>' +
+            '<div class="footer">' +
+                '<div><strong>Всего записей: ' + reportData.length + '</strong></div>' +
+                '<div style="margin-top:4px;">' + directorPosition + ' учреждения образования: ' + directorName + '</div>' +
+                '<div style="margin-top:2px;">Дата: ' + dateStr + '</div>' +
+                '<div style="margin-top:4px;">Отчёт сформировал(а): ' + userName + '</div>' +
+            '</div>' +
+        '</body>' +
+        '</html>';
+
+    var blob = new Blob(['\uFEFF' + docHtml], { type: 'application/msword;charset=utf-8' });
+    var filename = 'Отчёт_' + currentReport + '_' + dateStr.replace(/\./g, '-') + '.doc';
+    saveAs(blob, filename);
+    showToast('✅ Отчёт сохранён в DOC');
+}
+
+// ============================================================
+// ОБРАБОТЧИКИ
+// ============================================================
+function bindPageHandlers() {
+    document.querySelectorAll('.report-card').forEach(function(card) {
+        card.addEventListener('click', function() {
+            document.querySelectorAll('.report-card').forEach(function(c) { c.classList.remove('active'); });
+            this.classList.add('active');
+            currentReport = this.dataset.report;
+            renderFilters(currentReport);
+            generateReport();
+        });
+    });
+
+    document.getElementById('pdfModalClose').onclick = function() {
+        document.getElementById('pdfModal').classList.remove('active');
+    };
+    document.getElementById('pdfCancelBtn').onclick = function() {
+        document.getElementById('pdfModal').classList.remove('active');
+    };
+    document.getElementById('pdfModal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('active');
+    });
+
+    document.getElementById('pdfTitle').addEventListener('input', updatePdfPreview);
+    document.getElementById('pdfSubtitle').addEventListener('input', updatePdfPreview);
+    document.getElementById('pdfDirectorPosition').addEventListener('input', updatePdfPreview);
+    document.getElementById('pdfDirectorName').addEventListener('input', updatePdfPreview);
+
+    document.getElementById('exportPDFBtn').addEventListener('click', function() {
+        if (!reportData || reportData.length === 0) {
+            showToast('❌ Нет данных для экспорта', 'error');
+            return;
+        }
+        var reportName = REPORTS[currentReport] ? REPORTS[currentReport].label : currentReport;
+        document.getElementById('pdfTitle').value = 'ОТЧЁТ';
+        document.getElementById('pdfSubtitle').value = reportName;
+        updatePdfPreview();
+        document.getElementById('pdfModal').classList.add('active');
+    });
+
+    document.getElementById('pdfGenerateBtn').addEventListener('click', generatePDF);
+    document.getElementById('exportDOCBtn').addEventListener('click', exportToDOC);
+}
+
+// ============================================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================================
+async function init() {
+    if (window.Session && typeof window.Session.init === 'function') {
+        try {
+            var sessionOk = await window.Session.init();
+            if (sessionOk === false) return;
+        } catch (e) {
+            console.warn('⚠️ Session.init() ошибка:', e);
+        }
+    }
+
+    sb = getSupabaseClient();
+    if (!sb) {
+        console.error('❌ Не удалось получить клиент Supabase');
+        showToast('❌ Ошибка подключения к базе данных', 'error');
+        return;
+    }
+
+    waitForHeaderAndSidebar(function() {
+        bindHeaderButtons();
+        bindPageHandlers();
+
+        loadUser().then(function(ok) {
+            if (ok === false) return;
+            loadGroupsFilter().then(function() {
+                loadGraduationYears().then(function() {
+                    renderFilters('students').then(function() {
+                        generateReport();
+                    });
+                });
+            });
+        });
+    });
+}
+
+function boot() {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+}
+
+boot();
+</script>
+
+</body>
+</html>

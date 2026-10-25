@@ -144,7 +144,7 @@
                 <button class="btn btn-primary" id="checkCodeBtn"> Проверить код</button>
 
                 <div class="register-footer" style="margin-top:16px;">
-                    Уже есть аккаунт? <a href="/pages/index.html">Войти</a>
+                    Уже есть аккаунт? <a href="/pages/">Войти</a>
                 </div>
             </div>
 
@@ -486,7 +486,7 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
         
         // Перенаправление на главную
         setTimeout(() => {
-            window.location.href = '/pages/dashboard.html';
+            window.location.href = '/pages/dashboard';
         }, 1500);
 
     } catch (err) {
@@ -501,7 +501,7 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
 // ПРОВЕРКА: ЕСЛИ УЖЕ АВТОРИЗОВАН
 // ============================================================
 if (localStorage.getItem('currentUser')) {
-    window.location.href = '/pages/dashboard.html';
+    window.location.href = '/pages/dashboard';
 }
 
 console.log('✅ Страница регистрации загружена');

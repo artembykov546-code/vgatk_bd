@@ -268,10 +268,10 @@
                 <h1 class="page-title">🎓 Архив студентов <small>выпущенные группы</small></h1>
             </div>
             <div class="header-actions">
-                <a href="/students/index.html" class="btn btn-secondary">← Назад к группам</a>
-                <a href="/graduates/expelled.html" class="btn btn-danger">❌ Отчисленные</a>
-                <a href="/graduates/academic.html" class="btn btn-info">📚 Академ. отпуск</a>
-                <a href="/graduates/distribution.html" class="btn btn-distribution-highlight">📊 Распределение</a>
+                <a href="/students/" class="btn btn-secondary">← Назад к группам</a>
+                <a href="/graduates/expelled" class="btn btn-danger">❌ Отчисленные</a>
+                <a href="/graduates/academic" class="btn btn-info">📚 Академ. отпуск</a>
+                <a href="/graduates/distribution" class="btn btn-distribution-highlight">📊 Распределение</a>
                 <button class="btn btn-export-pdf" id="exportPDFBtn">📄 PDF</button>
                 <button class="btn btn-export-doc" id="exportDOCBtn">📝 DOC</button>
             </div>
@@ -384,10 +384,10 @@ async function loadUser() {
     var user = window.Session ? window.Session.getUser() : null;
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        if (!savedUser) { window.location.href = '/'; return false; }
         try { user = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return false;
         }
     }
@@ -413,7 +413,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
@@ -683,7 +683,7 @@ function renderTypeSection(groups, title, icon) {
 
             html += 
                 '<div class="group-card">' +
-                    '<a href="/graduates/group.html?id=' + g.id + '" class="group-name">' + g.name + '</a>' +
+                    '<a href="/graduates/group?id=' + g.id + '" class="group-name">' + g.name + '</a>' +
                     '<div class="group-meta">' +
                         '<span class="badge-type ' + typeBadge + '">' + typeLabel + '</span>' +
                         (period ? ' • ' + period : '') +
@@ -693,7 +693,7 @@ function renderTypeSection(groups, title, icon) {
                     '<div class="group-footer">' +
                         (qualification ? '<span class="qualification-text">' + qualification + '</span>' : '<span class="qualification-text" style="color:var(--text-muted);">📦 В архиве</span>') +
                         '<div class="group-actions">' +
-                            '<a href="/graduates/group.html?id=' + g.id + '" class="btn btn-info btn-xs">👁️ Просмотр</a>' +
+                            '<a href="/graduates/group?id=' + g.id + '" class="btn btn-info btn-xs">👁️ Просмотр</a>' +
                         '</div>' +
                     '</div>' +
                 '</div>';

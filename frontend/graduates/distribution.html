@@ -234,7 +234,7 @@
                 <h1 class="page-title">🎓 Распределение выпускников <small>просмотр</small></h1>
             </div>
             <div class="header-actions" id="headerActions">
-                <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+                <a href="/graduates/" class="btn btn-secondary">← Назад к архиву</a>
                 <button class="btn btn-export-word" id="exportWordBtn">📝 Экспорт в Word</button>
                 <button class="btn btn-primary" id="exportPdfBtn">📄 Экспорт в PDF</button>
             </div>
@@ -293,7 +293,7 @@
         </div>
 
         <div class="form-actions no-print">
-            <a href="/graduates/index.html" class="btn btn-secondary">← Назад к архиву</a>
+            <a href="/graduates/" class="btn btn-secondary">← Назад к архиву</a>
             <button class="btn btn-export-word" id="exportWordBtnBottom">📝 Экспорт в Word</button>
             <button class="btn btn-primary" id="exportPdfBtnBottom">📄 Экспорт в PDF</button>
         </div>
@@ -378,10 +378,10 @@ async function loadUser() {
     var user = window.Session ? window.Session.getUser() : null;
     if (!user) {
         var savedUser = localStorage.getItem('currentUser');
-        if (!savedUser) { window.location.href = '/index.html'; return false; }
+        if (!savedUser) { window.location.href = '/'; return false; }
         try { user = JSON.parse(savedUser); } catch (e) {
             localStorage.removeItem('currentUser');
-            window.location.href = '/index.html';
+            window.location.href = '/';
             return false;
         }
     }
@@ -407,7 +407,7 @@ function bindHeaderButtons() {
                 window.Session.logout();
             } else {
                 localStorage.removeItem('currentUser');
-                window.location.href = '/index.html';
+                window.location.href = '/';
             }
         };
     }
