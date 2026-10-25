@@ -1,7 +1,7 @@
 {
   "name": "vgatk_bd",
-  "version": "1.0.0",
-  "description": "Колледж - Кадровая система",
+  "version": "1.0.1",
+  "description": "База данных учащихся",
   "main": "electron/main.js",
   "author": "vgatk_bd",
   "license": "UNLICENSED",
