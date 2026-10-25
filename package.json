@@ -30,6 +30,7 @@
   "build": {
     "appId": "by.vgatk.bd",
     "productName": "vgatk_bd",
+    "artifactName": "vgatk_bd-Setup.${ext}",
     "directories": {
       "output": "release2"
     },
