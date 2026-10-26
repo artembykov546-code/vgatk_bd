@@ -898,6 +898,14 @@ async function viewGraduate(id) {
 
         document.getElementById('graduateModal').classList.add('active');
 
+        // Привязка кнопки "Скачать Word"
+        var wordBtn = document.getElementById('exportGraduateWordBtn');
+        if (wordBtn) {
+            wordBtn.onclick = function() {
+                exportGraduateToWord(graduate, parents, siblings, distributions);
+            };
+        }
+
     } catch (error) {
         console.error('❌ Ошибка загрузки карточки:', error);
         showToast('❌ Ошибка загрузки: ' + error.message, 'error');
@@ -907,6 +915,203 @@ async function viewGraduate(id) {
 // ============================================================
 // ЗАКРЫТИЕ МОДАЛЬНОГО ОКНА
 // ============================================================
+
+// ============================================================
+// ЭКСПОРТ КАРТОЧКИ ВЫПУСКНИКА В WORD
+// ============================================================
+function exportGraduateToWord(graduate, parents, siblings, distributions) {
+    if (!graduate) return;
+
+    var typeLabels = { 'sso': 'ССО', 'pto': 'ПТО' };
+    var dateStr = new Date().toLocaleDateString('ru-RU');
+    var userName = currentUser ? (currentUser.name || currentUser.login || 'Пользователь') : 'Пользователь';
+    var genderWordLive = graduate.gender === 'Женский' ? 'заселилась' : 'заселился';
+    var genderWordOut = graduate.gender === 'Женский' ? 'выселилась' : 'выселился';
+
+    var totalAvg = calculateTotalAverage(graduate);
+    var avgDisplay = totalAvg !== null ? totalAvg.toFixed(1).replace('.', ',') : '—';
+
+    var accData = (graduate.accounting_data && Array.isArray(graduate.accounting_data)) ? graduate.accounting_data.slice() : [];
+    var accTypes = graduate.accounting_type || [];
+    if (accTypes.includes('НГЗ') && !accData.some(function(x) { return x.type === 'НГЗ'; })) {
+        accData.push({ type: 'НГЗ', start: '', end: '' });
+    }
+
+    var accHtml = '';
+    if (accData.length > 0) {
+        accHtml = '<div class="section-title">📋 Учёт</div>';
+        accData.forEach(function(a) {
+            var line = a.type;
+            if (a.start) line += ' с ' + formatDateFull(a.start);
+            if (a.end) line += ' по ' + formatDateFull(a.end);
+            accHtml += '<div class="address-line"><span class="address-label">' + a.type + ':</span> ' + (a.start || a.end ? (formatDateFull(a.start) + (a.end ? ' — ' + formatDateFull(a.end) : '')) : 'Активен') + '</div>';
+        });
+    }
+
+    var addressesHtml = '';
+    var addresses = graduate.addresses || [];
+    if (addresses.length > 0) {
+        addressesHtml = '<div class="section-title">📍 Адреса</div>';
+        addresses.forEach(function(addr) {
+            var typeLabel = addr.type === 'регистрации' ? 'Регистрация' : (addr.type === 'проживания' ? 'Проживание' : 'Другой');
+            var fullAddr = addr.full || ((addr.locality || '') + (addr.street ? ', ' + addr.street : ''));
+            addressesHtml += '<div class="address-line"><span class="address-label">' + typeLabel + ':</span> ' + (fullAddr || '—') + '</div>';
+        });
+    }
+
+    var dormHtml = '';
+    if (graduate.lives_in_dorm) {
+        dormHtml = '<div class="section-title">🏠 Общежитие</div>' +
+            '<div class="dormitory">' +
+                '<div class="dorm-row"><span class="dorm-label">Блок:</span> ' + (graduate.dorm_block || '—') + '</div>' +
+                '<div class="dorm-row"><span class="dorm-label">Комната:</span> ' + (graduate.dorm_room_type || '—') + '</div>' +
+                (graduate.dorm_check_in ? '<div class="dorm-row"><span class="dorm-label">Заселён:</span> ' + formatDateFull(graduate.dorm_check_in) + '</div>' : '') +
+                (graduate.dorm_check_out ? '<div class="dorm-row"><span class="dorm-label">Выселен:</span> ' + formatDateFull(graduate.dorm_check_out) + '</div>' : '') +
+            '</div>';
+    }
+
+    var gradesHtml = '';
+    var type = graduate.type || 'pto';
+    var maxCourse = getMaxCourse(type);
+    var hasGrades = false;
+    for (var course = 1; course <= maxCourse; course++) {
+        if (graduate['grade_' + course + '_sem1'] || graduate['grade_' + course + '_sem2'] || graduate['grade_' + course + '_year']) {
+            hasGrades = true; break;
+        }
+    }
+    if (hasGrades) {
+        gradesHtml = '<div class="section-title">📊 Средний балл по курсам</div>';
+        for (var c = 1; c <= maxCourse; c++) {
+            var s1 = graduate['grade_' + c + '_sem1'];
+            var s2 = graduate['grade_' + c + '_sem2'];
+            var y = graduate['grade_' + c + '_year'];
+            if (s1 || s2 || y) {
+                gradesHtml += '<div class="grade-section">' +
+                    '<div class="grade-title">📘 ' + c + ' курс</div>' +
+                    (s1 ? '<div class="grade-row"><span class="grade-label">1-ое полугодие:</span> <span class="grade-value">' + formatGrade(s1) + '</span></div>' : '') +
+                    (s2 ? '<div class="grade-row"><span class="grade-label">2-ое полугодие:</span> <span class="grade-value">' + formatGrade(s2) + '</span></div>' : '') +
+                    (y ? '<div class="grade-row"><span class="grade-label">За год:</span> <span class="grade-value"><strong>' + formatGrade(y) + '</strong></span></div>' : '') +
+                '</div>';
+            }
+        }
+    }
+
+    var parentsHtml = '';
+    if (parents && parents.length > 0) {
+        parentsHtml = '<div class="section-title">👨‍👩‍👦 Родители</div>';
+        parents.forEach(function(p) {
+            parentsHtml += '<div class="related">' +
+                '<div class="related-name">' + p.full_name + '</div>' +
+                '<div class="related-info">' +
+                    (p.relation || 'Родитель') +
+                    (p.birth_date ? ' • ' + formatDateFull(p.birth_date) + ' (' + calculateAge(p.birth_date) + ' лет)' : '') +
+                    (p.work_place ? '<br>🏢 ' + p.work_place + (p.position ? ' — ' + p.position : '') : '') +
+                    (p.phone ? '<br>📱 ' + p.phone : '') +
+                    (p.address ? '<br>📍 ' + p.address : '') +
+                '</div>' +
+            '</div>';
+        });
+    }
+
+    var siblingsHtml = '';
+    if (siblings && siblings.length > 0) {
+        siblingsHtml = '<div class="section-title">👨‍👧‍👦 Братья и сёстры</div>';
+        siblings.forEach(function(s) {
+            siblingsHtml += '<div class="related">' +
+                '<div class="related-name">' + s.full_name + '</div>' +
+                '<div class="related-info">' +
+                    (s.type || 'Брат/сестра') +
+                    (s.birth_date ? ' • ' + formatDateFull(s.birth_date) + ' (' + calculateAge(s.birth_date) + ' лет)' : '') +
+                    (s.study_work ? ' • ' + s.study_work : '') +
+                '</div>' +
+            '</div>';
+        });
+    }
+
+    var distHtml = '';
+    if (distributions && distributions.length > 0) {
+        distHtml = '<div class="section-title">🏢 Распределение</div>';
+        distributions.forEach(function(d) {
+            distHtml += '<div class="related">' +
+                '<div class="related-name">' + (d.organization_name || '—') + '</div>' +
+                '<div class="related-info">' +
+                    (d.address ? '📍 ' + d.address : '') +
+                    (d.notes ? '<br>📝 ' + d.notes : '') +
+                '</div>' +
+            '</div>';
+        });
+    }
+
+    var docHtml = 
+        '<html xmlns:o=\'urn:schemas-microsoft-com:office:office\' xmlns:w=\'urn:schemas-microsoft-com:office:word\' xmlns=\'http://www.w3.org/TR/REC-html40\'>' +
+        '<head>' +
+            '<meta charset="utf-8">' +
+            '<title>Карточка выпускника</title>' +
+            '<style>' +
+                'body { font-family: \'Times New Roman\', Times, serif; font-size: 12pt; margin: 40px; }' +
+                '.header { text-align: center; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #000; }' +
+                '.header .title { font-size: 16pt; font-weight: 700; text-transform: uppercase; }' +
+                '.header .subtitle { font-size: 14pt; font-weight: 600; margin-top: 4px; }' +
+                '.header .info { font-size: 11pt; margin-top: 4px; color: #555; }' +
+                '.section-title { font-size: 13pt; font-weight: 700; margin-top: 12px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #ccc; }' +
+                '.row { display: flex; padding: 3px 0; border-bottom: 1px solid #eee; font-size: 11pt; }' +
+                '.row .label { font-weight: 600; width: 160px; flex-shrink: 0; color: #333; }' +
+                '.row .value { flex: 1; color: #000; }' +
+                '.grade-section { margin-top: 6px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; background: #f9f9f9; }' +
+                '.grade-title { font-weight: 600; font-size: 11pt; margin-bottom: 4px; }' +
+                '.grade-row { font-size: 10.5pt; padding: 2px 0; }' +
+                '.grade-label { color: #666; min-width: 100px; display: inline-block; }' +
+                '.related { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 4px; background: #fafafa; }' +
+                '.related-name { font-weight: 600; font-size: 11pt; }' +
+                '.related-info { font-size: 10pt; color: #555; margin-top: 2px; }' +
+                '.dormitory { background: #F0F9FF; padding: 6px 10px; border: 1px solid #7DD3FC; border-radius: 4px; margin-top: 4px; }' +
+                '.dorm-row { font-size: 10.5pt; padding: 2px 0; }' +
+                '.dorm-label { font-weight: 600; display: inline-block; min-width: 100px; }' +
+                '.address-line { padding: 2px 0; font-size: 11pt; }' +
+                '.address-label { font-weight: 600; min-width: 110px; display: inline-block; }' +
+                '.footer { margin-top: 12px; padding-top: 8px; border-top: 1px solid #000; text-align: center; font-size: 11pt; }' +
+            '</style>' +
+        '</head>' +
+        '<body>' +
+            '<div class="header">' +
+                '<div class="title">Карточка выпускника</div>' +
+                '<div class="subtitle">' + graduate.full_name + '</div>' +
+                '<div class="info">' +
+                    (graduate.group_name ? 'Группа: ' + graduate.group_name : '') +
+                    (graduate.type ? ' | ' + (typeLabels[graduate.type] || graduate.type) : '') +
+                    (graduate.graduation_year ? ' | Год выпуска: ' + graduate.graduation_year : '') +
+                '</div>' +
+            '</div>' +
+            '<div class="section-title">📋 Основная информация</div>' +
+            '<div class="row"><span class="label">Дата рождения:</span><span class="value">' + (graduate.birth_date ? formatDateFull(graduate.birth_date) + ' (' + calculateAge(graduate.birth_date) + ' лет)' : '—') + '</span></div>' +
+            '<div class="row"><span class="label">Телефон:</span><span class="value">' + (graduate.phone || '—') + '</span></div>' +
+            '<div class="row"><span class="label">Пол:</span><span class="value">' + (graduate.gender || '—') + '</span></div>' +
+            '<div class="row"><span class="label">Гражданство:</span><span class="value">' + (graduate.citizenship || '—') + '</span></div>' +
+            '<div class="row"><span class="label">Школа:</span><span class="value">' + (graduate.school || '—') + ' ' + (graduate.school_year ? '(' + graduate.school_year + ' г.)' : '') + '</span></div>' +
+            '<div class="row"><span class="label">Средний балл аттестата:</span><span class="value">' + formatGrade(graduate.avg_grade) + '</span></div>' +
+            (totalAvg !== null ? '<div class="row"><span class="label">Средний балл по курсам:</span><span class="value"><strong>' + avgDisplay + '</strong></span></div>' : '') +
+            accHtml +
+            addressesHtml +
+            dormHtml +
+            gradesHtml +
+            parentsHtml +
+            siblingsHtml +
+            distHtml +
+            '<div class="footer">' +
+                'Дата: ' + dateStr + ' | Экспортировал(а): ' + userName +
+            '</div>' +
+        '</body>' +
+        '</html>';
+
+    var blob = new Blob([docHtml], { type: 'application/msword;charset=utf-8' });
+    var filename = 'Карточка_выпускника_' + graduate.full_name.replace(/\s/g, '_') + '_' + dateStr.replace(/\./g, '-') + '.doc';
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    showToast('✅ Word-карточка создана');
+}
 
 function closeModal() {
     document.getElementById('graduateModal').classList.remove('active');
