@@ -614,6 +614,7 @@ async function loadDistribution() {
                     address: dist ? (dist.address || null) : null,
                     notes: dist ? (dist.notes || null) : null,
                     phone: g.phone || '—',
+                    gender: g.gender || null,
                     student_id: g.student_id,
                     graduation_year: g.graduation_year || '—'
                 };
@@ -687,12 +688,12 @@ function renderTable(distributions) {
                 '<td>' + (i + 1) + '.</td>' +
                 '<td><span class="student-name">' + fullName + '</span></td>' +
                 '<td>' +
-                    (hasOrg ? '<span class="org-name">' + d.organization_name + '</span>' : '<span class="empty-org">Не распределён</span>') +
+                    (hasOrg ? '<span class="org-name">' + d.organization_name + '</span>' : '<span class="empty-org">' + (d.gender === 'Женский' ? 'Не распределена' : 'Не распределён') + '</span>') +
                 '</td>' +
                 '<td>' + (address || '—') + '</td>' +
                 '<td>' + (d.notes || '—') + '</td>' +
                 '<td>' +
-                    (hasOrg ? '<span style="color:var(--success-dark);font-weight:600;">✅ Распределён</span>' : '<span style="color:var(--text-muted);">⏳ Не распределён</span>') +
+                    (hasOrg ? '<span style="color:var(--success-dark);font-weight:600;">✅ '' + (d.gender === ''Женский'' ? ''Распределена'' : ''Распределён'') + ''</span>' : '<span style="color:var(--text-muted);">⏳ '' + (d.gender === ''Женский'' ? ''Не распределена'' : ''Не распределён'') + ''</span>') +
                 '</td>' +
             '</tr>';
     });
