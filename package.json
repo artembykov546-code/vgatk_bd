@@ -1,6 +1,6 @@
 {
   "name": "vgatk_bd",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "База данных учащихся",
   "main": "electron/main.js",
   "author": "vgatk_bd",
