@@ -128,6 +128,7 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+    mainWindow.webContents.openDevTools(); // 👈 временно для отладки белого экрана
   });
 
   if (isDev) {
