@@ -1,12 +1,12 @@
-const { app, BrowserWindow, Menu, shell, protocol, net, dialog } = require('electron');
-const { autoUpdater } = require('electron-updater'); // ✅ ДОБАВЛЕН ИМПОРТ
+const { app, BrowserWindow, Menu, shell, protocol, net, dialog, Notification, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { pathToFileURL } = require('url');
 
 const isDev = !app.isPackaged;
 const DEV_URL = 'http://localhost:3000';
 
-// Регистрируем схему app:// как привилегированную (ОБЯЗАТЕЛЬНО до app.whenReady)
+// Регистрируем схему app:// (ОБЯЗАТЕЛЬНО до app.whenReady)
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'app',
@@ -23,7 +23,7 @@ protocol.registerSchemesAsPrivileged([
 let mainWindow = null;
 
 // ============================================================
-// ЛОГИКА АВТООБНОВЛЕНИЯ
+// АВТООБНОВЛЕНИЕ
 // ============================================================
 function setupAutoUpdater() {
   if (!app.isPackaged) {
@@ -31,25 +31,21 @@ function setupAutoUpdater() {
     return;
   }
 
-  // ⚠️ ОТКЛЮЧАЕМ автоматическое скачивание — сначала спрашиваем пользователя
   autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
-  // Провайдер — GitHub Releases
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: 'artembykov546-code',
     repo: 'vgatk_bd'
   });
 
-  // --- СОБЫТИЯ ---
   autoUpdater.on('checking-for-update', () => {
     console.log('[updater] Проверка обновлений...');
   });
 
   autoUpdater.on('update-available', (info) => {
     console.log('[updater] Доступно обновление:', info.version);
-
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Доступно обновление',
@@ -61,7 +57,6 @@ function setupAutoUpdater() {
       noLink: true
     }).then((result) => {
       if (result.response === 0) {
-        // Пользователь согласился — скачиваем
         console.log('[updater] Пользователь согласился — начинаю скачивание...');
         autoUpdater.downloadUpdate();
       } else {
@@ -75,14 +70,12 @@ function setupAutoUpdater() {
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    // Прогресс в консоль (пользователю не показываем)
     const pct = progress.percent.toFixed(1);
     console.log(`[updater] Скачано ${pct}% (${progress.transferred}/${progress.total} байт)`);
   });
 
   autoUpdater.on('update-downloaded', (info) => {
     console.log('[updater] Обновление скачано:', info.version);
-
     dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: 'Обновление готово',
@@ -101,12 +94,8 @@ function setupAutoUpdater() {
 
   autoUpdater.on('error', (err) => {
     console.error('[updater] Ошибка:', err);
-    // Не показываем ошибку пользователю — сеть может быть временно недоступна.
-    // Показываем только если это фатально при скачивании (не в начале проверки).
   });
 
-  // --- ЗАПУСК ПРОВЕРКИ ---
-  // Небольшая задержка, чтобы окно успело открыться
   setTimeout(() => {
     autoUpdater.checkForUpdates().catch((err) => {
       console.error('[updater] checkForUpdates error:', err);
@@ -114,6 +103,9 @@ function setupAutoUpdater() {
   }, 3000);
 }
 
+// ============================================================
+// ОКНО
+// ============================================================
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -144,7 +136,6 @@ function createWindow() {
     mainWindow.loadURL('app://./index.html');
   }
 
-  // Открывать внешние ссылки в системном браузере
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http://') || url.startsWith('https://')) {
       shell.openExternal(url);
@@ -153,7 +144,6 @@ function createWindow() {
     return { action: 'allow' };
   });
 
-  // Отладка: показываем ошибки загрузки страницы в консоль
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     console.error('[did-fail-load]', errorCode, errorDescription, validatedURL);
   });
@@ -166,33 +156,59 @@ function createWindow() {
   });
 }
 
+// ============================================================
+// ЗАПУСК
+// ============================================================
 app.whenReady().then(() => {
-  setupAutoUpdater(); // ✅ ВЫЗЫВАЕМ ФУНКЦИЮ
+  // ------------------------------------------------------------
+  // НАТИВНЫЕ УВЕДОМЛЕНИЯ (Windows)
+  // ------------------------------------------------------------
+  ipcMain.handle('notification:show', (_event, payload) => {
+    try {
+      const { title, body } = payload || {};
+      if (!title) return false;
+      if (!Notification.isSupported()) {
+        console.warn('[notify] Notification API не поддерживается');
+        return false;
+      }
+      const n = new Notification({
+        title: String(title),
+        body: String(body || ''),
+        icon: path.join(__dirname, '..', 'build', 'icon.ico'),
+        silent: false,
+      });
+      n.on('click', () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore();
+          mainWindow.focus();
+        }
+      });
+      n.show();
+      return true;
+    } catch (err) {
+      console.error('[notify] error:', err);
+      return false;
+    }
+  });
 
+  setupAutoUpdater();
+
+  // ------------------------------------------------------------
+  // Протокол app:// для продакшена
+  // ------------------------------------------------------------
   if (!isDev) {
     const distPath = path.join(__dirname, '..', 'dist');
 
     protocol.handle('app', (request) => {
       try {
         const url = new URL(request.url);
-
-        // Декодируем %20 и прочее
         let filePath = decodeURIComponent(url.pathname);
-
-        // Корень -> index.html
         if (filePath === '/' || filePath === '' || filePath === '.') {
           filePath = '/index.html';
         }
-
-        // Убираем ведущий слэш, чтобы path.join не ломался на Windows
         const relativePath = filePath.replace(/^\/+/, '');
-
-        // Склеиваем безопасно
         const fullPath = path.join(distPath, relativePath);
-
-        // Превращаем C:\...\dist\index.html в file:///C:/.../dist/index.html
         const fileUrl = pathToFileURL(fullPath).toString();
-
         return net.fetch(fileUrl);
       } catch (err) {
         console.error('[app://] handle error:', err);
@@ -208,6 +224,9 @@ app.whenReady().then(() => {
   });
 });
 
+// ============================================================
+// Единственный экземпляр
+// ============================================================
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   app.quit();
