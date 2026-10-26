@@ -665,10 +665,35 @@ async function viewStudent(id) {
                     '<div class="info-item"><span class="label">📚 Класс</span><span class="value">' + (student.school_class || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📍 Адрес регистрации</span><span class="value">' + (student.address_reg || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📍 Адрес проживания</span><span class="value">' + (student.address_live || '—') + '</span></div>' +
+                    (student.lives_in_dorm ? 
+                    '<div class="info-item" style="grid-column:1/-1;background:#F0F9FF;padding:8px 12px;border-radius:var(--border-radius);border:1px solid #7DD3FC;">' +
+                        '<span class="label">🏠 Общежитие</span>' +
+                        '<span class="value">' +
+                            '<strong>Блок:</strong> ' + (student.dorm_block || '—') + ' | ' +
+                            '<strong>Комната:</strong> ' + (student.dorm_room_type || '—') + ' | ' +
+                            '<strong>Заселён:</strong> ' + (student.dorm_check_in ? formatDateFull(student.dorm_check_in) : '—') +
+                            (student.dorm_check_out ? ' | <strong>Выселен:</strong> ' + formatDateFull(student.dorm_check_out) : '') +
+                        '</span>' +
+                    '</div>' : '') +
                     '<div class="info-item"><span class="label">📌 Область</span><span class="value">' + (student.address_region || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📌 Район</span><span class="value">' + (student.address_district || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📌 Населённый пункт</span><span class="value">' + (student.address_locality || '—') + '</span></div>' +
-                    '<div class="info-item"><span class="label">📋 Учёт</span><span class="value">' + (student.accounting_type ? student.accounting_type.join(', ') : '—') + '</span></div>' +
+                    '<div class="info-item"><span class="label">📋 Учёт</span><span class="value">' + (function() {
+                        var accData = (student.accounting_data && Array.isArray(student.accounting_data)) ? student.accounting_data.slice() : [];
+                        var accTypes = student.accounting_type || [];
+                        if (accTypes.includes('НГЗ') && !accData.some(function(x) { return x.type === 'НГЗ'; })) {
+                            accData.push({ type: 'НГЗ', start: '', end: '' });
+                        }
+                        if (accData.length === 0 && accTypes.length > 0) {
+                            return accTypes.join(', ');
+                        }
+                        return accData.length > 0 ? accData.map(function(a) { 
+                            var s = a.type;
+                            if (a.start) s += ' (с ' + formatDateFull(a.start) + ')';
+                            if (a.end) s += ' — ' + formatDateFull(a.end);
+                            return s;
+                        }).join(', ') : '—';
+                    })() + '</span></div>' +
                     (student.target_training ? 
                     '<div class="info-item" style="grid-column:1/-1;background:#F0FDF4;padding:8px 12px;border-radius:var(--border-radius);border:1px solid #86EFAC;">' +
                         '<span class="label">🎯 Целевое обучение</span>' +

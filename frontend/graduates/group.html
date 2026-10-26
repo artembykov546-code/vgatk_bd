@@ -855,10 +855,20 @@ async function viewGraduate(id) {
                     '<div class="info-item"><span class="label">📚 Класс</span><span class="value">' + (graduate.school_class || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📍 Адрес регистрации</span><span class="value">' + (graduate.address_reg || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📍 Адрес проживания</span><span class="value">' + (graduate.address_live || '—') + '</span></div>' +
+                    (graduate.lives_in_dorm ? 
+                    '<div class="info-item" style="grid-column:1/-1;background:#F0F9FF;padding:8px 12px;border-radius:var(--border-radius);border:1px solid #7DD3FC;">' +
+                        '<span class="label">🏠 Общежитие</span>' +
+                        '<span class="value">' +
+                            '<strong>Блок:</strong> ' + (graduate.dorm_block || '—') + ' | ' +
+                            '<strong>Комната:</strong> ' + (graduate.dorm_room_type || '—') + ' | ' +
+                            '<strong>Заселён:</strong> ' + (graduate.dorm_check_in ? formatDateFull(graduate.dorm_check_in) : '—') +
+                            (graduate.dorm_check_out ? ' | <strong>Выселен:</strong> ' + formatDateFull(graduate.dorm_check_out) : '') +
+                        '</span>' +
+                    '</div>' : '') +
                     '<div class="info-item"><span class="label">📌 Область</span><span class="value">' + (graduate.address_region || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📌 Район</span><span class="value">' + (graduate.address_district || '—') + '</span></div>' +
                     '<div class="info-item"><span class="label">📌 Населённый пункт</span><span class="value">' + (graduate.address_locality || '—') + '</span></div>' +
-                    '<div class="info-item"><span class="label">📋 Учёт</span><span class="value">' + (graduate.accounting_type ? graduate.accounting_type.join(', ') : '—') + '</span></div>' +
+                    '<div class="info-item"><span class="label">📋 Учёт</span><span class="value">' + (graduate.accounting_type && graduate.accounting_type.length > 0 ? graduate.accounting_type.join(', ') : '—') + '</span></div>' +
                     (graduate.target_training ? 
                     '<div class="info-item" style="grid-column:1/-1;background:#F0FDF4;padding:8px 12px;border-radius:var(--border-radius);border:1px solid #86EFAC;">' +
                         '<span class="label">🎯 Целевое обучение</span>' +

@@ -865,6 +865,15 @@ function bindExpelButton() {
                     dorm_block: fullStudent.dorm_block || null,
                     dorm_check_in: fullStudent.dorm_check_in || null,
                     dorm_check_out: fullStudent.dorm_check_out || null,
+                    dorm_room_type: fullStudent.dorm_room_type || null,
+                    accounting_data: (function() {
+                        var data = (fullStudent.accounting_data && Array.isArray(fullStudent.accounting_data)) ? fullStudent.accounting_data.slice() : [];
+                        var types = fullStudent.accounting_type || [];
+                        if (types.includes('НГЗ') && !data.some(function(x) { return x.type === 'НГЗ'; })) {
+                            data.push({ type: 'НГЗ', start: '', end: '' });
+                        }
+                        return data;
+                    })(),
                     expulsion_date: date,
                     expulsion_order: order,
                     expulsion_article: article,
@@ -1018,6 +1027,15 @@ function bindAcademicButton() {
                     dorm_block: fullStudent.dorm_block || null,
                     dorm_check_in: fullStudent.dorm_check_in || null,
                     dorm_check_out: fullStudent.dorm_check_out || null,
+                    dorm_room_type: fullStudent.dorm_room_type || null,
+                    accounting_data: (function() {
+                        var data = (fullStudent.accounting_data && Array.isArray(fullStudent.accounting_data)) ? fullStudent.accounting_data.slice() : [];
+                        var types = fullStudent.accounting_type || [];
+                        if (types.includes('НГЗ') && !data.some(function(x) { return x.type === 'НГЗ'; })) {
+                            data.push({ type: 'НГЗ', start: '', end: '' });
+                        }
+                        return data;
+                    })(),
                     academic_leave_date: date,
                     academic_leave_order: order,
                     academic_leave_reason: reason,
