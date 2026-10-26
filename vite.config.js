@@ -55,16 +55,31 @@ export default defineConfig({
 
   plugins: [
     {
-      // Копируем реальный frontend/_redirects в dist после сборки
-      name: 'copy-redirects-file',
+      name: 'copy-static-assets',
       closeBundle() {
-        const src = path.resolve(__dirname, 'frontend/_redirects');
-        const dest = path.resolve(__dirname, 'dist/_redirects');
-        if (fs.existsSync(src)) {
-          fs.copyFileSync(src, dest);
-          console.log('✅ _redirects скопирован в dist/');
-        } else {
-          console.warn('⚠️ frontend/_redirects не найден!');
+        const pairs = [
+          { src: 'frontend/_redirects', dest: 'dist/_redirects', kind: 'file' },
+          { src: 'frontend/js',         dest: 'dist/js',         kind: 'dir'  },
+          { src: 'frontend/images',     dest: 'dist/images',     kind: 'dir'  },
+          { src: 'frontend/css',        dest: 'dist/css',        kind: 'dir'  }
+        ];
+
+        for (const p of pairs) {
+          const srcPath = path.resolve(__dirname, p.src);
+          const destPath = path.resolve(__dirname, p.dest);
+
+          if (!fs.existsSync(srcPath)) {
+            console.warn(`⚠️ ${p.src} не найден — пропускаю`);
+            continue;
+          }
+
+          if (p.kind === 'file') {
+            fs.copyFileSync(srcPath, destPath);
+            console.log(`✅ ${p.src} -> ${p.dest}`);
+          } else {
+            fs.cpSync(srcPath, destPath, { recursive: true });
+            console.log(`✅ ${p.src} -> ${p.dest} (рекурсивно)`);
+          }
         }
       }
     }
