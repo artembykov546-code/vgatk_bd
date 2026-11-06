@@ -972,6 +972,85 @@ console.log('✅ Дашборд готов к работе. Используйт
 })();
 </script>
 
+<script>
+// ===== ЖУРНАЛ ДЕЙСТВИЙ НА ГЛАВНОЙ =====
+(function() {
+    function esc(s) {
+        if (s == null) return '';
+        return String(s).replace(/[&<>"']/g, function(c) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        });
+    }
+
+    function formatDate(iso) {
+        var d = new Date(iso);
+        var pad = function(n){ return n < 10 ? '0' + n : n; };
+        return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function actionLabel(action) {
+        return ({create: 'добавил(а)', update: 'изменил(а)', 'delete': 'удалил(а)', login: 'вошёл(ла)', logout: 'вышел(ла)'})[action] || action;
+    }
+
+    function typeLabel(type) {
+        return ({student: 'учащегося', employee: 'сотрудника', group: 'группу', invite: 'приглашение', report: 'отчёт'})[type] || type || '';
+    }
+
+    async function loadAudit() {
+        var user = (window.Session && Session.getUser && Session.getUser()) || (function(){ try { return JSON.parse(localStorage.getItem('currentUser') || 'null'); } catch(e){ return null; } })();
+        if (!user) return;
+        if (user.role !== 'admin' && user.role !== 'super_admin') return;
+
+        var section = document.getElementById('auditLogSection');
+        if (section) section.style.display = 'block';
+
+        var sb = (window.Session && Session.supabase && Session.supabase()) || window.supabaseClient;
+        if (!sb) return;
+
+        var since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+        var res = await sb
+            .from('audit_logs')
+            .select('id, user_name, action, target_type, target_name, created_at')
+            .gte('created_at', since)
+            .order('created_at', { ascending: false })
+            .limit(50);
+
+        var list = document.getElementById('auditLogList');
+        if (!list) return;
+
+        if (res.error) {
+            list.innerHTML = '<p style="color:#EF4444;text-align:center;padding:20px;">Ошибка: ' + esc(res.error.message) + '</p>';
+            return;
+        }
+        if (!res.data || res.data.length === 0) {
+            list.innerHTML = '<p style="color:#94A3B8;text-align:center;padding:20px;">Пока нет записей</p>';
+            return;
+        }
+
+        var html = '';
+        for (var i = 0; i < res.data.length; i++) {
+            var r = res.data[i];
+            html += '<div style="display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #F1F5F9;font-size:13px;">';
+            html +=   '<div style="flex:1;min-width:0;">';
+            html +=     '<strong style="color:#1E293B;">' + esc(r.user_name || 'Пользователь') + '</strong> ';
+            html +=     '<span style="color:#64748B;">' + esc(actionLabel(r.action)) + ' ' + esc(typeLabel(r.target_type)) + '</span>';
+            if (r.target_name) {
+                html += ' <span style="color:#2563EB;">' + esc(r.target_name) + '</span>';
+            }
+            html +=   '</div>';
+            html +=   '<div style="color:#94A3B8;white-space:nowrap;">' + esc(formatDate(r.created_at)) + '</div>';
+            html += '</div>';
+        }
+        list.innerHTML = html;
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadAudit);
+    } else {
+        loadAudit();
+    }
+})();
+</script>
 </body>
 </html>
 
