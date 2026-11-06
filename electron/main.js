@@ -144,6 +144,14 @@ function createWindow() {
     return { action: 'allow' };
   });
 
+  // Перехват навигации: любые внешние http(s)-ссылки открываем в системном браузере
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      event.preventDefault();
+      shell.openExternal(url);
+    }
+  });
+
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     console.error('[did-fail-load]', errorCode, errorDescription, validatedURL);
   });
