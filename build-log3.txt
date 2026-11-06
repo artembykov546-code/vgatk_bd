@@ -1,0 +1,181 @@
+
+> vgatk_bd@1.2.3 electron:build
+> npm run build && electron-builder --win
+
+
+> vgatk_bd@1.2.3 build
+> vite build
+
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+<script src="/js/session.js"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/dashboard.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/dashboard.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/dashboard.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/dashboard.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/dashboard.html" can't be bundled without type="module" attribute
+transforming...
+<script src="/js/session.js"> in "/students/create-group.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/create-group.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/create-group.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/create-group.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/create-group.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/index.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/index.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/index.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/add-parent.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/add-parent.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/add-parent.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/add-parent.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/add-parent.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/add-student.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/add-student.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/add-student.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/add-student.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/add-student.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/add-sibling.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/add-sibling.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/add-sibling.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/add-sibling.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/add-sibling.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/profile.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/profile.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/profile.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/profile.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/profile.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/edit-student.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/edit-student.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/edit-student.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/edit-student.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/edit-student.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/group.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/group.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/group.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/group.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/group.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/students/graduate-distribution.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/students/graduate-distribution.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/students/graduate-distribution.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/students/graduate-distribution.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/students/graduate-distribution.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/graduates/group.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/graduates/group.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/graduates/group.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/graduates/group.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/graduates/group.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/graduates/expelled.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/graduates/expelled.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/graduates/expelled.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/graduates/expelled.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/graduates/expelled.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/graduates/distribution.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/graduates/distribution.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/graduates/distribution.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/graduates/distribution.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/graduates/distribution.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/graduates/index.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/graduates/index.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/graduates/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/graduates/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/graduates/index.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/profile/index.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/profile/index.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/profile/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/profile/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/profile/index.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/graduates/academic.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/graduates/academic.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/graduates/academic.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/graduates/academic.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/graduates/academic.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/employees/index.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/employees/index.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/employees/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/employees/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/employees/index.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/invites/index.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/invites/index.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/invites/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/invites/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/invites/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/register/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/register/index.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/reports/index.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/reports/index.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/reports/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/reports/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/reports/index.html" can't be bundled without type="module" attribute
+<script src="/js/session.js"> in "/support/index.html" can't be bundled without type="module" attribute
+<script src="/js/header.js?v=2"> in "/support/index.html" can't be bundled without type="module" attribute
+<script src="/js/sidebar.js?v=2"> in "/support/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications.js?v=1"> in "/support/index.html" can't be bundled without type="module" attribute
+<script src="/js/notifications-bind.js?v=1"> in "/support/index.html" can't be bundled without type="module" attribute
+[32mтЬУ[39m 49 modules transformed.
+rendering chunks...
+computing gzip size...
+[2m../dist/[22m[32madmin/index.html                     [39m[1m[2m  0.00 kB[22m[1m[22m[2m тФВ gzip:  0.02 kB[22m
+[2m../dist/[22m[32madmin/logs.html                      [39m[1m[2m  0.00 kB[22m[1m[22m[2m тФВ gzip:  0.02 kB[22m
+[2m../dist/[22m[32madmin/positions.html                 [39m[1m[2m  0.00 kB[22m[1m[22m[2m тФВ gzip:  0.02 kB[22m
+[2m../dist/[22m[32madmin/settings.html                  [39m[1m[2m  0.00 kB[22m[1m[22m[2m тФВ gzip:  0.02 kB[22m
+[2m../dist/[22m[32massets/vk-CuSOFoKb.png               [39m[1m[2m  6.75 kB[22m[1m[22m
+[2m../dist/[22m[32mprofile/index.html                   [39m[1m[2m 17.23 kB[22m[1m[22m[2m тФВ gzip:  5.28 kB[22m
+[2m../dist/[22m[32mstudents/add-sibling.html            [39m[1m[2m 22.43 kB[22m[1m[22m[2m тФВ gzip:  6.02 kB[22m
+[2m../dist/[22m[32massets/telegram-B4h4br_k.png         [39m[1m[2m 23.52 kB[22m[1m[22m
+[2m../dist/[22m[32mstudents/add-parent.html             [39m[1m[2m 24.00 kB[22m[1m[22m[2m тФВ gzip:  6.34 kB[22m
+[2m../dist/[22m[32mstudents/create-group.html           [39m[1m[2m 25.80 kB[22m[1m[22m[2m тФВ gzip:  7.16 kB[22m
+[2m../dist/[22m[32mregister/index.html                  [39m[1m[2m 25.89 kB[22m[1m[22m[2m тФВ gzip:  7.78 kB[22m
+[2m../dist/[22m[32msupport/index.html                   [39m[1m[2m 27.14 kB[22m[1m[22m[2m тФВ gzip:  7.08 kB[22m
+[2m../dist/[22m[32mindex.html                           [39m[1m[2m 27.59 kB[22m[1m[22m[2m тФВ gzip:  7.59 kB[22m
+[2m../dist/[22m[32minvites/index.html                   [39m[1m[2m 28.21 kB[22m[1m[22m[2m тФВ gzip:  8.42 kB[22m
+[2m../dist/[22m[32mstudents/graduate-distribution.html  [39m[1m[2m 32.70 kB[22m[1m[22m[2m тФВ gzip:  8.53 kB[22m
+[2m../dist/[22m[32mdashboard.html                       [39m[1m[2m 35.27 kB[22m[1m[22m[2m тФВ gzip:  9.45 kB[22m
+[2m../dist/[22m[32mgraduates/expelled.html              [39m[1m[2m 41.77 kB[22m[1m[22m[2m тФВ gzip: 10.17 kB[22m
+[2m../dist/[22m[32mgraduates/academic.html              [39m[1m[2m 41.99 kB[22m[1m[22m[2m тФВ gzip: 10.21 kB[22m
+[2m../dist/[22m[32mgraduates/distribution.html          [39m[1m[2m 43.51 kB[22m[1m[22m[2m тФВ gzip: 10.49 kB[22m
+[2m../dist/[22m[32mgraduates/index.html                 [39m[1m[2m 44.49 kB[22m[1m[22m[2m тФВ gzip: 10.25 kB[22m
+[2m../dist/[22m[32mstudents/index.html                  [39m[1m[2m 44.62 kB[22m[1m[22m[2m тФВ gzip: 10.05 kB[22m
+[2m../dist/[22m[32memployees/index.html                 [39m[1m[2m 60.16 kB[22m[1m[22m[2m тФВ gzip: 13.83 kB[22m
+[2m../dist/[22m[32mgraduates/group.html                 [39m[1m[2m 60.54 kB[22m[1m[22m[2m тФВ gzip: 13.95 kB[22m
+[2m../dist/[22m[32mstudents/group.html                  [39m[1m[2m 61.91 kB[22m[1m[22m[2m тФВ gzip: 14.24 kB[22m
+[2m../dist/[22m[32mstudents/add-student.html            [39m[1m[2m 78.42 kB[22m[1m[22m[2m тФВ gzip: 14.99 kB[22m
+[2m../dist/[22m[32mreports/index.html                   [39m[1m[2m 90.35 kB[22m[1m[22m[2m тФВ gzip: 18.35 kB[22m
+[2m../dist/[22m[32mstudents/edit-student.html           [39m[1m[2m 95.53 kB[22m[1m[22m[2m тФВ gzip: 18.04 kB[22m
+[2m../dist/[22m[32massets/logo-Wn9-z6mT.png             [39m[1m[2m113.46 kB[22m[1m[22m
+[2m../dist/[22m[32mstudents/profile.html                [39m[1m[2m117.44 kB[22m[1m[22m[2m тФВ gzip: 19.92 kB[22m
+[2m../dist/[22m[32massets/instagram-hryadL4x.png        [39m[1m[2m209.73 kB[22m[1m[22m
+[2m../dist/[22m[32massets/favicon-Df3o49Nr.ico          [39m[1m[2m270.40 kB[22m[1m[22m
+[2m../dist/[22m[35massets/components-Bl9R5U7W.css       [39m[1m[2m 17.53 kB[22m[1m[22m[2m тФВ gzip:  3.97 kB[22m
+[32mтЬУ built in 763ms[39m
+тЬЕ frontend/_redirects -> dist/_redirects
+тЬЕ frontend/js -> dist/js (╤А╨╡╨║╤Г╤А╤Б╨╕╨▓╨╜╨╛)
+тЬЕ frontend/images -> dist/images (╤А╨╡╨║╤Г╤А╤Б╨╕╨▓╨╜╨╛)
+тЬЕ frontend/css -> dist/css (╤А╨╡╨║╤Г╤А╤Б╨╕╨▓╨╜╨╛)
+  тАв electron-builder  version=25.1.8 os=10.0.26300
+  тАв loaded configuration  file=package.json ("build" field)
+  тАв executing @electron/rebuild  electronVersion=33.4.11 arch=x64 buildFromSource=false appDir=./
+  тАв installing native dependencies  arch=x64
+  тАв completed installing native dependencies
+  тАв packaging       platform=win32 arch=x64 electron=33.4.11 appOutDir=release3\win-unpacked
+  тАв downloading     url=https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip size=115 MB parts=8
+  тАв downloaded      url=https://github.com/electron/electron/releases/download/v33.4.11/electron-v33.4.11-win32-x64.zip duration=4m45.584s
+  тАв updating asar integrity executable resource  executablePath=release3\win-unpacked\vgatk_bd.exe
+  тАв downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z size=5.6 MB parts=1
+  тАв downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/winCodeSign-2.6.0/winCodeSign-2.6.0.7z duration=10.303s
+  тАв signing with signtool.exe  path=release3\win-unpacked\vgatk_bd.exe
+  тАв no signing info identified, signing is skipped  signHook=false cscInfo=null
+  тАв building        target=nsis file=release3\vgatk_bd-Setup.exe archs=x64 oneClick=false perMachine=false
+  тАв downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z size=1.3 MB parts=1
+  тАв downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-3.0.4.1/nsis-3.0.4.1.7z duration=4.34s
+  тАв signing with signtool.exe  path=release3\win-unpacked\resources\elevate.exe
+  тАв no signing info identified, signing is skipped  signHook=false cscInfo=null
+  тАв downloading     url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z size=731 kB parts=1
+  тАв downloaded      url=https://github.com/electron-userland/electron-builder-binaries/releases/download/nsis-resources-3.4.1/nsis-resources-3.4.1.7z duration=2.057s
+  тАв signing with signtool.exe  path=release3\__uninstaller-nsis-vgatk_bd.exe
+  тАв no signing info identified, signing is skipped  signHook=false cscInfo=null
+  тАв signing with signtool.exe  path=release3\vgatk_bd-Setup.exe
+  тАв no signing info identified, signing is skipped  signHook=false cscInfo=null
+  тАв building block map  blockMapFile=release3\vgatk_bd-Setup.exe.blockmap
