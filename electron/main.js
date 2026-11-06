@@ -128,7 +128,6 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    mainWindow.webContents.openDevTools(); // 👈 временно для отладки белого экрана
   });
 
   if (isDev) {
@@ -198,9 +197,27 @@ app.whenReady().then(() => {
   // Протокол app:// для продакшена
   // ------------------------------------------------------------
   if (!isDev) {
+    const fs = require('fs');
     const distPath = path.join(__dirname, '..', 'dist');
+    const unpackedDist = distPath.replace('app.asar', 'app.asar.unpacked');
 
-    protocol.handle('app', (request) => {
+    const mimeTypes = {
+      '.html': 'text/html; charset=utf-8',
+      '.js': 'text/javascript; charset=utf-8',
+      '.css': 'text/css; charset=utf-8',
+      '.json': 'application/json; charset=utf-8',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.ico': 'image/x-icon',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2',
+      '.ttf': 'font/ttf'
+    };
+
+    protocol.handle('app', async (request) => {
       try {
         const url = new URL(request.url);
         let filePath = decodeURIComponent(url.pathname);
@@ -208,9 +225,47 @@ app.whenReady().then(() => {
           filePath = '/index.html';
         }
         const relativePath = filePath.replace(/^\/+/, '');
-        const fullPath = path.join(distPath, relativePath);
-        const fileUrl = pathToFileURL(fullPath).toString();
-        return net.fetch(fileUrl);
+
+        // Сначала пробуем распакованную папку, потом asar
+        let fullPath = path.join(unpackedDist, relativePath);
+        if (!fs.existsSync(fullPath)) {
+          fullPath = path.join(distPath, relativePath);
+        }
+        
+        // 1. Если это файл - читаем
+        // 2. Если папка - ищем index.html
+        // 3. Если нет - ищем с .html
+        if (fs.existsSync(fullPath)) {
+          const stat = fs.statSync(fullPath);
+          if (stat.isDirectory()) {
+            const asIndex = path.join(fullPath, 'index.html');
+            if (fs.existsSync(asIndex)) {
+              fullPath = asIndex;
+            }
+          }
+        } else {
+          const withHtml = fullPath + '.html';
+          if (fs.existsSync(withHtml)) {
+            fullPath = withHtml;
+          } else {
+            const withIndex = path.join(fullPath, 'index.html');
+            if (fs.existsSync(withIndex)) fullPath = withIndex;
+          }
+        }
+
+        if (!fs.existsSync(fullPath) || fs.statSync(fullPath).isDirectory()) {
+          console.error('[app://] not found:', fullPath);
+          return new Response('Not Found', { status: 404 });
+        }
+
+        const data = fs.readFileSync(fullPath);
+        const ext = path.extname(fullPath).toLowerCase();
+        const mime = mimeTypes[ext] || 'application/octet-stream';
+
+        return new Response(data, {
+          status: 200,
+          headers: { 'Content-Type': mime }
+        });
       } catch (err) {
         console.error('[app://] handle error:', err);
         return new Response('Not Found', { status: 404 });
