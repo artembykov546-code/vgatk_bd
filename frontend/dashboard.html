@@ -1049,5 +1049,29 @@ console.log('✅ Дашборд готов к работе. Используйт
     }
 })();
 </script>
+<script>
+// ===== ПОДТЯГИВАЕМ ПОСЛЕДНЮЮ ВЕРСИЮ С GITHUB =====
+(function() {
+    var info = document.getElementById('latestVersionInfo');
+    var ver = document.getElementById('buildVersion');
+    if (!info && !ver) return;
+
+    fetch('https://api.github.com/repos/artembykov546-code/vgatk_bd/releases/latest')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data && data.tag_name) {
+                if (info) info.textContent = '✅ Доступна последняя версия';
+                if (ver)  ver.textContent  = 'Версия: ' + data.tag_name + ' (с GitHub)';
+            } else {
+                if (info) info.textContent = '';
+                if (ver)  ver.textContent  = 'Версия: не удалось определить';
+            }
+        })
+        .catch(function() {
+            if (info) info.textContent = '';
+            if (ver)  ver.textContent  = 'Версия: не удалось получить';
+        });
+})();
+</script>
 </body>
 </html>
