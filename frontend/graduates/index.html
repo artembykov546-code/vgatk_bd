@@ -939,7 +939,8 @@ function bindExportDOC() {
                     '<div class="total">Всего групп: ' + allGroupsData.length + ' | Всего студентов: ' + totalStudents + '</div>' +
                     '<div style="margin-top:4px;">Дата: ' + dateStr + ' | Экспортировал(а): ' + userName + '</div>' +
                 '</div>' +
-            '</body>' +
+            '    <script src="/js/footer.js"></script>
+</body>' +
             '</html>';
 
         var blob = new Blob(['\uFEFF' + docHtml], { type: 'application/msword;charset=utf-8' });
@@ -1010,5 +1011,6 @@ function boot() {
 boot();
 </script>
 
+    <script src="/js/footer.js"></script>
 </body>
 </html>

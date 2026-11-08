@@ -1970,7 +1970,8 @@ function exportToDOC() {
                 '<div style="margin-top:2px;">Дата: ' + dateStr + '</div>' +
                 '<div style="margin-top:4px;">Отчёт сформировал(а): ' + userName + '</div>' +
             '</div>' +
-        '</body>' +
+        '    <script src="/js/footer.js"></script>
+</body>' +
         '</html>';
 
     var blob = new Blob(['\uFEFF' + docHtml], { type: 'application/msword;charset=utf-8' });
@@ -2072,5 +2073,6 @@ function boot() {
 boot();
 </script>
 
+    <script src="/js/footer.js"></script>
 </body>
 </html>
