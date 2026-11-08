@@ -32,4 +32,8 @@ Desktop.ini
 release/
 release2/
 build/win-unpacked/
-
+release3/
+release4/
+release5/
+frontend/downloads/
+build-log*.txt
