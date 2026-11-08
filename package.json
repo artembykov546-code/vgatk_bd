@@ -55,11 +55,14 @@
     },
     "nsis": {
       "oneClick": false,
+      "installerLanguages": ["ru_RU"],
+      
+      "language": "1033",
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "license": "build/license.txt",
+      
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico",
