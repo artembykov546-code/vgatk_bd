@@ -1102,8 +1102,8 @@ function exportGraduateToWord(graduate, parents, siblings, distributions) {
             '<div class="footer">' +
                 'Дата: ' + dateStr + ' | Экспортировал(а): ' + userName +
             '</div>' +
-        '    <script src="/js/footer.js"></script>
-</body>' +
+
+'</body>' +
         '</html>';
 
     var blob = new Blob([docHtml], { type: 'application/msword;charset=utf-8' });
@@ -1210,6 +1210,5 @@ function boot() {
 boot();
 </script>
 
-    <script src="/js/footer.js"></script>
-</body>
+'</body>
 </html>

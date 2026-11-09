@@ -1,5 +1,5 @@
 // ============================================================
-// FOOTER — Все права защищены. Подключается на все страницы.
+// FOOTER - Все права защищены. Подключается на все страницы.
 // ============================================================
 (function () {
     'use strict';
@@ -13,7 +13,7 @@
 
         footer.innerHTML =
             '<div>&copy; 2026 Все права защищены</div>' +
-            '<div style="margin-top:4px;">Авторы: ГУО &laquo;Витебский технологический колледж&raquo;, Быков Артём Русланович</div>' +
+            '<div style="margin-top:4px;">Автор: Быков Артём Русланович</div>' +
             '<div style="margin-top:4px;">Обратная связь: <a href="https://t.me/artem_20_07" target="_blank" rel="noopener" style="color:#2563EB;text-decoration:none;">Telegram: t.me/artem_20_07</a></div>';
 
         document.body.appendChild(footer);
