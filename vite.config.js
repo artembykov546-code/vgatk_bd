@@ -84,6 +84,7 @@ export default defineConfig({
       closeBundle() {
         const pairs = [
           { src: 'frontend/_redirects', dest: 'dist/_redirects', kind: 'file' },
+          { src: 'frontend/google9a5142c1aeace9c6.html', dest: 'dist/google9a5142c1aeace9c6.html', kind: 'file' },
           { src: 'frontend/js',         dest: 'dist/js',         kind: 'dir'  },
           { src: 'frontend/images',     dest: 'dist/images',     kind: 'dir'  },
           { src: 'frontend/css',        dest: 'dist/css',        kind: 'dir'  }
