@@ -169,7 +169,7 @@
                 </form>
 
                 <div class="login-links">
-                    Нет аккаунта? <a href="https://vgatk-bd.onrender.com/register/" id="registerLink" target="_blank" rel="noopener">Зарегистрироваться на сайте</a>
+                    Нет аккаунта? <a href="https://vgatk-bd.onrender.com/register/" id="registerLink" target="_blank" rel="noopener">Зарегистрироваться</a>
                     <div style="margin-top:8px;font-size:12px;color:#94A3B8;">
                         Регистрация доступна только на сайте. Если нет пригласительного кода — обратитесь к администратору или супер-администратору базы данных.
                     </div>
@@ -573,5 +573,21 @@ console.log('✅ Страница входа загружена');
 </script>
 
     <script src="/js/footer.js?v=3"></script>
+<script>
+// Если запущено в Electron — ссылка ведёт на сайт и текст "Зарегистрироваться на сайте"
+(function() {
+    var isElectron = navigator.userAgent.toLowerCase().includes('electron');
+    var isAppProtocol = window.location.protocol === 'app:' || window.location.protocol === 'file:';
+    if (isElectron || isAppProtocol) {
+        var link = document.getElementById('registerLink');
+        if (link) {
+            link.textContent = 'Зарегистрироваться на сайте';
+            link.href = 'https://vgatk-bd.onrender.com/register/';
+            link.target = '_blank';
+            link.rel = 'noopener';
+        }
+    }
+})();
+</script>
 </body>
 </html>
