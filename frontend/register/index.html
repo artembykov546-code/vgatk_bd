@@ -220,17 +220,20 @@ const SUPABASE_URL = 'https://selbolepupendprhixas.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNlbGJvbGVwdXBlbmRwcmhpeGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI1NjQzODgsImV4cCI6MjA5ODE0MDM4OH0.UpWEr6hEs9ytnDxnaQ7Uf3d_xDQLHO-eejkIw53o7EE';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let verifiedUserId = null; // ID пользователя из таблицы users
-let userFullName = '';     // Имя сотрудника для отображения
+let verifiedUserId = null;
+let userFullName = '';
 
-// ============================================================
-// УТИЛИТЫ
-// ============================================================
 function togglePassword(inputId) {
     const input = document.getElementById(inputId);
     const button = input.parentElement.querySelector('.toggle-password');
-    if (input.type === 'password') { input.type = 'text'; button.textContent = ''; } 
-    else { input.type = 'password'; button.textContent = '👁️'; }
+    if (!input || !button) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        button.textContent = '🙈';
+    } else {
+        input.type = 'password';
+        button.textContent = '👁️';
+    }
 }
 
 function showAlert(containerId, type, message) {
@@ -262,14 +265,12 @@ function goToStep(step) {
     }
 }
 
-// Автоформатирование кода (только цифры + дефис)
 document.getElementById('inviteCode').addEventListener('input', function(e) {
     let val = this.value.replace(/[^0-9]/g, '');
     if (val.length > 4) val = val.substring(0, 4) + '-' + val.substring(4, 8);
     this.value = val;
 });
 
-// Индикатор силы пароля
 document.getElementById('newPassword').addEventListener('input', function() {
     const p = this.value; 
     const bar = document.getElementById('strengthBar'); 
@@ -288,7 +289,6 @@ document.getElementById('newPassword').addEventListener('input', function() {
     if (idx > 0) { bar.classList.add(lvls[idx]); txt.textContent = 'Надёжность: ' + labels[idx]; }
 });
 
-// Проверка совпадения паролей
 document.getElementById('confirmPassword').addEventListener('input', function() {
     const h = document.getElementById('confirmHint');
     const newP = document.getElementById('newPassword').value;
@@ -304,9 +304,6 @@ document.getElementById('confirmPassword').addEventListener('input', function() 
     }
 });
 
-// ============================================================
-// ЛОГИКА ШАГА 1: ПРОВЕРКА КОДА (ИСПРАВЛЕНО!)
-// ============================================================
 document.getElementById('checkCodeBtn').addEventListener('click', async () => {
     const code = document.getElementById('inviteCode').value.trim().toUpperCase();
     if (!code || code.length !== 9) { 
@@ -320,8 +317,6 @@ document.getElementById('checkCodeBtn').addEventListener('click', async () => {
     hideAlert('step1Alert');
 
     try {
-        // Ищем ПОЛЬЗОВАТЕЛЯ по invite_code в таблице users
-        // ВАЖНО: Мы запрашиваем конкретные поля, чтобы не触发 RLS ошибки на скрытых полях
         const { data: user, error } = await supabaseClient
             .from('users')
             .select('id, employee_id, invite_code, invite_used, login')
@@ -331,23 +326,20 @@ document.getElementById('checkCodeBtn').addEventListener('click', async () => {
 
         if (error) {
             console.error('Supabase Error:', error);
-            // Если ошибка 403 или 500, скорее всего проблема в RLS
             showAlert('step1Alert', 'danger', '❌ Ошибка сервера. Попробуйте позже.');
             return;
         }
 
         if (!user) {
-            showAlert('step1Alert', 'danger', ' Неверный или уже использованный код');
+            showAlert('step1Alert', 'danger', '❌ Неверный или уже использованный код');
             return;
         }
 
-        // Если у пользователя уже есть логин, значит он уже зарегистрирован
         if (user.login) {
             showAlert('step1Alert', 'danger', '❌ Этот код уже был использован');
             return;
         }
 
-        // Получаем ФИО сотрудника через employee_id
         let fullName = 'Сотрудник';
         if (user.employee_id) {
             const { data: emp, error: empError } = await supabaseClient
@@ -359,7 +351,6 @@ document.getElementById('checkCodeBtn').addEventListener('click', async () => {
             if (!empError && emp && emp.full_name) fullName = emp.full_name;
         }
 
-        // Сохраняем ID пользователя (из таблицы users), а не сотрудника
         verifiedUserId = user.id;
         userFullName = fullName;
         
@@ -379,7 +370,10 @@ document.getElementById('checkCodeBtn').addEventListener('click', async () => {
 });
 
 document.getElementById('inviteCode').addEventListener('keydown', e => { 
-    if(e.key === 'Enter') document.getElementById('checkCodeBtn').click(); 
+    if(e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('checkCodeBtn').click(); 
+    }
 });
 
 document.getElementById('backToCodeBtn').onclick = () => { 
@@ -387,9 +381,6 @@ document.getElementById('backToCodeBtn').onclick = () => {
     goToStep(1); 
 };
 
-// ============================================================
-// ЛОГИКА ШАГА 2: РЕГИСТРАЦИЯ (ИСПРАВЛЕНО!)
-// ============================================================
 document.getElementById('registerBtn').addEventListener('click', async () => {
     hideAlert('step2Alert');
     
@@ -407,9 +398,9 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
     const pass = document.getElementById('newPassword').value;
     const conf = document.getElementById('confirmPassword').value;
 
-    if (login.length < 3) { showAlert('step2Alert', 'danger', ' Логин должен содержать минимум 3 символа'); return; }
+    if (login.length < 3) { showAlert('step2Alert', 'danger', '❌ Логин должен содержать минимум 3 символа'); return; }
     if (pass.length < 6) { showAlert('step2Alert', 'danger', '❌ Пароль должен содержать минимум 6 символов'); return; }
-    if (pass !== conf) { showAlert('step2Alert', 'danger', ' Пароли не совпадают'); return; }
+    if (pass !== conf) { showAlert('step2Alert', 'danger', '❌ Пароли не совпадают'); return; }
 
     const btn = document.getElementById('registerBtn');
     btn.innerHTML = '<span class="loading-spinner"></span> Регистрация...';
@@ -418,8 +409,6 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
     try {
         console.log('🔍 Проверка уникальности логина в Supabase...');
         
-        // 1. ПРОВЕРКА ЛОГИНА В SUPABASE
-        // Мы ищем, есть ли уже такой login в таблице users
         const { data: existingLogin, error: loginCheckError } = await supabaseClient
             .from('users')
             .select('id')
@@ -440,21 +429,16 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
 
         console.log('✅ Логин свободен. Хеширование пароля...');
         
-        // 2. ХЕШИРОВАНИЕ ПАРОЛЯ
-        // Пароль НЕ отправляется в базу в открытом виде.
-        // Мы превращаем его в хеш прямо здесь, в браузере.
         const passwordHash = await window.bcrypt.hash(pass, 10);
         console.log('✅ Пароль захеширован');
 
         console.log('💾 Сохранение в базу данных...');
         
-        // 3. ОБНОВЛЕНИЕ ЗАПИСИ В USERS
-        // Мы обновляем запись, которую нашли по коду (verifiedUserId)
         const { error: updateError } = await supabaseClient
             .from('users')
             .update({
                 login: login,
-                password_hash: passwordHash, // Сохраняем ТОЛЬКО хеш
+                password_hash: passwordHash,
                 invite_used: true,
                 invite_status: 'used'
             })
@@ -465,14 +449,12 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
             throw updateError;
         }
 
-        // Получаем роль пользователя для localStorage
         const { data: updatedUser } = await supabaseClient
             .from('users')
             .select('role, employee_id')
             .eq('id', verifiedUserId)
             .single();
 
-        // Сохраняем данные пользователя в localStorage
         const userData = {
             id: verifiedUserId,
             login: login,
@@ -485,7 +467,6 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
 
         showAlert('step2Alert', 'success', '✅ Регистрация успешно завершена!');
         
-        // Перенаправление на главную
         setTimeout(() => {
             window.location.href = '/dashboard';
         }, 1500);
@@ -498,18 +479,15 @@ document.getElementById('registerBtn').addEventListener('click', async () => {
     }
 });
 
-// ============================================================
-// ПРОВЕРКА: ЕСЛИ УЖЕ АВТОРИЗОВАН
-// ============================================================
 if (localStorage.getItem('currentUser')) {
     window.location.href = '/dashboard';
 }
 
 console.log('✅ Страница регистрации загружена');
 </script>
-
-        <script src="/js/notifications.js?v=3"></script>
-    <script src="/js/notifications-bind.js?v=3"></script>
-    <script src="/js/footer.js?v=3"></script>
 </body>
 </html>
+
+
+
+
